@@ -1,0 +1,41 @@
+{% extends 'base_layout.html' %}
+{% load static %}
+
+{% block extra_js %}
+		<script type="text/javascript">
+			var loader;
+			function loadNow(opacity) {
+					if (opacity <= 0) {
+							displayContent();
+					} else {
+							{#loader.style.opacity = opacity;#}
+							window.setTimeout(function() {
+									loadNow(opacity - 0.1);
+							}, 300);
+					}
+			}
+
+			function displayContent() {
+					loader.style.display = 'none';
+					document.getElementById('content').style.display = 'block';
+			}
+
+			document.addEventListener("DOMContentLoaded", function() {
+					loader = document.getElementById('gifZilio');
+					loadNow(1);
+			});
+	</script>
+{% endblock %}
+
+{% block title %}Portale Impianti{% endblock %}
+
+{% block body %}
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+	<div id="gifZilio"></div>
+
+	<div id="content" class="container-fluid" style="padding: 0; margin: 0; border: 0">
+	</div>
+	<script type="text/JavaScript">
+      setTimeout("location.href = '{% url 'monitoraggio-home'  %}';",4000);
+	</script>
+{% endblock %}

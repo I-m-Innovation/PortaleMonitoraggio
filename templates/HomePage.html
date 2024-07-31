@@ -1,0 +1,73 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+  <title>{% block title %}Portale Impianti{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+	<link rel="stylesheet" href="{% static 'css/style_HomePage.css' %}">
+</head>
+<body>
+
+<header>
+	<nav class="navbar navbar-expand-lg py-0">
+		<div class="container">
+			<a class="navbar-brand" href=""> <img src="{% static 'images/logo_IM.png' %}" style="height:40px;" alt="logo I'm innovation"> </a>
+			<h1 class="navtitle" style="font-weight: bold; color: #ffffff"> Portale Impianti </h1>
+			<a class="navbar-brand" href="https://www.ziliogroup.com/"> <img src="{% static 'images/zilio_logo.png' %}" style="height:60px;" alt="logo Zilio Group"> </a>
+		</div>
+	</nav>
+</header>
+
+
+<main style="border: none">
+	<div class="background-image"></div>
+	<div class="content" style="padding-top: 13%">
+		<div class="container">
+			<div class="row justify-content-center" >
+				<div class="col">
+					<div class="card">
+						<div style="width:100%; text-align:center">
+						<img class="card-img-top py-0" src="{% static 'images/HomePage/monitoring-icon.png' %}" alt="" style="width: 50%;">
+						</div>
+						<div class="card-body py-1">
+							<h3 class="card-title" style="font-weight: lighter; color: white"> Monitoraggio </h3>
+							<p class="card-text" style="color: #b4b4b4"> Supervisione e monitoraggio degli impianti</p>
+							<a class="btn btn-light" href="{% url 'next-monitoraggio' %}"> Entra </a>
+						</div>
+					</div>
+				</div>
+				<div class="col">
+					<div class="card">
+						<div style="width:100%; text-align:center">
+						<img class="card-img-top py-0" src="{% static 'images/HomePage/analisi-icon.png' %}" alt="" style="width: 50%;">
+						</div>
+						<div class="card-body py-1">
+							<h3 class="card-title" style="font-weight: lighter; color: white"> Analisi dati </h3>
+							<p class="card-text" style="color: #b4b4b4"> Archivio dati, analisi e rendimenti degli impianti </p>
+							<a class="btn btn-light" href="{% url 'next-analisi' %}"> Entra </a>
+						</div>
+					</div>
+				</div>
+				<div class="col">
+					<div class="card" id="ricky">
+						<div style="width:100%; text-align:center;">
+							<img class="card-img-top"  src="{% static 'images/HomePage/pixiz-18-03-2024-10-42-38.jpg' %}" alt="" style="width: 150px; padding-top: 20px">
+						</div>
+						<div class="card-body">
+							<h5 class="card-title" style="color: #e5e5e5"> Situazione corrispettivi </h5>
+							<p class="card-text"> ... </p>
+							<a class="btn btn-light" href=""> Tocca </a>
+{#							<a class="btn btn-light" href="{% url 'next-GSE' %}"> Tocca </a>#}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+</body>
+</html>
+

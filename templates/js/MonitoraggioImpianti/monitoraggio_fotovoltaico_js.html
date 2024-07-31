@@ -1,0 +1,116 @@
+<script>
+		$(document).ready(function(){
+				var DayChart = echarts.init(document.getElementById('chart'));
+				var gaugePot = echarts.init(document.getElementById('gauge1'));
+
+				var endpoint = '{% url 'api-monitoraggio-impianto' nickname %}';
+
+				const warmpalette = [
+						'rgb(255,227,161)', 'rgb(232,183,20)',
+						'rgb(186,164,150)','rgb(116,87,69)',
+						'rgb(220,156,191)','rgb(160,27,104)',
+						'rgb(255,194,190)','rgb(209,65,36)',
+				];
+				const coolpalette = [
+						'rgb(173,220,145)', 'rgb(31,160,64)',
+						'rgb(137,182,181)','rgb(0,114,206)',
+						'rgb(37,118,117)','rgb(157,174,204)',
+						'rgb(126,183,232)','rgb(37,75,135)',
+				];
+
+				const colors = [warmpalette[7],coolpalette[3],warmpalette[2],coolpalette[2]];
+
+				window.addEventListener('resize', function() {DayChart.resize();});
+				window.addEventListener('resize', function() {gaugePot.resize();});
+
+				DayChart.setOption({
+						visualMap: [
+								{
+										type: 'continuous', min: 0, max: {{ impianto.potenza_installata|stringformat:".2f" }},
+										inRange: {
+												color: ['rgb(255,194,190)','rgb(209,65,36)','#171717'],
+										},show: false,
+								},
+						],
+            tooltip: {trigger: 'axis'},
+            toolbox: {right: '15%', top: 0,
+			          feature: {
+					          dataView: { show: true, readOnly: false },
+					          restore: {show: true},
+					          saveAsImage: {show: true}
+                }
+			      },
+            dataZoom: [{type: 'inside',show: true, realtime: true, start: 0, end: 100, xAxisIndex: [0,1],height: 60}],
+            xAxis: [{ data: ['00:00']},],
+						yAxis: [
+                {
+                    type: 'value', name: 'Potenza',
+                    axisLine: {show: true, lineStyle: {color: warmpalette[7],}},
+                    axisLabel: {formatter: '{value} kW'}, min: 0, max: {{ impianto.potenza_installata|stringformat:".2f" }}
+                },
+            ],
+            grid:[{top:'7%',bottom:'5%',right:'8%', left:'8%'}],
+            series: [
+                {
+                    name: 'Potenza', type: 'line', data: [0],
+                    areaStyle: {opacity: 0.9,},tooltip: {valueFormatter: value => toLocale(value,2) + ' kW'},
+                    xAxisIndex: 0, yAxisIndex: 0, lineStyle: {width: 1,},showSymbol: false
+                },
+            ]
+         });
+				
+				gaugePot.setOption({
+						grid:[{top:'3%',bottom:'3%',right:'3%', left:'3%'}],
+            series: [
+                {
+                    name: 'gauge Potenza', type: 'gauge', radius: '110%', min: 0, max: {{ impianto.potenza_installata|stringformat:".2f" }},
+                    data: [{
+                        name: 'Potenza', value: 0,
+                    }],
+                    progress: {show: true, color: {type:'linear'}},
+                    startAngle: 210, endAngle: -30, axisLabel: {fontSize: 10,}, title: {offsetCenter: [0, '50%'], fontSize: 14},
+                    pointer: {itemStyle: {color: '#3d3d3d'},length: '95%',width: '3%',},
+                    splitNumber: 8, axisTick: {distance: 3, lineStyle:{width: 1}}, splitLine: {distance: 3,lineStyle:{width: 2}},
+                    {#    lineStyle: {color: [[gauge_pot.Media - gauge_pot.Dev, '#ff5858'], [gauge_pot.Media + gauge_pot.Dev, '#c9c9c9'], [1, '#8bcfea']]}#}
+                    {# },#}
+                    detail: {offsetCenter: [0, '30%'], fontSize: 18,formatter: '{value} kW' },
+                    center: ['50%','60%'],
+                }
+            ]
+				});
+                
+				(function worker() {
+						$.get(endpoint, {view_impianto: true}).done(function (data) {
+
+								let timestamps = data.time;
+                let potenza = data.pot;
+	              let t_last = data.t_last;
+								let PLast = data.PLast;
+								let info = data.info;
+								
+								document.getElementById('ledcolor').className = data.led;
+								document.getElementById('energy').innerHTML = toLocaleKWh(info.energy, 2);
+								document.getElementById('co2').innerHTML = toLocale(info.co2, 2) + ' kg';
+								document.getElementById('case').innerHTML = toLocale(info.case);
+								document.getElementById('alberi').innerHTML = toLocale(info.alberi);
+
+                DayChart.setOption({
+	                  xAxis: [{ data: timestamps }],
+	                  graphic: [{type: 'group', left: '15%', top: '2.5%',
+			                  children: [
+					                  {type: 'text', z: 100, style:
+									                  {fill: '#333', text: 'ultima lettura: '+ t_last, fontsize:9,
+									                  }
+					                  }]}],
+                    series: [{data: potenza,},]
+                })
+								
+								gaugePot.setOption({
+			              series: [{
+					              data: [{value: PLast,}],}]
+								})
+						})
+						setTimeout(worker, 60000*5)
+         })();
+		})
+</script>

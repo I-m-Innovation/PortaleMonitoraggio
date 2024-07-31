@@ -1,0 +1,62 @@
+{% extends 'base_layout.html' %}
+{% load static %}
+
+{% block refresh %}
+	<meta http-equiv="refresh" content="{{ refresh }}">
+{% endblock %}
+
+{% block extra_css %}
+	<!-- CSS LEDS -->
+	<link rel="stylesheet" href="{% static 'css/leds.css' %}">
+{% endblock %}
+
+{% block content %}
+	<div class="container-fluid p-3">
+	<div class="row p-0 m-0" style="background-color: #ffffff; border-radius: 8px; box-shadow: rgba(50, 50, 93, 0.25) 0 2px 5px -1px, rgba(0, 0, 0, 0.3) 0 1px 3px -1px;">
+		<div class="col px-0 backgroundBar" style="height: 60px">
+			<div class="led-box"><div id="ledcolor" class="led-class"></div></div>
+			<h1 style="color: #4a3c54; margin-left: 20px; display: inline;">{{ impianto.nome_impianto }}</h1>
+			<span style="display:inline; padding-left: 50px"><a style="text-align: end; color: #6c4d79" href="{% url 'analisi-impianto' nickname %}" >Visione dati - {{ curr_anno }}</a></span>
+		</div>
+		<div class="row" style="padding: 0 20px 0 20px;">
+				<div class="col" style="padding-top: 10px;">
+				<div id="chart" style="height: 500px;"></div>
+				</div>
+		</div>
+		<div class="row" style="padding: 0 30px 0 30px; height: 200px; overflow: hidden">
+			<div class="col" style="padding: 0;">
+				<div id='gauge1' style="height: 250px;"></div>
+			</div>
+			<div class="col" style="padding: 0;">
+				<div id='gauge2' style="height: 250px;"></div>
+			</div>
+			<div class="col" style="padding: 0;">
+				<div id='gauge3' style="height: 250px;"></div>
+			</div>
+			<div class="col" style="padding: 0;">
+				<div id='gauge4' style="height: 250px;"></div>
+			</div>
+		</div>
+		<div class="row" style="padding: 0 30px 0 30px; height: 50px; overflow: hidden">
+			<div class="col">
+				<div class="led-box" style="margin: 5px 38%"><div id="ledcolor_gauge1" class="led-class"></div></div>
+			</div>
+			<div class="col">
+				<div class="led-box" style="margin: 5px 38%"><div id="ledcolor_gauge2" class="led-class"></div></div>
+			</div>
+			<div class="col">
+				<div class="led-box" style="margin: 5px 38%"><div id="ledcolor_gauge3" class="led-class"></div></div>
+			</div>
+			<div class="col">
+				<div class="led-box" style="margin: 5px 38%"><div id="ledcolor_gauge4" class="led-class"></div></div>
+			</div>
+		</div>
+	</div>
+	</div>
+	
+	<!-- CODICE JAVASCRIPT PER IL GRAFICO E I GAUGE -->
+	{% include 'js/MonitoraggioImpianti/monitoraggio_idroelttrico_js.html' %}
+{% endblock %}
+
+
+
