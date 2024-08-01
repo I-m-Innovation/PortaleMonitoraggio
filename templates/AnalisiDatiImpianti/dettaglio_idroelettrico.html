@@ -18,17 +18,21 @@
 						<h1 style="color: #4a3c54; font-weight: lighter">Visione dati - {{ impianto.nome_impianto }}</h1>
 						<p>Anno corrente, 01/01/2024 00:00 - {{ oggi }}</p>
 						
+						<!-- GRAFICO DATI DA INIZIO ANNO -->
 						<div class="col border-end">
-							<div id="chart1" style="height: 900px; width: 1000px"></div>
+							<div id="chart-year" style="height: 900px; width: 1000px"></div>
 						</div>
 						
+						<!-- COLONNA A DESTRA -->
 						<div class="col mx-2">
+							<!-- REPORT -->
 							<div class="row">
 								<h4>Report</h4>
 								<p>
 									Genera report dei dati della centrale (<i>portata, potenza, pressione</i> e <i>rendimento</i>) nell'intervallo temporale selezionato.
 									Analisi disponibilità e resa.
 								</p>
+								<!-- FORM PER RICHIEDERE IL REPORT -->
 								<form action="{% url 'analisi-impianto' nickname %}" method="post">
 									{% csrf_token %}
 									{% for field in form %}
@@ -63,25 +67,29 @@
 								</form>
 							</div>
 							<br>
+							<!-- STATISTICHE IMPIANTO GIORNO-MESE-ANNO -->
 							<div class="row">
 								<h4>Statistiche</h4>
 								{% load humanize %}{% load i18n %}{% load l10n %}
 		            {% language 'de' %}
+			            <!-- TABELLA CON LE STATISTICHE -->
 			            {% include 'AnalisiDatiImpianti/partials/tabella_statistiche.html' %}
 								{% endlanguage %}
 							</div>
 						</div>
 						</div>
+						
+						<!-- GRAFICO RENDIMENTO 3D -->
 						<div class="row w-75">
 							<div class="col ms-5" style="margin: 20px; border-radius: 5px; border: 1px solid lightgrey">
-								<div id="chart2" style="height: 500px;"></div>
+								<div id="chart-3D" style="height: 500px;"></div>
 							</div>
 						</div>
 				</div>
 			</div>
 		</div>
 	
-	<!-- SCRIPT: GRAFICO DATI "YearTL" + GRAFICO 3D -->
+	<!-- SCRIPT GRAFICO DATI GRAFICI "YearTL" + GRAFICO 3D -->
 	{% include 'js/AnalisiDatiImpianti/dettaglio_idroelettrico_js.html' %}
 	</main>
 {% endblock %}

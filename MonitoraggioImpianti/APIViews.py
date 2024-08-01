@@ -17,6 +17,7 @@ from . import API_HIGECO_dataQuery as HIGECO
 from MonitoraggioImpianti.utils import functions as fn
 
 
+# calcolo energia e info varie
 def info_energy(df, delta):
 	energy = np.mean(df['P']) * delta
 	co2_kg = energy * 0.457
@@ -104,8 +105,9 @@ class DayChartData(APIView):
 			# QUANDO FACCIO LA CHIAMATA PER IL SINGOLO IMPIANTO, METTO UN QUERY PARAMETER
 			# E SALTO IL DELAY
 			if not request.query_params:
-				print(f"delay: {(impianto.id-9)*10}s")
-				sleep((impianto.id-9)*10)
+				delay = (impianto.id-9)*20
+				print(f"delay: {delay}s")
+				sleep(delay)
 
 			# PRENDO I DATI DALL'API DI iSolarCloud
 			try:
@@ -168,6 +170,7 @@ class DayChartData(APIView):
 				}
 			return Response(chart_data)
 
+
 		elif impianto.lettura_dati == 'API_HIGECO':
 			nome_impianto = impianto.nome_impianto
 
@@ -204,7 +207,7 @@ class DayChartData(APIView):
 					'PLast': round(df_time_series.P[k_last], 1),
 					'irg': [],
 					'led': led,
-					'info': {'co2': co2_kg, 'case': case, 'alberi': alberi, 'energy': round(energy, 2),}
+					'info': {'co2': co2_kg, 'case': case, 'alberi': alberi, 'energy': round(energy, 2)}
 				}
 				return Response(chart_data, )
 

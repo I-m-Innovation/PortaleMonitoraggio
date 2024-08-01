@@ -29,7 +29,9 @@
 						<div class="row p-0 m-0" style="height: 15px; background: linear-gradient(135deg, #cfe4ff,#6b98ce);"></div>
 						<h1 style="color: #4a3c54; margin-left: 20px; font-weight: lighter">Monitoraggio idroelettrico  <img src="{% static 'images/water-drop-icon.png' %}" alt="Impianto idroelettrico" style="height: 35px"></h1>
 						<div class="row" style="margin: 10px; border: 0.5px solid lightgrey">
+							<!-- TESTA DELLA TABELLA -->
 							{% include 'MonitoraggioIMpianti/partials/table_head.html' %}
+							<!-- TABELLA IDROELETTRICI -->
 							{% include 'MonitoraggioIMpianti/partials/idro_table.html' %}
 						</div>
 					</div>
@@ -40,8 +42,10 @@
 						<div class="row p-0 m-0" style="height: 15px; background: linear-gradient(135deg, #fff7b0, #eee663);"></div>
 						<h1 style="color: #4a3c54; margin-left: 20px; font-weight: lighter">Monitoraggio fotovoltaico <img src="{% static 'images/sun-symbol.png' %}" alt="Impianto idroelettrico" style="height: 35px"></h1>
 						<div class="row" style="margin: 10px; border: 0.5px solid lightgrey">
-						{% include 'MonitoraggioIMpianti/partials/table_head.html' %}
-						{% include 'MonitoraggioIMpianti/partials/pv_table.html' %}
+							<!-- TESTA DELLA TABELLA -->
+							{% include 'MonitoraggioIMpianti/partials/table_head.html' %}
+							<!-- TABELLA FOTOVOLTAICI -->
+							{% include 'MonitoraggioIMpianti/partials/pv_table.html' %}
 						</div>
 					</div>
 				</div>

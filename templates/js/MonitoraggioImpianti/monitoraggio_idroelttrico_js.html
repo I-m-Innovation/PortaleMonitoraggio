@@ -1,12 +1,20 @@
 <script>
 		$(document).ready(function(){
+				/* IDS GRAFICO E GAUGES */
 				var DayChart = echarts.init(document.getElementById('chart'));
-				var gaugePot = echarts.init(document.getElementById('gauge1'));
-				var gaugePor = echarts.init(document.getElementById('gauge2'));
-				var gaugePre = echarts.init(document.getElementById('gauge3'));
-				var gaugeRend = echarts.init(document.getElementById('gauge4'));
-
-
+				var gaugePot = echarts.init(document.getElementById('gauge-potenza'));
+				var gaugePor = echarts.init(document.getElementById('gauge-portata'));
+				var gaugePre = echarts.init(document.getElementById('gauge-pressione'));
+				var gaugeRend = echarts.init(document.getElementById('gauge-rendimento'));
+                
+				/* RESIZING CHARTS */
+				window.addEventListener('resize', function() {DayChart.resize();});
+				window.addEventListener('resize', function() {gaugePot.resize();});
+        window.addEventListener('resize', function() {gaugePor.resize();});
+        window.addEventListener('resize', function() {gaugePre.resize();});
+        window.addEventListener('resize', function() {gaugeRend.resize();});
+				
+				/* URL DATI */
 				var endpoint = '{% url 'api-monitoraggio-impianto' nickname %}';
 
 				const warmpalette = [
@@ -23,35 +31,34 @@
 				];
 
 				const colors = [warmpalette[7],coolpalette[3],warmpalette[2],coolpalette[2]];
-
-				window.addEventListener('resize', function() {DayChart.resize();});
-				window.addEventListener('resize', function() {gaugePot.resize();});
-        window.addEventListener('resize', function() {gaugePor.resize();});
-        window.addEventListener('resize', function() {gaugePre.resize();});
-        window.addEventListener('resize', function() {gaugeRend.resize();});
 				
-        
+				/* FUNZIONE AGGIORNAMENTO AGGIORNAMENTO DATI */
+        {# CHIAMATA AL TERMINE DEL TIMEOUT #}
+        {# OGNI VOLTA CHE VIENE CHIAMATA PRENDE I DATI E RICREA IL GRAFICO #}
         (function worker() {
+            /* CHIAMATA AJAX */
 						$.get(endpoint).done(function (data) {
+								/* VARIABILI */
 								let timestamps = data.timestamps;
                 let potenza = data.potenza;
 	              let portata = data.portata;
 	              let last_index = data.last_index;
-								let gauges = data.gauges
+								let gauges = data.gauges;
 								let gauge_pot = gauges.Power;
 								let gauge_colors = gauges.colors;
 								let gauge_port = gauges.Var2;
 								let gauge_pres = gauges.Var3;
 								let gauge_eta = gauges.Eta;
-
-								{#$("#ledcolor").removeClass("led-class").addClass(led);#}
-								document.getElementById("ledcolor").className = data.led;
-								document.getElementById("ledcolor_gauge1").className = gauges.leds.Power;
-								document.getElementById("ledcolor_gauge2").className = gauges.leds.Var2;
-								document.getElementById("ledcolor_gauge3").className = gauges.leds.Var3;
-								document.getElementById("ledcolor_gauge4").className = gauges.leds.Eta;
-                console.log(data);
 								
+								/* AGGIORNAMENTO LED IMPIANTO */
+								document.getElementById("ledcolor").className = data.led;
+								/* AGGIORNAMENTO LED GAUGES */
+								document.getElementById("ledcolor_gauge-potenza").className = gauges.leds.Power;
+								document.getElementById("ledcolor_gauge-portata").className = gauges.leds.Var2;
+								document.getElementById("ledcolor_gauge-pressione").className = gauges.leds.Var3;
+								document.getElementById("ledcolor_gauge-rendimento").className = gauges.leds.Eta;
+								
+								/* CREAZIONE DEL GRAFICO PRINCIPALE */
 								DayChart.setOption({
 	                  color: colors,
 	                  tooltip: {trigger: 'axis'},
@@ -112,6 +119,7 @@
 								center_position = ['50%','50%'];
 								detail_fontsize = 18;
 
+								/* GAUGE POTENZA */
 								gaugePot.setOption({
 			              series: [
 	                      {
@@ -129,6 +137,7 @@
 	                          detail: {offsetCenter: [0, '30%'], fontSize: detail_fontsize,formatter: '{value} kW', color: gauge_colors.Power },
 			                      center: center_position,
                         }]})
+								/* GAUGE PORTATA */
 	              gaugePor.setOption({
 			              series:[
 	                      {
@@ -143,9 +152,12 @@
 			                      axisLine: {
 			                          lineStyle: {color: [[gauge_port.Media - gauge_port.Dev, '#ff5858'], [gauge_port.Media + gauge_port.Dev, '#c9c9c9'], [1, '#8bcfea']]}
 	                          },
-	                          detail: {offsetCenter: [0, '30%'], fontSize: detail_fontsize,formatter: '{value} {{impianto.unita_misura}}', color: gauge_colors.Var2},
+	                          detail: {offsetCenter: [0, '30%'], fontSize: detail_fontsize, formatter: '{value} {{impianto.unita_misura}}', color: gauge_colors.Var2},
 			                      center: center_position,
-                        }]})
+                        }
+			              ]
+	              })
+								/* GAUGE PRESSIONE */
 	              gaugePre.setOption({
 			              series:[
 	                      {
@@ -163,6 +175,7 @@
 	                          detail: {offsetCenter: [0, '30%'], fontSize: detail_fontsize,formatter: '{value} Bar', color: gauge_colors.Var3},
 			                      center: center_position,
                         }]})
+								/* GAUGE RENDIMENTO */
 	              gaugeRend.setOption({
 			              series:[
 	                      {
@@ -183,7 +196,8 @@
                     ]
                  });
 						})
-						setTimeout(worker, 50000)
+		        /* AGGIORNAMENTO OGNI 120 SECONDI */
+						setTimeout(worker, 120000)
         })();
 		})
 </script>

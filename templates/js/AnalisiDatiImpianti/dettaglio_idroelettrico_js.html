@@ -1,9 +1,16 @@
 <script>
 		$(document).ready(function(){
-				var Chart1 = echarts.init(document.getElementById('chart1'));
-				var Chart2 = echarts.init(document.getElementById('chart2'));
+				/* ID CHARTS */
+				var Chart1 = echarts.init(document.getElementById('chart-year'));
+				var Chart2 = echarts.init(document.getElementById('chart-3D'));
+                
+				window.addEventListener('resize', function() {Chart1.resize();});
+				window.addEventListener('resize', function() {Chart2.resize();});
 				
+				/* URL DATI */
 				var endpoint = '{% url 'api-analisi-impianto' nickname %}';
+				
+				/* VARIABILI */
 				var potenza = [];
 				var portata = [];
 				var pressione = [];
@@ -12,8 +19,7 @@
 				let today_max = 0;
 				let month_max = 0;
 				let year_max = 0;
-
-                  
+				
 				const warmpalette = [
 						'rgb(255,227,161)', 'rgb(232,183,20)',
 						'rgb(180,152,133)','rgb(116,87,69)',
@@ -29,9 +35,9 @@
 				
 				const colors = [warmpalette[7],coolpalette[3],warmpalette[2],coolpalette[3],coolpalette[2]]
 				
-				window.addEventListener('resize', function() {Chart1.resize();});
-				
+				/* CHIAMATA AJAX PER I DATI */
 				$.get(endpoint).done(function (Chart_data) {
+						/* AGGIORNAMENTO VARIABILI */
 						timestamps = Chart_data.time;
 						potenza = Chart_data.pot;
 						portata = Chart_data.port;
@@ -43,11 +49,12 @@
 						
 						let coords = portata.map((el, index)=> [el, pressione[index],rendimento[index]]);
                             
+						/* AGGIORNAMTO MASSIMI GIORNO, MESE, ANNO */
 						document.getElementById("today_max").innerHTML = toLocale(today_max,2) + ' kW';
 						document.getElementById("month_max").innerHTML = toLocale(month_max,2) + ' kW';
 						document.getElementById("year_max").innerHTML = toLocale(year_max,2) + ' kW';
 						
-	              
+						/* GRAFICO DATI anno */
 						Chart1.setOption({
 								title: false,
 								color: colors,
@@ -153,6 +160,7 @@
                 ]
 						});
                 
+						/* GRAFICO DATI 3D */
 						Chart2.setOption({
 								grid3D: {
 										viewControl: {projection: 'orthographic'}

@@ -12,7 +12,7 @@ from retry_requests import retry
 from .models import *
 
 
-def get_OpenMeteoData(lat,long,):
+def get_OpenMeteoData(lat, long):
 	cache_session = requests_cache.CachedSession('.cache', expire_after=3600)
 	retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
 	openmeteo = openmeteo_requests.Client(session=retry_session)
@@ -34,6 +34,7 @@ def get_OpenMeteoData(lat,long,):
 	return [current_weather_code,current_temperature_2m]
 
 
+# FUNZIONI/DIZIONARIO PER IL METEO
 def get_WeatherIcon(weather_code):
 	weather_icons = {
 		0: '1530392_weather_sun_sunny_temperature.png',  # 'Clear sky', Cielo sereno
