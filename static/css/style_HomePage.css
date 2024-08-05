@@ -44,8 +44,8 @@ nav {
 }
 
 .card{
-    border-radius: 5px;
-    background: radial-gradient(circle at 90% 80%, rgb(87, 108, 117) 0%, rgb(37, 50, 55) 100.2%);
+    border-radius: 1px;
+    background: radial-gradient(circle at 90% 80%, rgb(87, 108, 117) 0%, rgb(76, 94, 103) 100.2%);
     border: none;
     height: 300px;
     box-shadow: 0 6px 10px rgb(58, 58, 58), 0 0 6px rgba(59, 59, 59, 0.05);

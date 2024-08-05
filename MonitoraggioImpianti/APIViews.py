@@ -1,6 +1,7 @@
 from datetime import datetime
 import random
 from time import sleep
+import os
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -111,7 +112,12 @@ class DayChartData(APIView):
 
 			# PRENDO I DATI DALL'API DI iSolarCloud
 			try:
-				df_time_series, df_status = ISC.getDATA(nome_impianto)
+				file_path = 'temporary/' + nickname
+				os.makedirs(file_path, exist_ok=True)
+				Now = datetime.now()
+				t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
+				df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_start, end=Now)
+				df_time_series.to_csv(file_path + f'/{nickname}.csv', index=False)
 
 			except Exception as error:
 				df_time_series = pd.DataFrame({'t': [], 'P': []})
@@ -169,7 +175,6 @@ class DayChartData(APIView):
 					'info': {},
 				}
 			return Response(chart_data)
-
 
 		elif impianto.lettura_dati == 'API_HIGECO':
 			nome_impianto = impianto.nome_impianto

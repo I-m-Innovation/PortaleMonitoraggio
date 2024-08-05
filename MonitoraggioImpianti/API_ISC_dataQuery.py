@@ -206,7 +206,7 @@ def inv_status(token, INV_keysList):
 	return resp
 
 
-def getDATA(impianto):
+def getDATA(impianto, start, end):
 # if __name__ == '__main__':
 	# LOGIN API E GET TOKEN
 	delay = 1.5
@@ -247,9 +247,6 @@ def getDATA(impianto):
 		return
 
 	# INTERVALLI DI 3H
-	Now = datetime.now()
-	start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
-	end = Now
 	steps = deltatime(start, end, timedelta(hours=3))
 
 	try:

@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import numpy as np
 
 
-def GET_SAVE_DATA_FTP(folder,filename,nick):
+def GET_SAVE_DATA_FTP(folder, filename, nick):
 	ftp = FTP("192.168.10.211", timeout=120)
 	ftp.login('ftpdaticentzilio', 'Sd2PqAS.We8zBK')
 	ftp.cwd('/dati/' + folder)
