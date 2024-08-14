@@ -11,7 +11,7 @@
 				<!-- CORNERINO COLORATO IN ALTO A DESTRA -->
 				<div class="go-corner" style="background-color: #88a7ce;" ><div class="go-arrow">→</div></div>
 				<!-- TABELLA, CON I VARI DATI -->
-				<table style="color: #283c50; width: 100%;">
+				<table style="color: #283c50; width: 100%; height: 100%">
 					<!-- DEFINIZIONE LARGHEZZA COLONNE -->
 					<colgroup>
 						<col span="1" style="width: 8%;">
@@ -30,7 +30,7 @@
 		            <div>
 			            <img src="{% static 'images/weather_icons/'|add:impianto.curr_icona  %}" alt="weather" style="height: 50px">
 		            </div>
-		            <div style="margin-top: -10px">
+		            <div style="margin-top: -5px">
 			            <small style="font-size: 12px; color: #939393; margin-left: 10px">{{ impianto.curr_temp }}°C</small>
 		            </div>
 	            </td>
@@ -39,8 +39,10 @@
 		            <b>{{ impianto.Name }}</b>
 	            </td>
 	            <!-- LED -->
-		          <td style="text-align: center;">
-		            <div class="led-box" style="margin:0; padding: 10% 0 0 30%"><div class="{{ impianto.state }}" style="width: 20px; height: 20px"></div></div>
+		          <td>
+			          <div class="container-fluid ps-3">
+				          <div class="led-box"><div class="{{ impianto.state }}" style="width: 20px; height: 20px"></div></div>
+			          </div>
 	            </td>
 	            <!-- CHART -->
 	            <td style="text-align: center; border: none; "><div id="minichart_{{ nickname }}" class="minichartIdro"></div></td>
@@ -48,7 +50,7 @@
 		          {# "humanize" serve per mettere i numeri all'italiana #}
 		          {% load humanize %}{% load i18n %}{% load l10n %}
 		          {% language 'de' %}
-	            <td style="text-align: end"><b>{% if impianto.last_power %}{{ impianto.last_power| floatformat:"0g" }} kW {% else %} - {% endif %} </b><span style="color: #9f9f9f; font-size: 12px"> / {{ impianto.potenza_installata|floatformat:"2g" }} kW</span></td>
+	            <td style="text-align: center"><b>{% if impianto.last_power %}{{ impianto.last_power| floatformat:"0g" }} kW {% else %} - {% endif %} </b><span style="color: #9f9f9f; font-size: 12px"> / {{ impianto.potenza_installata|floatformat:"2g" }} kW</span></td>
 	            <td style="text-align: center;"><b>{% if impianto.Energy %} {{ impianto.Energy| floatformat:"0g" }} kWh {% else %} - {% endif %} </b></td>
 		          {% endlanguage %}
 	            <!-- RENDIMENTO -->

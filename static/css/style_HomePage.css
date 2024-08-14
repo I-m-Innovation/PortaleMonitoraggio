@@ -24,14 +24,14 @@ html {
 }
 
 nav {
-  --rebecca-purple: hsl(111, 17%, 15%);
-  background-image: linear-gradient(
+    --rebecca-purple: hsl(111, 17%, 15%);
+    background-image: linear-gradient(
     to bottom right,
     hsla(203, 92%, 35.5%, 0.25),
     var(--rebecca-purple),
     hsla(27.6, 87.1%, 35.7%, 0.25)
-  );
-  background-color: var(--rebecca-purple);
+    );
+    background-color: var(--rebecca-purple);
 }
 
 .content {

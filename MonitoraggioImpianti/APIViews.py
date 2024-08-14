@@ -13,8 +13,9 @@ from .models import *
 import numpy as np
 import pandas as pd
 
-from . import API_ISC_dataQuery as ISC
-from . import API_HIGECO_dataQuery as HIGECO
+from . import API_ISC as ISC
+from . import API_HIGECO as HIGECO
+from . import API_MyLeo as LEO
 from MonitoraggioImpianti.utils import functions as fn
 
 
@@ -101,23 +102,45 @@ class DayChartData(APIView):
 
 		# ISolarCloud
 		elif impianto.lettura_dati == 'API_ISC':
-
+			Now = datetime.now()
 			nome_impianto = impianto.nome_impianto
 			# QUANDO FACCIO LA CHIAMATA PER IL SINGOLO IMPIANTO, METTO UN QUERY PARAMETER
 			# E SALTO IL DELAY
 			if not request.query_params:
-				delay = (impianto.id-9)*20
+				delay = (impianto.id-9)*10
 				print(f"delay: {delay}s")
 				sleep(delay)
 
 			# PRENDO I DATI DALL'API DI iSolarCloud
 			try:
-				file_path = 'temporary/' + nickname
-				os.makedirs(file_path, exist_ok=True)
-				Now = datetime.now()
-				t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
-				df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_start, end=Now)
-				df_time_series.to_csv(file_path + f'/{nickname}.csv', index=False)
+				# NOME FILE TEMPORANEO CON I DATI DI MONITORAGGIO
+				file_path = f'temporary/{nickname}/{nickname}.csv'
+				# CONTROLLO CHE CI SIA LA CARTELLA
+				os.makedirs(f'temporary/{nickname}', exist_ok=True)
+				# SE ESISTE FILE TEMPORANEO
+				if os.path.isfile(file_path):
+					# CARICO CSV TEMPORANEO
+					df_time_series_old = pd.read_csv(file_path)[['t', 'Total']]
+					df_time_series_old['t'] = pd.to_datetime(df_time_series_old['t'])
+					t_last = df_time_series_old['t'].iloc[-5]
+					# CONTROLLO L'ULTIMO TIMESTAMP
+					# SE IL TIMESTAMP è DEL GIORNO CORRENTE
+					if t_last > datetime(Now.year, Now.month, Now.day, 0, 0, 0):
+						# SCARICO I DATI A PARTIRE DALL'ULTIMO TIMESTAMP
+						df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_last, end=Now)
+						# AGGREGO I DATI
+						df_time_series = pd.concat([df_time_series_old.iloc[:-5], df_time_series[['t','Total']]], ignore_index=True)
+					# SE IL TIMESTAMP NON è DELLA GIORNATA CORRENTE
+					else:
+						t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
+						df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_start, end=Now)
+				# SE NON ESISTE IL FILE TEMPORANEO
+				else:
+					# SCARICO I FILE DA MEZZANOTTE
+					t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
+					df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_start, end=Now)
+				# SALVO I DATI SU CSV TEMPORANEO
+				df_time_series.to_csv(file_path, index=False)
 
 			except Exception as error:
 				df_time_series = pd.DataFrame({'t': [], 'P': []})
@@ -125,6 +148,7 @@ class DayChartData(APIView):
 				print(f'Errore getDATA {nome_impianto}', type(error).__name__, "–", error)
 
 			try:
+				# RIEMPIO DATASET CON DATI NULLI FINO ALLA MEZZANOTTE
 				df_time_series, k_last, t_last, delta = fn.fillTL(df_time_series, '5min')
 				df_time_series['P'] = df_time_series['Total']
 
@@ -176,55 +200,82 @@ class DayChartData(APIView):
 				}
 			return Response(chart_data)
 
-		elif impianto.lettura_dati == 'API_HIGECO':
+		elif impianto.lettura_dati == 'API_LEO':
+			Now = datetime.now()
 			nome_impianto = impianto.nome_impianto
 
-			plants = {'zilio_gr': 1, 'dual_im': 0}
-
+			# PRENDO I DATI DALL'API DI LEONARDO E APPLICO STESSA LOGICA DEI DATI PRESI DA ISOLCLOUD
 			try:
-				df_time_series = HIGECO.getDataHIGECO(plants[nickname])
+				file_path = f'temporary/{nickname}/{nickname}.csv'
+				if os.path.isfile(file_path):
+					df_time_series_old = pd.read_csv(file_path)
+					df_time_series_old['t'] = pd.to_datetime(df_time_series_old['t'])
+					t_last = df_time_series_old['t'].iloc[-5]
+					if t_last > datetime(Now.year, Now.month, Now.day, 0, 0, 0):
+						df_time_series = LEO.get_leo_data(t_start=t_last, t_end=Now)
+						df_time_series = pd.concat([df_time_series_old.iloc[:-5], df_time_series], ignore_index=True)
+					else:
+						t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
+						df_time_series = LEO.get_leo_data(t_start=t_start, t_end=Now)
+				else:
+					t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
+					df_time_series = LEO.get_leo_data(t_start=t_start, t_end=Now)
+				os.makedirs(f'temporary/{nickname}', exist_ok=True)
+				df_time_series.to_csv(file_path, index=False)
 
-			except:
-				df_time_series = pd.DataFrame({'t': [], 'P': []})
-				print('Mancata lettura TL {}'.format(nome_impianto))
+			except Exception as error:
+				df_time_series = pd.DataFrame({'t': [], 'P': [], 'BESS': [], 'PacHome': []})
+				print(f'Errore get_leo_data {nome_impianto}', type(error).__name__, "–", error)
 
 			try:
 				df_time_series, k_last, t_last, delta = fn.fillTL(df_time_series, '5min')
+				# TRASFORMO IN kW (su MyLeo sono in WATT)
+				df_time_series['P'] = df_time_series['PacPV'] / 1000
+				# POTENZA BATTERIA
+				df_time_series['BESS'] = df_time_series['Pbat'] / 1000
+				# CONSUMI
+				df_time_series['PacHome'] = df_time_series['PacHome'] / 1000
+				# RETE
+				df_time_series['PacGrid'] = df_time_series['PacGrid'] / 1000
 
-			except:
-				k_last = None
-				t_last = None
-				delta = None
-				print('Mancato fillNA {}'.format(nome_impianto))
+			except Exception as error:
+				k_last = t_last = delta = None
+				print(f'Errore fillNA {nome_impianto}', type(error).__name__, "–", error)
 
 			try:
 				# CALCOLO ENERGIA TOTALE GIORNATA, + ALTRE INFO VARIE
 				energy, alberi, case, co2_kg = info_energy(df_time_series, delta)
 				df_time_series['t'] = df_time_series['t'].dt.strftime('%H:%M')
-				df_time_series['P'] = df_time_series['P'].fillna('')
+				df_time_series = df_time_series.fillna('')
 				led = 'led-green'
 
+				# CONTEXT
 				chart_data = {
 					'time': df_time_series.t,
 					'pot': df_time_series.P,
+					'bess': df_time_series.BESS,
+					'consumi': df_time_series.PacHome,
+					'rete': df_time_series.PacGrid,
 					'k_last': k_last,
 					't_last': t_last,
-					'PLast': round(df_time_series.P[k_last], 1),
-					'irg': [],
 					'led': led,
-					'info': {'co2': co2_kg, 'case': case, 'alberi': alberi, 'energy': round(energy, 2)}
+					'PLast': round(df_time_series.P[k_last], 2),
+					'info': {'co2': co2_kg, 'case': case, 'alberi': alberi, 'energy': round(energy, 2), }
 				}
-				return Response(chart_data, )
 
-			except:
-				print(f'Mancato ultimo passaggio dati {nome_impianto}')
+			except Exception as error:
+				print(f'Errore ultimo passaggio dati {nome_impianto}', type(error).__name__, "–", error)
+
 				chart_data = {
 					'time': [],
 					'pot': [],
+					'bess': [],
+					'consumi': [],
 					'k_last': None,
 					't_last': None,
 					'PLast': None,
 					'irg': [],
 					'led': 'led-gray',
+					'info': {},
 				}
-			return Response(chart_data, )
+			return Response(chart_data)

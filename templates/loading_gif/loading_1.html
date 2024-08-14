@@ -5,14 +5,14 @@
 
 {% block body %}
 	<div class="d-flex justify-content-center align-items-center" style="height: 100vh; background-color: white">
-		<div id="display"></div>
+		<div id="gifzilio"></div>
 	</div>
 	
 	<script type="text/JavaScript">
 			var img = document.createElement("img"), 
 					imageUrl = "{% static 'images/gif_zilio.GIF' %}";
 			img.src = imageUrl;
-			$("#display").append(img);
+			$("#gifzilio").append(img);
 			window.restartAnim = function () {
 					img.src = "";
 					img.src = imageUrl;

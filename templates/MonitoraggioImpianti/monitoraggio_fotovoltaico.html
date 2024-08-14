@@ -5,51 +5,86 @@
 	<meta http-equiv="refresh" content="{{ refresh }}">
 {% endblock %}
 
-{% block extra_css %}
-	<!-- CSS LEDS -->
-	<link rel="stylesheet" href="{% static 'css/leds.css' %}">
-{% endblock %}
 
 {% block content %}
-	<div class="container-fluid p-3">
-	<div class="row p-0 m-0" style="background-color: #ffffff; border-radius: 8px; box-shadow: rgba(50, 50, 93, 0.25) 0 2px 5px -1px, rgba(0, 0, 0, 0.3) 0 1px 3px -1px;">
-		<!-- BARRA GRIGIA SOPRA COME SFONDO -->
-		<div class="col px-0 backgroundBar" style="height: 60px">
-			<!-- LED IMPIANTO -->
-			<div class="led-box"><div id="ledcolor" class="led-class"></div></div>
-			<h1 style="color: #4a3c54; margin-left: 20px; display: inline;">{{ impianto.nome_impianto }}</h1>
-			<span style="display:inline; padding-left: 50px"><a style="text-align: end; color: #6c4d79" target="_blank" href="https://www.isolarcloud.eu/">iSolarCloud</a></span>
-		</div>
-		<!-- GRAFICO -->
-		<div class="row" style="padding: 0 20px 0 20px;">
-				<div id="chart" style="height: 500px;"></div>
-		</div>
-		
-		<div class="row p-2 justify-content-center" style="font-size: 18px">
-			<!-- GAUGE POTENZA -->
-			<div class="col-3">
-				<div id='gauge-potenza' style="height: 250px;"></div>
-			</div>
-			<!-- INFO VARIE ENERGIA PRODOTTA -->
-			<div class="col-4">
-				<div class="row py-4">
-					<div class="col mx-4 info-fotovoltaico">
-						<i class="bi bi-lightning-fill"></i> Energia prodotta <br>
-						<b id="energy" style="padding-left: 20px">-</b>
-					</div>
-					<div class="col info-fotovoltaico">
-						<i class="bi bi-globe-europe-africa"></i> C0<sub>2</sub> offset <br>
-						<b id="co2" style="padding-left: 20px">-</b>
-					</div>
+	<div class="container-fluid py-2 px-4">
+	<div class="row rounded-3 monitoraggio-card">
+		<div class="col p-0 m-0">
+		<!-- BARRA SOPRA COME SFONDO -->
+			<div class="row py-0 backgroundBar-pv align-items-center" style="height: 70px; ">
+				<!-- LED IMPIANTO -->
+				<div class="col py-2">
+					<div class="led-box"><div id="ledcolor" class="led-class"></div></div>
+					<small>stato</small>
 				</div>
-				<div class="row py-4">
-					<div class="col mx-4 info-fotovoltaico">
-						<i class="bi bi-tree-fill"></i> Alberi equivalenti <br>
-						<b id="alberi" style="padding-left: 20px">-</b>
+				<div class="col-9">
+					<small style="color: grey">impianto</small>
+					<h1 style="color: #4a3c54; display: inline">{{ impianto.nome_impianto }}</h1>
+				</div>
+				<div class="col-2">
+					<small style="color: grey">vedi su</small>
+					<a style="text-align: end; color: #6c4d79; font-weight: bolder" target="_blank" href="https://www.isolarcloud.eu/">iSolarCloud</a>
+				</div>
+			</div>
+			<!-- GRAFICO -->
+			<div class="row px-3 pt-3" style="height: 56vh;">
+					<div id="chart" style="height: 100%;"></div>
+			</div>
+			
+			<div class="row px-2 py-3 justify-content-center" style="height: 30vh; font-size: 20px">
+				<!-- GAUGE POTENZA -->
+			<div class="col-5 border-end h-100">
+				<div id='gauge-potenza' style="height: 100%"></div>
+			</div>
+				<!-- INFO VARIE ENERGIA PRODOTTA -->
+				<div class="col-7">
+					<div class="row py-3 px-3 justify-content-center">
+						<div class="col-3 info-energia mx-3">
+							<div class="info-icon">
+								<img src="{% static 'images/energy-icon.png' %}" alt="weather" style="height: 60px">
+							</div>
+							<div class="info-number">
+								<b id="energy" style="padding-left: 20px">-</b>
+								</div>
+							<div class="info-text">
+								<span style="color: grey">Energia prodotta</span>
+							</div>
+						</div>
+						<div class="col-3 info-energia mx-3">
+							<div class="info-icon">
+								<img src="{% static 'images/co2-icon.png' %}" alt="weather" style="height: 60px">
+							</div>
+							<div class="info-number">
+								<b id="co2" style="padding-left: 20px">-</b>
+								</div>
+							<div class="info-text">
+								<span style="color: grey">C0<sub>2</sub> offset</span>
+							</div>
+						</div>
 					</div>
-					<div class="col info-fotovoltaico">
-						<i class="bi bi-houses-fill"></i> Fabbisogno giornaliero <br>
-						<b id="case" style="padding-left: 20px">-</b>
+					<div class="row py-3 px-3 justify-content-center">
+						<div class="col-3 info-energia mx-3">
+							<div class="info-icon">
+								<img src="{% static 'images/tree-icon.png' %}" alt="weather" style="height: 60px">
+							</div>
+							<div class="info-number">
+								<b id="alberi" style="padding-left: 20px">-</b>
+							</div>
+							<div class="info-text">
+								<span style="color: grey">Alberi equivalenti</span>
+							</div>
+						</div>
+						<div class="col-3 info-energia mx-3">
+							<div class="info-icon">
+								<img src="{% static 'images/houses-icon.png' %}" alt="weather" style="height: 60px">
+							</div>
+							<div class="info-number">
+									<b id="case" style="padding-left: 20px">-</b>
+								</div>
+							<div class="info-text">
+								<span style="color: grey">Fabbisogno giornaliero</span>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>

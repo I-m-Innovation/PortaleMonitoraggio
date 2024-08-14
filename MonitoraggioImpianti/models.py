@@ -63,7 +63,9 @@ misura = (
 letture_dati = (
 	('ftp', 'ftp'),
 	('API_HIGECO', 'API_HIGECO'),
-	('API_ISC', 'API_ISC')
+	('API_LEO', 'API_LEO'),
+	('API_ISC', 'API_ISC'),
+	('---', '---')
 )
 
 

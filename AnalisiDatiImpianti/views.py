@@ -28,7 +28,7 @@ def home(request):
 		'map': map
 	}
 	# context['map'] = context['map'].replace('<div style="width:100%;">','<div>')
-	context['map'] = context['map'].replace('<div style="position:relative;width:100%;height:0;padding-bottom:60%;">','<div style="position:relative;height:0;padding-bottom:85%;">')
+	context['map'] = context['map'].replace('<div style="position:relative;width:100%;height:0;padding-bottom:60%;">','<div style="position:relative;height:0;padding-bottom:100%;">')
 	return render(request, 'AnalisiDatiImpianti/HomePageAnalisi.html', context=context)
 
 

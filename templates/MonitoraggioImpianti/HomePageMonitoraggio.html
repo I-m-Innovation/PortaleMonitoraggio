@@ -3,12 +3,6 @@
 
 {% block title %}{{ headtitle }}{% endblock %}
 
-
-{% block extra_css %}
-	<!-- CSS LEDS -->
-	<link rel="stylesheet" href="{% static 'css/leds.css' %}">
-{% endblock %}
-
 {% block content %}
 	<!-- LAYOUT-GRIGLIA -->
 	<main class="home-container">
@@ -18,13 +12,18 @@
 		</div>
 		
 		<div class="item-b">
-			{% if alarm_matematico %}
-				<div class="row" style="padding: 20px 40% 0 40%"><h5>⚠ ilMatematico scollegato</h5></div>
-			{% endif %}
 			<div class="container-fluid">
-				<div class="row pt-3">
-					<!-- SCHEDA IDROELETTRICO --> 
-					<div class="col homePage-col" style="margin: 0 10px 5px 10px; height: 100%">
+				{% if alarm_matematico %}
+					<div class="row py-2">
+					<div class="d-flex justify-content-center">
+						<h5 class="alert alert-danger my-0">⚠ ilMatematico scollegato</h5>
+					</div>
+					</div>
+				{% endif %}
+				
+				<div class="row py-0 column-gap-2 px-2">
+					<!-- SCHEDA IDROELETTRICO -->
+					<div class="col monitoraggio-card h-100">
 						<!-- RIGA COLROATA IN CIMA ALLA COLONNA -->
 						<div class="row p-0 m-0" style="height: 15px; background: linear-gradient(135deg, #cfe4ff,#6b98ce);"></div>
 						<h1 style="color: #4a3c54; margin-left: 20px; font-weight: lighter">Monitoraggio idroelettrico  <img src="{% static 'images/water-drop-icon.png' %}" alt="Impianto idroelettrico" style="height: 35px"></h1>
@@ -37,7 +36,7 @@
 					</div>
 					
 					<!-- SCHEDA FOTOVOLTAICO -->
-					<div class="col homePage-col" style="margin: 0 10px 10px 5px; height: 100%">
+					<div class="col monitoraggio-card" style="height: auto">
 						<!-- RIGA COLORATA IN CIMA ALLA COLONNA -->
 						<div class="row p-0 m-0" style="height: 15px; background: linear-gradient(135deg, #fff7b0, #eee663);"></div>
 						<h1 style="color: #4a3c54; margin-left: 20px; font-weight: lighter">Monitoraggio fotovoltaico <img src="{% static 'images/sun-symbol.png' %}" alt="Impianto idroelettrico" style="height: 35px"></h1>

@@ -13,6 +13,7 @@ from .API_OpenMeteo import get_OpenMeteoData, get_WeatherIcon
 def home(request):
 	# INTERVALLO DI REFRESH DELLA HOMEPAGE (SECONDI)
 	refresh_interval = 1800
+	Now = datetime.now()
 
 	impianti = Impianto.objects.all()
 	df_impianti = pd.DataFrame(impianti.values())
@@ -21,10 +22,16 @@ def home(request):
 	dz_impianti = df_impianti.to_dict(orient='index')
 
 	# LAST RUN DEL MATEMATICO, CODICE DI CONTROLLO SUL MATEMATICO
-	last_run = fn.read_DATA('Database_Produzione', 'lastRun.csv', 'Database_Produzione')
-	Now = datetime.now()
-	last_run = pd.to_datetime(last_run['t'])
-	matematico_down = Now - last_run > timedelta(minutes=30)
+	try:
+		...
+		# last_run = fn.read_DATA('Database_Produzione', 'lastRun.csv', 'Database_Produzione')
+		last_run = pd.to_datetime(last_run['t'])
+		matematico_down = Now - last_run > timedelta(minutes=30)
+
+	except Exception as error:
+		matematico_down = [True]
+		print('Errore lettura last run matematico', type(error).__name__, "–", error)
+
 
 	# CREAZIONE DATAFRAME OER IL MONITORAGGIO GENERALE CON I DATI SULLA SCHEDA DI OGNI IMPIANTO
 	df_monitoraggio = pd.DataFrame([{nickname: None} for nickname in nicks],
@@ -42,8 +49,14 @@ def home(request):
 	# OVERVIEW IMPIANTI - LETTURA "PORTALE IMPIANTI HP.CSV" CON I DATI AGGIORNATI PER LA HOMEPAGE
 	# (IDROELETTRICO, FOTOVOLTAICO TRAMITE AJAX)
 	# CONTIENE I DATI AGGIORNATI DI: TAG,Name,last_power,last_eta,state,Energy
-	DF_lastDATA_impianti = fn.read_DATA('Database_Produzione', 'Portale impianti HP.csv', 'Database_Produzione')
-	DF_lastDATA_impianti = DF_lastDATA_impianti.set_index('TAG')
+	try:
+
+		# DF_lastDATA_impianti = fn.read_DATA('Database_Produzione', 'Portale impianti HP.csv', 'Database_Produzione')
+		DF_lastDATA_impianti = DF_lastDATA_impianti.set_index('TAG')
+	except Exception as error:
+		DF_lastDATA_impianti = pd.DataFrame()
+		print('Errore lettura lastdata impianti', type(error).__name__, "–", error)
+
 
 	for impianto in list(impianti):
 		# dz_impianto = dz_impianti[nick]
@@ -145,15 +158,29 @@ def impianto(request, nickname):
 			'refresh': refresh_interval,
 			'curr_anno': curr_anno
 		}
-		return render(request, 'MonitoraggioImpianti/monitoraggio_fotovoltaico.html', context=context)
+		if impianto.nickname == 'zilio_gr':
+			return render(request, 'MonitoraggioImpianti/monitoraggio_zilio_gr.html', context=context)
+		else:
+			return render(request, 'MonitoraggioImpianti/monitoraggio_fotovoltaico.html', context=context)
 
 	elif impianto.tipo == 'Idroelettrico':
-		YearStatFile = impianto.filemonitoraggio_set.filter(tipo='YearStat')[0]
-		DF_stat = fn.read_DATA(YearStatFile.cartella, str(YearStatFile), nickname)
-		# STATISTICHE GLOBALI CALCOLATE DA MATLAB (SALVATE NEL DB)
-		StatALL = {stat.variabile: stat.valore for stat in list(impianto.infostat_set.all())}
-		impianto = impianto.__dict__
-		impianto.update(StatALL)
+		try:
+
+			YearStatFile = impianto.filemonitoraggio_set.filter(tipo='YearStat')[0]
+			DF_stat = fn.read_DATA(YearStatFile.cartella, str(YearStatFile), nickname)
+			# STATISTICHE GLOBALI CALCOLATE DA MATLAB (SALVATE NEL DB)
+			StatALL = {stat.variabile: stat.valore for stat in list(impianto.infostat_set.all())}
+			impianto = impianto.__dict__
+			impianto.update(StatALL)
+			if impianto['unita_misura'] == 'mc/s':
+				QMedia_anno = DF_stat['QMean'][0]
+			else:
+				QMedia_anno = DF_stat['QMean'][0] * 1000
+
+		except Exception as e:
+			impianto = impianto.__dict__
+			DF_stat = pd.DataFrame()
+			impianto['StatALL'] = {}
 
 		refresh_interval = 3600
 		curr_anno = datetime.now().year

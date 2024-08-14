@@ -1,7 +1,21 @@
-.backgroundBar {
+.backgroundBar-PV {
     border-radius: 8px 8px 0 0;
-    background: rgb(206, 206, 206); /* Old browsers */
-    background: linear-gradient(to bottom,  rgba(206, 206, 206,1) 0%,rgba(219,219,219,1) 50%,rgba(209,209,209,1) 51%,rgba(254,254,254,1) 100%); /* W3C */
+    /*background: rgb(206, 206, 206); !* Old browsers *!*/
+    /*background: linear-gradient(to bottom,  rgba(206, 206, 206,1) 0%,rgba(219,219,219,1) 50%,rgba(209,209,209,1) 51%,rgba(254,254,254,1) 100%); !* W3C *!*/
+    /*background: #fceabb;*/
+    /*background: linear-gradient(to right, #fceabb,#f8b500);*/
+    background-image: linear-gradient(
+      0deg,
+      hsl(0deg 0% 100%) 0%,
+      hsl(49deg 100% 96%) 14%,
+      hsl(49deg 100% 92%) 26%,
+      hsl(49deg 100% 87%) 37%,
+      hsl(49deg 100% 83%) 48%,
+      hsl(49deg 100% 79%) 60%,
+      hsl(49deg 100% 75%) 72%,
+      hsl(50deg 98% 70%) 86%,
+      hsl(51deg 96% 64%) 100%
+    );
     filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e2e2e2', endColorstr='#fefefe',GradientType=0 ); /* IE6-9 */
     padding: 10px 0 10px 0;
     margin: 0;

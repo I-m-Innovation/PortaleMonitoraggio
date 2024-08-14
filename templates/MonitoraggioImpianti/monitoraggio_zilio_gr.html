@@ -1,0 +1,276 @@
+{% extends 'base_layout.html' %}
+{% load static %}
+
+{% block refresh %}
+	<meta http-equiv="refresh" content="{{ refresh }}">
+{% endblock %}
+
+{% block content %}
+	<div class="container-fluid py-2 px-4">
+	<div class="row rounded-3 monitoraggio-card">
+		<div class="col p-0 m-0">
+			<!-- BARRA SOPRA COME SFONDO -->
+			<div class="row py-0 backgroundBar-zilio align-items-center" style="height: 70px; color: whitesmoke">
+				<!-- LED IMPIANTO -->
+				<div class="col py-2">
+					<div class="led-box"><div id="ledcolor" class="led-class"></div></div>
+					<small>stato</small>
+				</div>
+				<div class="col-9">
+					<small>impianto</small>
+					<h1 style="color: #ddd1e5; display: inline">{{ impianto.nome_impianto }}</h1>
+				</div>
+				<div class="col-2">
+					<small>vedi su</small>
+					<a style="text-align: end; color: #ddd1e5; font-weight: bolder" target="_blank" href="https://myleonardo.western.it/it/home/">MyLeonardo</a>
+				</div>
+			</div>
+		
+		<!-- GRAFICO -->
+		<div class="row px-3 pt-3" style="height: 56vh;">
+				<div id="chart" style="height: 100%;"></div>
+		</div>
+		
+		<div class="row px-2 py-3 justify-content-center" style="height: 30vh; font-size: 20px">
+			<!-- GAUGE POTENZA -->
+			<div class="col-5 border-end h-100">
+				<div id='gauge-potenza' style="height: 100%"></div>
+			</div>
+			<!-- INFO VARIE ENERGIA PRODOTTA -->
+			<div class="col-7">
+				<div class="row py-3 px-3 justify-content-center">
+					<div class="col-4 info-energia mx-3">
+						<div class="info-icon">
+							<img src="{% static 'images/energy-icon.png' %}" alt="weather" style="height: 60px">
+						</div>
+						<div class="info-number">
+							<b id="energy" style="padding-left: 20px">-</b>
+							</div>
+						<div class="info-text">
+							<span style="color: grey">Energia prodotta</span>
+						</div>
+					</div>
+					<div class="col-4 info-energia mx-3">
+						<div class="info-icon">
+							<img src="{% static 'images/co2-icon.png' %}" alt="weather" style="height: 60px">
+						</div>
+						<div class="info-number">
+							<b id="co2" style="padding-left: 20px">-</b>
+							</div>
+						<div class="info-text">
+							<span style="color: grey">C0<sub>2</sub> offset</span>
+						</div>
+					</div>
+				</div>
+				<div class="row py-3 px-3 justify-content-center">
+					<div class="col-4 info-energia mx-3">
+						<div class="info-icon">
+							<img src="{% static 'images/tree-icon.png' %}" alt="weather" style="height: 60px">
+						</div>
+						<div class="info-number">
+							<b id="alberi" style="padding-left: 20px">-</b>
+						</div>
+						<div class="info-text">
+							<span style="color: grey">Alberi equivalenti</span>
+						</div>
+					</div>
+					<div class="col-4 info-energia mx-3">
+						<div class="info-icon">
+							<img src="{% static 'images/houses-icon.png' %}" alt="weather" style="height: 60px">
+						</div>
+						<div class="info-number">
+								<b id="case" style="padding-left: 20px">-</b>
+							</div>
+						<div class="info-text">
+							<span style="color: grey">Fabbisogno giornaliero</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		</div>
+	</div>
+	</div>
+	
+	<!-- CODICE JAVASCRIPT PER IL GRAFICO E I GAUGE -->
+	<script>
+			$(document).ready(function(){
+					/* IDS GRAFICO E GAUGES */
+					var DayChart = echarts.init(document.getElementById('chart'));
+					var gaugePot = echarts.init(document.getElementById('gauge-potenza'));
+					
+					/* RESIZING CHARTS */
+					window.addEventListener('resize', function() {DayChart.resize();});
+					window.addEventListener('resize', function() {gaugePot.resize();});
+					
+					/* URL DATI */
+					var endpoint = '{% url 'api-monitoraggio-impianto' nickname %}';
+	
+					const warmpalette = [
+							'rgb(255,227,161)', 'rgb(232,183,20)',
+							'rgb(186,164,150)','rgb(116,87,69)',
+							'rgb(220,156,191)','rgb(160,27,104)',
+							'rgb(255,194,190)','rgb(209,65,36)',
+					];
+					const coolpalette = [
+							'rgb(173,220,145)', 'rgb(31,160,64)',
+							'rgb(137,182,181)','rgb(0,114,206)',
+							'rgb(37,118,117)','rgb(157,174,204)',
+							'rgb(126,183,232)','rgb(37,75,135)',
+					];
+	
+					const colors = ['rgb(37,75,135)', 'rgb(209,65,36)','rgb(231,221,73)', 'rgb(231,38,38)'];
+					
+					/* CREAZIONE DEL GRAFICO PRINCIPALE */
+					DayChart.setOption({
+							color: colors,
+							visualMap: [
+									{
+											type: 'continuous', min: 0, max: {{ impianto.potenza_installata|stringformat:".2f" }},
+											inRange: {
+													color: ['rgb(255,194,190)','rgb(209,65,36)','#171717'],
+											},show: false, seriesIndex: 1
+									},
+							],
+	            tooltip: {trigger: 'axis'},
+	            toolbox: {show:false,},
+	            dataZoom: [{type: 'inside',show: true, realtime: true, start: 0, end: 100, xAxisIndex: [0,1],height: 60}],
+							grid:[
+			            {top: '7%', bottom: '4%', left: '4%', width: '50%'},
+			            {left: '60%', right: '3%', top: '8%', bottom: '69%'},
+									{left: '60%', right: '3%', top: '39%', bottom: '38%'},
+									{left: '60%', right: '3%', top: '70%', bottom: '4%'},
+	            ],
+	            xAxis: [
+			            {data: [0], gridIndex: 0},
+			            {data: [0], gridIndex: 1,axisTick: {show: false}, axisLabel: {show:false}},
+			            {data: [0], gridIndex: 2, axisTick: {show: false}, axisLabel: {show:false}},
+			            {data: [0], gridIndex: 3}],
+							yAxis: [
+	                {
+	                    type: 'value', name: 'Potenza Impianto', gridIndex: 0,
+	                    axisLine: {show: true,},
+	                    axisLabel: {formatter: '{value} kW'}, 
+			                min: 0, max: {{ impianto.potenza_installata|stringformat:".2f" }}
+	                },
+									{
+	                    type: 'value', name: 'Consumi elettrici', gridIndex: 1,
+	                    axisLine: {show: true,},splitNumber: 4,
+	                    axisLabel: {formatter: '{value} kW'}, 
+			                {#min: 0, max: {{ impianto.potenza_installata|stringformat:".2f" }}#}
+	                },
+									{
+	                    type: 'value', gridIndex: 2, name: 'Prelievi(-)/Immissioni(+) di rete',
+	                    axisLine: {show: true,},splitNumber: 4,
+	                    axisLabel: {formatter: '{value} kW'}, 
+			                {#min: 0, max: {{ impianto.potenza_installata|stringformat:".2f" }}#}
+	                },
+									{
+	                    type: 'value', gridIndex: 3, name: 'Carica(+)/Scarica(-) Batteria',
+	                    axisLine: {show: true,},splitNumber: 4,
+	                    axisLabel: {formatter: '{value} kW'}, 
+			                {#min: 0, max: {{ impianto.potenza_installata|stringformat:".2f" }}#}
+	                },
+	            ],
+	            series: [
+			            {
+	                    name: 'Consumi elettrici', type: 'line', data: [0], tooltip: {valueFormatter: value => toLocale(value,2) + ' kW'},
+	                    lineStyle: {width: 0},showSymbol: false, xAxisIndex: 1, yAxisIndex: 1,
+					            areaStyle: {},
+	                },
+	                {
+	                    name: 'Potenza Impianto', type: 'line', data: [0], 
+	                    areaStyle: {},tooltip: {valueFormatter: value => toLocale(value,2) + ' kW'},
+	                    lineStyle: {width: 0, },showSymbol: false, xAxisIndex: 0, yAxisIndex: 0,
+	                },
+			            {
+	                    name: 'Carica(+)/Scarica(-) Batteria', type: 'line', data: [0],
+	                    areaStyle: {},tooltip: {valueFormatter: value => toLocale(value,2) + ' kW'},
+	                    lineStyle: {width: 0 },showSymbol: false, xAxisIndex: 3, yAxisIndex: 3,
+	                },
+			            {
+	                    name: 'Prelievi(-)/Immissioni(+) di rete', type: 'line', data: [0],
+	                    areaStyle: {},tooltip: {valueFormatter: value => toLocale(value,2) + ' kW'},
+	                    lineStyle: {width: 0 },showSymbol: false, xAxisIndex: 2, yAxisIndex: 2,
+	                },
+	            ]
+	         });
+					
+					/* CREAZIONE GAUGE POTENZA */
+					gaugePot.setOption({
+							grid:[{top:'3%',bottom:'3%',right:'3%', left:'3%'}],
+		          series: [
+		              {
+		                  name: 'gauge Potenza', type: 'gauge', radius: '110%', min: 0, max: {{ impianto.potenza_installata|stringformat:".2f" }},
+		                  data: [{
+		                      name: 'Potenza', value: 0,
+		                  }],
+			                axisLine: {lineStyle: {width: 15,},roundCap: true, },
+		                  progress: {show: true, color: {type:'linear'}, width: 15, roundCap: true,},
+		                  startAngle: 210, endAngle: -30, axisLabel: {fontSize: 12, distance: 25, formatter: value => toLocale(value,0)}, 
+			                title: {offsetCenter: [0, '50%'], fontSize: 18},
+		                  pointer: {show: false},
+		                  splitNumber: 8, axisTick: {distance: 4, lineStyle:{width: 1}}, splitLine: {distance: 5,lineStyle:{width: 2}},
+		                  {#    lineStyle: {color: [[gauge_pot.Media - gauge_pot.Dev, '#ff5858'], [gauge_pot.Media + gauge_pot.Dev, '#c9c9c9'], [1, '#8bcfea']]}#}
+		                  {# },#}
+		                  detail: {offsetCenter: [0, 0], fontSize: 25, formatter: value => toLocale(value,2) +' kW' },
+		                  center: ['50%','60%'],
+		              }
+		          ]
+					});
+	                
+					/* FUNZIONE AGGIORNAMENTO AGGIORNAMENTO DATI */
+	        {# CHIAMATA AL TERMINE DEL TIMEOUT #}
+	        {# OGNI VOLTA CHE VIENE CHIAMATA PRENDE I DATI E RICREA IL GRAFICO #}
+					(function worker() {
+							/* CHIAMATA AJAX */
+	            {# AGGIUNTA QUERY PARAMETER NELLA CHIAMATA PER IDENTIFICARE CHE SI TRATTA DELLA PAGINA DELL'IMPIANTO #}
+							$.get(endpoint, {view_impianto: true}).done(function (data) {
+									/* VARIABILI */
+									let timestamps = data.time;
+	                let potenza = data.pot;
+									let bess = data.bess;
+									let consumi = data.consumi;
+									let rete = data.rete;
+		              let t_last = data.t_last;
+									let PLast = data.PLast;
+									let info = data.info;
+									console.log(data);
+									
+									/* AGGIORNAMENTO LED IMPIANTO */
+									document.getElementById('ledcolor').className = data.led;
+									/* AGGIORNAMENTO INFO */
+									document.getElementById('energy').innerHTML = toLocaleKWh(info.energy, 2);
+									document.getElementById('co2').innerHTML = toLocale(info.co2, 2) + ' kg';
+									document.getElementById('case').innerHTML = toLocale(info.case);
+									document.getElementById('alberi').innerHTML = toLocale(info.alberi);
+	
+	                DayChart.setOption({
+		                  xAxis: [
+				                  {data: timestamps, gridIndex: 0,}, 
+				                  {data: timestamps, gridIndex: 1,},
+				                  {data: timestamps, gridIndex: 2,},
+				                  {data: timestamps, gridIndex: 3,}
+		                  ],
+	                    series: [
+			                    {data: consumi, name: 'Consumi elettrici', xAxisIndex: 1, yAxisIndex: 1,},
+			                    {data: potenza, name: 'Potenza Impianto', xAxisIndex: 0, yAxisIndex: 0,},
+			                    {data: bess, name: 'Carica/Scarica Batteria', xAxisIndex: 3, yAxisIndex: 3,},
+			                    {data: rete, name: 'Prelievi/Immissioni rete elettrica', xAxisIndex: 2, yAxisIndex: 2,},
+	                    ]
+	                })
+									
+									gaugePot.setOption({
+				              series: [{
+						              data: [{value: PLast, name: 'Potenza'}],}]
+									})
+							})
+							/* AGGIORNAMENTO OGNI 120 SECONDI */
+							setTimeout(worker, 60000*5)
+					})();
+			})
+	</script>
+{% endblock %}
+
+
+

@@ -7,18 +7,17 @@ html {
 html, body {
     margin: 0;
     padding:0;
-    height: 100%;
-    background-color: #e3e3e3;
+    height: 100vh;
+    background-color: #e6e9f1;
 }
 
-#gifZilio {
-    position: fixed;
-    width: 100%;
-    height: 100vh;
-    z-index: 1;
-    overflow: visible;
-    background: #fff url("static/images/gif_zilio.GIF") no-repeat center center;
+body {
+    background-image: url(water-splash-element-transparent-background-png.png);
+    background-repeat: repeat;
+    background-attachment: fixed;
+    background-size: auto;
 }
+
 
 /* IMPOSTAZIONE LAYOUT BASE DELLE VARIE PAGINE*/
 .home-container {
@@ -48,13 +47,15 @@ html, body {
 .info-energia {
     box-shadow: rgba(50, 50, 93, 0.25) 0 2px 5px -1px, rgba(0, 0, 0, 0.3) 0 1px 3px -1px;
     font-size: 18px;
+    border-radius: 4px;
+    border-bottom: 5px solid grey;
     padding: 8px;
     display: grid;
-    grid-template-columns: 1fr 2fr;
+    grid-template-columns: 2fr 1fr;
     grid-template-rows: 1fr 1fr;
     grid-template-areas:
-            "icon number"
-            "icon text";
+            "number icon"
+            "text icon";
     background-color: white;
 }
 .info-icon {
@@ -77,28 +78,51 @@ html, body {
     box-shadow: inset 0 0 0 9999px #88a7ce !important; !important;
 }
 
-.disabled {
-  color: linen;
-  opacity: 0.5;
-  background: #CCC;
-}
-
-table.dataTable tbody th, table.dataTable tbody td {
-    border-bottom: 0.5px solid #878787;
-}
-
 /* COLONNA CHE CONTIENE LE SCHEDE DI MONITORAGGIO */
-.homePage-col {
-    background-color: #ffffff;
+.monitoraggio-card {
+    /*background-color: #ffffff;*/
     padding: 0;
+    border-radius: 8px;
+    overflow: hidden;
     /*border-radius: 8px;*/
-    box-shadow: rgba(50, 50, 93, 0.25) 0 2px 5px -1px, rgba(0, 0, 0, 0.3) 0 1px 3px -1px;
+    /*box-shadow: rgba(50, 50, 93, 0.25) 0 2px 5px -1px, rgba(0, 0, 0, 0.3) 0 1px 3px -1px;*/
+    /* From https://css.glass */
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    /*border: 1px solid rgba(255, 255, 255, 0.32);*/
+}
+
+.analisi-card {
+    /*background-color: white;*/
+    border-radius: 8px;
+    overflow: hidden;
+    /*box-shadow: rgba(50, 50, 93, 0.25) 0 2px 5px -1px, rgba(0, 0, 0, 0.3) 0 1px 3px -1px;*/
+    padding: 20px;
+    /* From https://css.glass */
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    /*border: 1px solid rgba(255, 255, 255, 0.32);*/
 }
 
 /* posizionamento scritta 'aggiornamento:..' nelle schede di monitoraggio */
 .aggiornamento-IdroTable-card{
     text-align: right;
-    font-size: 11px;
+    font-size: 12px;
+    color: #a1a1a1;
+    padding: 0 2px 0 0 ;
+    margin: 0;
+    position: relative;
+    overflow: hidden;
+    top: -8px;
+    right: 0;
+}
+.aggiornamento-PVTable-card{
+    text-align: right;
+    font-size: 12px;
     color: #a1a1a1;
     padding: 0 2px 0 0 ;
     margin: 0;
@@ -107,51 +131,6 @@ table.dataTable tbody th, table.dataTable tbody td {
     top: -15px;
     right: 0;
 }
-.aggiornamento-PVTable-card{
-    text-align: right;
-    font-size: 11px;
-    color: #a1a1a1;
-    padding: 0 2px 0 0 ;
-    margin: 0;
-    position: relative;
-    overflow: hidden;
-    top: -18px;
-    right: 0;
-}
-
-.hiddenRow {
-    padding: 0 !important;
-}
-
-.list_custom {
-    padding: 5px;
-    list-style-type: none;
-    text-decoration: none;
-}
-
-.table_custom:hover {cursor: pointer}
-
-.title-detail {
-    padding: 10px;
-    box-shadow: rgba(50, 50, 93, 0.25) 0 2px 5px -1px, rgba(0, 0, 0, 0.3) 0 1px 3px -1px;
-    margin: 0;
-    background-color: #ced2c6;
-}
-
-
-.layout-card {
-    background-color: white;
-    box-shadow: rgba(50, 50, 93, 0.25) 0 2px 5px -1px, rgba(0, 0, 0, 0.3) 0 1px 3px -1px;
-    padding: 20px;
-}
-
-.navtitle {
-    font-weight: bolder;
-    color: #c0c0c0;
-    margin-right: 20px;
-}
-
-
 
 .go-corner {
     display: flex;
@@ -176,24 +155,31 @@ table.dataTable tbody th, table.dataTable tbody td {
 .card-idro, .card3, .card-pv {
     display: block;
     position: relative;
-    background-color: #efefef;
+    /*background-color: #efefef;*/
     border-radius: 1px 6px 1px 1px;
     padding: 10px 5px 5px 5px;
-    max-height: 80px;
+    max-height: 9vh;
     margin: 5px 0;
     text-decoration: none;
     z-index: 0;
     overflow: hidden;
+    /* From https://css.glass */
+    background: rgba(234, 234, 234, 0.8);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid rgba(229, 229, 229, 0.32);
 }
 
 .card-pv {
     padding: 5px 5px 5px 5px;
     margin: 5px 0 5px 0;
-    max-height: 60px;
+    max-height: 7vh;
 }
 
 .card-pv:hover {
-    background: #fffad2;
+    /* From https://css.glass */
+    background: rgba(255, 250, 210, 0.5);
 }
 
 .card3:hover {
@@ -201,14 +187,14 @@ table.dataTable tbody th, table.dataTable tbody td {
 }
 
 .card-idro:hover {
-    background: #e1edff;
+    background: rgba(225, 237, 255, 0.5);
 }
 
 .minichartIdro{
-    margin:0; width: 100%; height: 60px; border-radius:5px; background-color: #ffffff; overflow: hidden;
+    margin:0; width: 100%; height: 90%; border-radius:5px; background-color: rgba(255, 255, 255, 0.2); overflow: hidden;
 }
 .minichartPV{
-    margin:0; width: 100%; height: 45px; border-radius:5px; background-color: #ffffff; overflow: hidden;
+    margin:0; width: 100%; height: 90%; border-radius:5px; background-color: rgba(255, 255, 255, 0.2); overflow: hidden;
 }
 
 .home-map{
@@ -218,11 +204,6 @@ table.dataTable tbody th, table.dataTable tbody td {
     overflow: hidden;
 }
 
-.bolded {
-  font-weight:bold;
-}
-
-
 .fa{
     color: #414141;
 }
@@ -230,40 +211,6 @@ table.dataTable tbody th, table.dataTable tbody td {
 .fa:hover {
     cursor: pointer;
     color: #705884;
-}
-
-td.cell-background-color-gray{
-    background-color: #efefef;
-}
-
-td.cell-background-color-red{
-    background-color: #fff4ec;
-}
-
-td.cell-background-color-blue{
-    background-color: #dff3ff;
-}
-
-td.cell-background-color-white{
-    border: hidden !important;
-    background-color: rgb(255, 255, 255) !important;
-}
-
-.active{
-    background-color: #d3d3d3 !important;
-    border: none
-}
-
-.riga-scheda-corrispettivi {
-    border-left: 4px solid #518ffa;
-    /*border-top: 1px solid #518ffa;*/
-    background-color: #f5f8ff;
-    border-top: 0.5px solid lightgrey;
-    border-bottom: 0.5px solid lightgrey;
-    border-right: 0.5px solid lightgrey;
-    height: 70px;
-    margin: 0;
-    /*font-weight: bolder;*/
 }
 
 .list-group-mine .list-group-item {
@@ -286,65 +233,155 @@ td.cell-background-color-white{
     background-color: #e5f1ff;
 }
 
-.report-page {
+
+.backgroundBar-idro, .backgroundBar-pv, .backgroundBar-zilio {
+    border-radius: 8px 8px 0 0;
+    /*background: rgb(206, 206, 206); !* Old browsers *!*/
+    /*background: linear-gradient(to bottom,  rgba(206, 206, 206,1) 0%,rgba(219,219,219,1) 50%,rgba(209,209,209,1) 51%,rgba(254,254,254,1) 100%); !* W3C *!*/
+    /*background: #fceabb;*/
+    /*background: linear-gradient(to right, #fceabb,#f8b500);*/
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e2e2e2', endColorstr='#fefefe',GradientType=0 ); /* IE6-9 */
+    padding: 10px 0 10px 0;
+    margin: 0;
+    /*display: grid;*/
+    /*grid-template-columns: 1fr 9fr;*/
+    /*grid-template-rows: 60px;*/
+    /*grid-template-areas:*/
+    /*        "led title";*/
+}
+
+.backgroundBar-idro {
+     background-image: linear-gradient(to top, #cfe4ff, #b6d1f3, #9dbde6, #84abda, #6b98ce);
+}
+
+.backgroundBar-pv {
+    background-image: linear-gradient(to top, #fff7b0, #fbf39d, #f7ee8b, #f3ea77, #eee663);
+}
+
+.backgroundBar-zilio {
+    --rebecca-purple: hsl(120, 11%, 47%);
+    /*background-image: linear-gradient(*/
+    /*        to top,*/
+    /*        hsla(203, 92%, 35.5%, 0.25),*/
+    /*        var(--rebecca-purple),*/
+    /*        hsla(27.6, 87.1%, 35.7%, 0.25)*/
+    /*);*/
+    background-color: var(--rebecca-purple);
+}
+
+.led-box {
+    width: 30px;
+    height: 30px;
+    background-color: rgba(247, 250, 255, 0.8);
+    padding: 4px;
+    border-radius: 50%;
+    margin: 0;
+}
+
+
+.led-red {
+    margin: auto;
+    width: 100%;
     height: 100%;
-    display: grid;
-    grid-template-columns: 3fr 1fr;
-    grid-template-rows: [row1-start] 40px [row1-end] 1fr [row2-end] 1fr [row3-end];
-    grid-template-areas:
-            "header header"
-            "grafici tabelle"
-            "grafico grafico";
-    gap: 5px 5px;
-    align-items: stretch;
+    background-color: #F00;
+    border-radius: 50%;
+    box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #441313 0 -1px 9px, rgba(255, 0, 0, 0.5) 0 2px 12px;
+    -webkit-animation: blinkRed 0.5s infinite;
+    -moz-animation: blinkRed 0.5s infinite;
+    -ms-animation: blinkRed 0.5s infinite;
+    -o-animation: blinkRed 0.5s infinite;
+    animation: blinkRed 0.5s infinite;
 }
 
-.report-item-a {
-    grid-area: header;
-    background-color: #4088d4;
-    padding-left: 20px;
+@-webkit-keyframes blinkRed {
+    from { background-color: #F00; }
+    50% { background-color: #A00; box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #441313 0 -1px 9px, rgba(255, 0, 0, 0.5) 0 2px 0;}
+    to { background-color: #F00; }
+}
+@-moz-keyframes blinkRed {
+    from { background-color: #F00; }
+    50% { background-color: #A00; box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #441313 0 -1px 9px, rgba(255, 0, 0, 0.5) 0 2px 0;}
+    to { background-color: #F00; }
+}
+@-ms-keyframes blinkRed {
+    from { background-color: #F00; }
+    50% { background-color: #A00; box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #441313 0 -1px 9px, rgba(255, 0, 0, 0.5) 0 2px 0;}
+    to { background-color: #F00; }
+}
+@-o-keyframes blinkRed {
+    from { background-color: #F00; }
+    50% { background-color: #A00; box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #441313 0 -1px 9px, rgba(255, 0, 0, 0.5) 0 2px 0;}
+    to { background-color: #F00; }
+}
+@keyframes blinkRed {
+    from { background-color: #F00; }
+    50% { background-color: #A00; box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #441313 0 -1px 9px, rgba(255, 0, 0, 0.5) 0 2px 0;}
+    to { background-color: #F00; }
 }
 
-.report-grafici {
-    grid-area: grafici;
-    background-color: white;
-    display: grid;
-    grid-template-columns: 3fr 2fr;
-    grid-template-areas:
-            "grafico1 grafico2";
-    align-items: stretch;
+.led-yellow {
+    margin: auto;
+    width: 100%;
+    height: 100%;
+    background-color: #FF0;
+    border-radius: 50%;
+    box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #808002 0 -1px 9px, #FF0 0 2px 12px;
+    -webkit-animation: blinkYellow 1s infinite;
+    -moz-animation: blinkYellow 1s infinite;
+    -ms-animation: blinkYellow 1s infinite;
+    -o-animation: blinkYellow 1s infinite;
+    animation: blinkYellow 1s infinite;
 }
 
-.report-item-b {
-    grid-area: grafico1;
+@-webkit-keyframes blinkYellow {
+    from { background-color: #FF0; }
+    50% { background-color: #AA0; box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #808002 0 -1px 9px, #FF0 0 2px 0; }
+    to { background-color: #FF0; }
+}
+@-moz-keyframes blinkYellow {
+    from { background-color: #FF0; }
+    50% { background-color: #AA0; box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #808002 0 -1px 9px, #FF0 0 2px 0; }
+    to { background-color: #FF0; }
+}
+@-ms-keyframes blinkYellow {
+    from { background-color: #FF0; }
+    50% { background-color: #AA0; box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #808002 0 -1px 9px, #FF0 0 2px 0; }
+    to { background-color: #FF0; }
+}
+@-o-keyframes blinkYellow {
+    from { background-color: #FF0; }
+    50% { background-color: #AA0; box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #808002 0 -1px 9px, #FF0 0 2px 0; }
+    to { background-color: #FF0; }
+}
+@keyframes blinkYellow {
+    from { background-color: #FF0; }
+    50% { background-color: #AA0; box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #808002 0 -1px 9px, #FF0 0 2px 0; }
+    to { background-color: #FF0; }
 }
 
-.report-item-c {
-    grid-area: grafico2;
+.led-green {
+    margin: auto;
+    width: 100%;
+    height: 100%;
+    background-color: #ABFF00;
+    border-radius: 50%;
+    box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #304701 0 -1px 9px, #89FF00 0 2px 12px;
 }
 
-.report-item-d {
-    grid-area: tabelle;
-    background-color: white;
+.led-on {
+    margin: auto;
+    width: 100%;
+    height: 100%;
+    background-color: #fff8d1;
+    border-radius: 50%;
+    box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #b8ab17 0 -1px 9px, #ffff82 0 2px 14px;
 }
 
-.report-item-e {
-    grid-area: grafico;
-    background-color: white;
-}
-
-.table-report {
-    border-collapse: separate;
-    border-spacing: 5px;
-}
-
-.table-report tr td {
-    background-color: #f1f1f1;
-    margin: auto 5px;
-    padding: 3px 10px;
-
-}
-
-.table-report tr td:last-child{
-    text-shadow: 0.5px 0.5px 1px;
+.led-gray {
+    margin: auto;
+    width: 100%;
+    height: 100%;
+    background-color: #888;
+    border-radius: 50%;
+    box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #444444 0 -1px 9px, rgba(0, 0, 0, 0.5) 0 2px 12px;
 }

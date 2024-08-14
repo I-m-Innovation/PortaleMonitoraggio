@@ -58,7 +58,7 @@
                 {
                     name: 'Potenza', type: 'line', data: [0],
                     areaStyle: {opacity: 0.9,},tooltip: {valueFormatter: value => toLocale(value,2) + ' kW'},
-                    xAxisIndex: 0, yAxisIndex: 0, lineStyle: {width: 1,},showSymbol: false
+                    xAxisIndex: 0, yAxisIndex: 0, lineStyle: {width: 1},showSymbol: false
                 },
             ]
          });
@@ -72,13 +72,15 @@
                     data: [{
                         name: 'Potenza', value: 0,
                     }],
-                    progress: {show: true, color: {type:'linear'}},
-                    startAngle: 210, endAngle: -30, axisLabel: {fontSize: 10,}, title: {offsetCenter: [0, '50%'], fontSize: 14},
-                    pointer: {itemStyle: {color: '#3d3d3d'},length: '95%',width: '3%',},
-                    splitNumber: 8, axisTick: {distance: 3, lineStyle:{width: 1}}, splitLine: {distance: 3,lineStyle:{width: 2}},
+		                axisLine: {lineStyle: {width: 15,},roundCap: true, },
+                    progress: {show: true, color: {type:'linear'}, width: 15, roundCap: true,},
+                    startAngle: 210, endAngle: -30, axisLabel: {fontSize: 12, distance: 25, formatter: value => toLocale(value,0)}, 
+		                title: {offsetCenter: [0, '50%'], fontSize: 18},
+                    pointer: {show: false},
+                    splitNumber: 8, axisTick: {distance: 4, lineStyle:{width: 1}}, splitLine: {distance: 5,lineStyle:{width: 2}},
                     {#    lineStyle: {color: [[gauge_pot.Media - gauge_pot.Dev, '#ff5858'], [gauge_pot.Media + gauge_pot.Dev, '#c9c9c9'], [1, '#8bcfea']]}#}
                     {# },#}
-                    detail: {offsetCenter: [0, '30%'], fontSize: 18, formatter: '{value} kW' },
+                    detail: {offsetCenter: [0, 0], fontSize: 25, formatter: value => toLocale(value,2) +' kW' },
                     center: ['50%','60%'],
                 }
             ]
@@ -108,12 +110,6 @@
 
                 DayChart.setOption({
 	                  xAxis: [{ data: timestamps }],
-	                  graphic: [{type: 'group', left: '15%', top: '2.5%',
-			                  children: [
-					                  {type: 'text', z: 100, style:
-									                  {fill: '#333', text: 'ultima lettura: '+ t_last, fontsize:9,
-									                  }
-					                  }]}],
                     series: [{data: potenza, name: 'Potenza'},]
                 })
 								
@@ -124,6 +120,6 @@
 						})
 						/* AGGIORNAMENTO OGNI 120 SECONDI */
 						setTimeout(worker, 60000*5)
-         })();
+				})();
 		})
 </script>
