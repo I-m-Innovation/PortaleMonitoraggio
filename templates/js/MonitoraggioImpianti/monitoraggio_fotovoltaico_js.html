@@ -36,8 +36,9 @@
 										},show: false,
 								},
 						],
+						title: [{text: 'Potenza impianto', left:'50%', textAlign: 'center'}],
             tooltip: {trigger: 'axis'},
-            toolbox: {right: '15%', top: 0,
+            toolbox: {right: '10%', top: 0,
 			          feature: {
 					          dataView: { show: true, readOnly: false },
 					          restore: {show: true},
@@ -80,7 +81,7 @@
                     splitNumber: 8, axisTick: {distance: 4, lineStyle:{width: 1}}, splitLine: {distance: 5,lineStyle:{width: 2}},
                     {#    lineStyle: {color: [[gauge_pot.Media - gauge_pot.Dev, '#ff5858'], [gauge_pot.Media + gauge_pot.Dev, '#c9c9c9'], [1, '#8bcfea']]}#}
                     {# },#}
-                    detail: {offsetCenter: [0, 0], fontSize: 25, formatter: value => toLocale(value,2) +' kW' },
+                    detail: {offsetCenter: [0, 0], fontSize: 25, formatter: value => toLocale(value,0) +' kW' },
                     center: ['50%','60%'],
                 }
             ]

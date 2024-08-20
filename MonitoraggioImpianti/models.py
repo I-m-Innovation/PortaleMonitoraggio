@@ -37,8 +37,6 @@ class Impianto(models.Model):
 	potenza_business_plan = models.FloatField(null=True, blank=True, editable=True, default=0, help_text="Potenza da Business Plan",
 										   verbose_name='Potenza Business Plan')
 
-
-
 	inizio_esercizio = models.DateField(null=True, blank=True, editable=True, help_text="Data inizio esercizio", verbose_name='Entrata in esercizio')
 	lettura_dati = models.CharField(max_length=50, null=True, blank=True, editable=True, help_text="Tipo lettura dati impianti", verbose_name='Lettura dati')
 	proprieta = models.BooleanField(default=False, editable=True, help_text="Indica se l'impianto è di propietà Zilio", verbose_name='Proprietà')
@@ -156,11 +154,18 @@ class InfoStatForm(ModelForm):
 		}
 
 
-# class FileProduzioneCashFlow(models.Model):
-# 	anno = models.IntegerField(blank=False, null=False, editable=True,)
-# 	diario_letture = models.FloatField(blank=False, null=False, editable=True, default=False)
-# 	nome = models.CharField(max_length=100, blank=False, null=False, editable=True,)
-# 	impianto = models.ForeignKey(Impianto, on_delete=models.CASCADE, blank=False, null=False)
-# 	percorso_file = models.CharField(max_length=300, null=True, blank=True, editable=True,
-# 								help_text='Percorso file lettura dati', verbose_name='Cartella diari letture')
+class linkportale(models.Model):
+	portale = models.CharField(max_length=200, blank=False, null=False, editable=True, default='-', verbose_name='Nome portale')
+	tag = models.CharField(max_length=50, blank=False, null=False, editable=True, default='-', verbose_name='tag portale')
+	link = models.CharField(max_length=250, blank=False, null=False, editable=True, default='-', verbose_name='link-portale')
+
+	class Meta:
+		verbose_name = 'Link Portale'
+		verbose_name_plural = 'Link Portali'
+
+
+class linkportaleForm(ModelForm):
+	class Meta:
+		model = linkportale
+		fields = "__all__"
 

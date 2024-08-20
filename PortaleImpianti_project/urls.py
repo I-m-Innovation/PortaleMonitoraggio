@@ -28,5 +28,5 @@ urlpatterns = [
     path("analisi-impianti/", include('AnalisiDatiImpianti.urls')),
     path('loading/1/', views.loadingPageMonitoraggio, name='next-monitoraggio'),
     path('loading/2/', views.loadingPageAnalisi, name='next-analisi'),
-    # path('loading/3/', views.loadingPageGSE, name='next-GSE'),
+    path('loading/3/', views.loadingPageCorrispettivi, name='next-corrispettivi'),
 ]

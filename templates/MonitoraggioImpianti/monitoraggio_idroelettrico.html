@@ -5,65 +5,74 @@
 	<meta http-equiv="refresh" content="{{ refresh }}">
 {% endblock %}
 
-{% block extra_css %}
-	<!-- CSS LEDS -->
-	<link rel="stylesheet" href="{% static 'css/leds.css' %}">
-{% endblock %}
+{% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-	<div class="container-fluid p-3">
-	<div class="row p-0 m-0" style="background-color: #ffffff; border-radius: 8px; box-shadow: rgba(50, 50, 93, 0.25) 0 2px 5px -1px, rgba(0, 0, 0, 0.3) 0 1px 3px -1px;">
+	<div class="container-fluid p-2">
+	<div class="col p-0 m-0 rounded-3 monitoraggio-card">
 		<!-- BARRA GRIGIA SOPRA COME SFONDO -->
-		<div class="col px-0 backgroundBar" style="height: 60px">
+		<div class="row py-0 backgroundBar-idro align-items-center">
 			<!-- LED IMPIANTO -->
-			<div class="led-box"><div id="ledcolor" class="led-class"></div></div>
-			<h1 style="color: #4a3c54; margin-left: 20px; display: inline;">{{ impianto.nome_impianto }}</h1>
-			<span style="display:inline; padding-left: 50px"><a style="text-align: end; color: #6c4d79; font-weight: bolder" href="{% url 'analisi-impianto' nickname %}" >Visione dati - {{ curr_anno }}</a></span>
+			<div class="col ps-2 pt-2">
+				<div class="led-box"><div id="ledcolor" class="led-class"></div></div>
+				<small style="color: #606060">stato</small>
+			</div>
+			<div class="col-9">
+				<small style="color: #606060">impianto</small>
+				<h2 style="color: #4a3c54; display: inline">{{ impianto.nome_impianto }}</h2>
+			</div>
+			<div class="col-2">
+				<small style="color: #606060">vedi su</small>
+				<a style="text-align: end; color: #6c4d79; font-weight: bolder" href="{% url 'analisi-impianto' nickname %}" >Visione dati - {{ curr_anno }}</a>
+			</div>
 		</div>
+		
 		<!-- GRAFICO -->
-		<div class="row" style="padding: 0 20px 0 20px;">
-			<div id="chart" style="height: 500px;"></div>
+		<div class="row px-3 pt-3" style="min-height: 53vh">
+			<div id="chart"></div>
 		</div>
 		
 		<!-- GAUGES -->
-		<div class="row" style="padding: 0 30px 0 30px; height: 200px; overflow: hidden">
+		<div class="row px-3 py-1 justify-content-center">
 			<!-- POTENZA -->
-			<div class="col" style="padding: 0;">
-				<div id='gauge-potenza' style="height: 250px;"></div>
+			<div class="col justify-content-center" style="padding: 0;">
+				<div class="row">
+					<div id='gauge-potenza' style="height: 250px;"></div>
+				</div>
+				<div class="row justify-content-center">
+					<div class="led-box"><div id="ledcolor_gauge-potenza" class="led-class"></div></div>
+				</div>
 			</div>
 			<!-- PORTATA -->
-			<div class="col" style="padding: 0;">
-				<div id='gauge-portata' style="height: 250px;"></div>
+			<div class="col justify-content-center" style="padding: 0;">
+				<div class="row">
+					<div id='gauge-portata' style="height: 250px;"></div>
+				</div>
+				<div class="row justify-content-center">
+					<div class="led-box"><div id="ledcolor_gauge-portata" class="led-class"></div></div>
+				</div>
 			</div>
 			<!-- PRESSIONE -->
-			<div class="col" style="padding: 0;">
-				<div id='gauge-pressione' style="height: 250px;"></div>
+			<div class="col justify-content-center" style="padding: 0;">
+				<div class="row">
+					<div id='gauge-pressione' style="height: 250px;"></div>
+				</div>
+				<div class="row justify-content-center">
+					<div class="led-box" style="margin: 5px 38%"><div id="ledcolor_gauge-pressione" class="led-class"></div></div>
+				</div>
 			</div>
 			<!-- RENDIMENTO -->
-			<div class="col" style="padding: 0;">
-				<div id='gauge-rendimento' style="height: 250px;"></div>
+			<div class="col justify-content-center" style="padding: 0;">
+				<div class="row">
+					<div id='gauge-rendimento' style="height: 250px;"></div>
+				</div>
+				<div class="row justify-content-center">
+					<div class="led-box" style="margin: 5px 38%"><div id="ledcolor_gauge-rendimento" class="led-class"></div></div>
+				</div>
 			</div>
 		</div>
 		
 		<!-- LED RELATIVI AI GAUGES -->
-		<div class="row" style="padding: 0 30px 0 30px; height: 50px; overflow: hidden">
-			<!-- POTENZA -->
-			<div class="col">
-				<div class="led-box" style="margin: 5px 38%"><div id="ledcolor_gauge-potenza" class="led-class"></div></div>
-			</div>
-			<!-- PORTATA -->
-			<div class="col">
-				<div class="led-box" style="margin: 5px 38%"><div id="ledcolor_gauge-portata" class="led-class"></div></div>
-			</div>
-			<!-- PRESSIONE -->
-			<div class="col">
-				<div class="led-box" style="margin: 5px 38%"><div id="ledcolor_gauge-pressione" class="led-class"></div></div>
-			</div>
-			<!-- RENDIMENTO -->
-			<div class="col">
-				<div class="led-box" style="margin: 5px 38%"><div id="ledcolor_gauge-rendimento" class="led-class"></div></div>
-			</div>
-		</div>
 	</div>
 	</div>
 	

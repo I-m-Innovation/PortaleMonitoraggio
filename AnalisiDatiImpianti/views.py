@@ -15,6 +15,10 @@ from datetime import datetime, timedelta
 
 @login_required(login_url='login')
 def home(request):
+	# LINK PORTALE CORRISPETTIVI (NELLA NAV-BAR)
+	link_corrispettivi = linkportale.objects.filter(tag='portale-corrispettivi')[0].link
+	link_corrispettivi = 'http://localhost:8000/analisi-impianti/'
+
 	from MonitoraggioImpianti.utils.graphics import createMap
 	dz_impianti = Impianto.objects.all().values()
 	df_impianti = pd.DataFrame(dz_impianti)
@@ -23,17 +27,22 @@ def home(request):
 	# FILTRO IMPIANTI IDROELETTRICI
 	dz_impianti = {v['nickname']: v for v in dz_impianti if v['tipo'] == 'Idroelettrico'}
 	context = {
+		'link_corrispettivi': link_corrispettivi,
 		'headtitle': 'Archivio dati',
 		'impianti': dz_impianti,
 		'map': map
 	}
-	# context['map'] = context['map'].replace('<div style="width:100%;">','<div>')
-	context['map'] = context['map'].replace('<div style="position:relative;width:100%;height:0;padding-bottom:60%;">','<div style="position:relative;height:0;padding-bottom:100%;">')
+	# context['map'] = context['map'].replace('<div style="width:100%;">','<div>
+	context['map'] = context['map'].replace('<div style="position:relative;width:100%;height:0;padding-bottom:60%;">','<div style="position:relative;height:0;padding-bottom:80%;">')
 	return render(request, 'AnalisiDatiImpianti/HomePageAnalisi.html', context=context)
 
 
 @login_required(login_url='login')
 def impianto(request, nickname):
+	# LINK PORTALE CORRISPETTIVI (NELLA NAV-BAR)
+	link_corrispettivi = linkportale.objects.filter(tag='portale-corrispettivi')[0].link
+	link_corrispettivi = 'http://localhost:8000/analisi-impianti/'
+
 	if nickname == 'petilia_bf_canaletta':
 		return redirect('analisi-home')
 
@@ -105,6 +114,7 @@ def impianto(request, nickname):
 		dz_yearstat['QMean'] = dz_yearstat['QMean'] * 1000
 
 	context = {
+		'link_corrispettivi': link_corrispettivi,
 		'headtitle': 'Dettaglio impianto',
 		'nickname': nickname,
 		'impianto': impianto.__dict__,

@@ -224,7 +224,7 @@ class DayChartData(APIView):
 				df_time_series.to_csv(file_path, index=False)
 
 			except Exception as error:
-				df_time_series = pd.DataFrame({'t': [], 'P': [], 'BESS': [], 'PacHome': []})
+				df_time_series = pd.DataFrame({'t': [], 'P': [], 'BESS': [], 'PacHome': [], 'SoC': []})
 				print(f'Errore get_leo_data {nome_impianto}', type(error).__name__, "–", error)
 
 			try:
@@ -237,6 +237,8 @@ class DayChartData(APIView):
 				df_time_series['PacHome'] = df_time_series['PacHome'] / 1000
 				# RETE
 				df_time_series['PacGrid'] = df_time_series['PacGrid'] / 1000
+				# BESS %
+				df_time_series['SoC'] = df_time_series['SoC']
 
 			except Exception as error:
 				k_last = t_last = delta = None
@@ -260,6 +262,8 @@ class DayChartData(APIView):
 					't_last': t_last,
 					'led': led,
 					'PLast': round(df_time_series.P[k_last], 2),
+					'BESSLast': round(df_time_series.BESS[k_last], 2),
+					'BESSSoC': round(df_time_series.SoC[k_last], 2),
 					'info': {'co2': co2_kg, 'case': case, 'alberi': alberi, 'energy': round(energy, 2), }
 				}
 

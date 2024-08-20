@@ -4,13 +4,17 @@ from datetime import datetime,timedelta
 from django.db.models import Q
 from django.shortcuts import render, redirect
 
-from .models import Impianto
+from .models import *
 from MonitoraggioImpianti.utils import functions as fn
 from .API_OpenMeteo import get_OpenMeteoData, get_WeatherIcon
 
 
 # Create your views here.
 def home(request):
+	# LINK PORTALE CORRISPETTIVI (NELLA NAV-BAR)
+	link_corrispettivi = linkportale.objects.filter(tag='portale-corrispettivi')[0].link
+	link_corrispettivi = 'http://localhost:8000/analisi-impianti/'
+
 	# INTERVALLO DI REFRESH DELLA HOMEPAGE (SECONDI)
 	refresh_interval = 1800
 	Now = datetime.now()
@@ -23,8 +27,7 @@ def home(request):
 
 	# LAST RUN DEL MATEMATICO, CODICE DI CONTROLLO SUL MATEMATICO
 	try:
-		...
-		# last_run = fn.read_DATA('Database_Produzione', 'lastRun.csv', 'Database_Produzione')
+		last_run = fn.read_DATA('Database_Produzione', 'lastRun.csv', 'Database_Produzione')
 		last_run = pd.to_datetime(last_run['t'])
 		matematico_down = Now - last_run > timedelta(minutes=30)
 
@@ -51,12 +54,11 @@ def home(request):
 	# CONTIENE I DATI AGGIORNATI DI: TAG,Name,last_power,last_eta,state,Energy
 	try:
 
-		# DF_lastDATA_impianti = fn.read_DATA('Database_Produzione', 'Portale impianti HP.csv', 'Database_Produzione')
+		DF_lastDATA_impianti = fn.read_DATA('Database_Produzione', 'Portale impianti HP.csv', 'Database_Produzione')
 		DF_lastDATA_impianti = DF_lastDATA_impianti.set_index('TAG')
 	except Exception as error:
 		DF_lastDATA_impianti = pd.DataFrame()
 		print('Errore lettura lastdata impianti', type(error).__name__, "–", error)
-
 
 	for impianto in list(impianti):
 		# dz_impianto = dz_impianti[nick]
@@ -126,11 +128,16 @@ def home(request):
 
 	# CONTEXT DATA
 	context = {
+		# NAV-BAR
+		'link_corrispettivi': link_corrispettivi,
+		# PAGINA
+		'refresh': refresh_interval,
+		'page_title': 'Monitoraggio Impianti',
+		# DATI - PAGINA
 		'alarm_matematico': matematico_down[0],
 		'plants_overview': dz_monitoraggio,
-		'headtitle': 'Monitoraggio impianti',
 		'impianti': dz_impianti,
-		'refresh': refresh_interval,
+		# SIDEBAR
 		'tot_energia': tot_energy,
 		'energia_idro': tot_energy_idro,
 		'energia_pv': tot_energy_pv,
@@ -143,41 +150,47 @@ def home(request):
 
 
 def impianto(request, nickname):
+	# LINK PORTALE CORRISPETTIVI (NELLA NAV-BAR)
+	link_corrispettivi = linkportale.objects.filter(tag='portale-corrispettivi')[0].link
+	link_corrispettivi = 'http://localhost:8000/analisi-impianti/'
+
+	# REFRESH PAGIN OGNI TOT PER PULIRE CACHE
+	refresh_interval = 3600
+
 	impianto = Impianto.objects.filter(nickname=nickname)[0]
 	if nickname == 'petilia_bf_canaletta':
 		return redirect('monitoraggio-home')
 
-	if impianto.tipo =='Fotovoltaico':
-		refresh_interval = 3600
-		curr_anno = datetime.now().year
+	if impianto.tipo == 'Fotovoltaico':
 
+		curr_anno = datetime.now().year
+		impianto = impianto.__dict__
 		context = {
-			'headtitle': 'Dettaglio impianto',
-			'nickname': nickname,
-			'impianto': impianto.__dict__,
+			# PAGINA
+			'link_corrispettivi': link_corrispettivi,
+			'page_title': f'Monitoragggio {impianto['nome_impianto']}',
 			'refresh': refresh_interval,
+			# DATI
+			'nickname': nickname,
+			'impianto': impianto,
 			'curr_anno': curr_anno
 		}
-		if impianto.nickname == 'zilio_gr':
+		if nickname == 'zilio_gr':
 			return render(request, 'MonitoraggioImpianti/monitoraggio_zilio_gr.html', context=context)
 		else:
 			return render(request, 'MonitoraggioImpianti/monitoraggio_fotovoltaico.html', context=context)
 
 	elif impianto.tipo == 'Idroelettrico':
 		try:
-
 			YearStatFile = impianto.filemonitoraggio_set.filter(tipo='YearStat')[0]
 			DF_stat = fn.read_DATA(YearStatFile.cartella, str(YearStatFile), nickname)
 			# STATISTICHE GLOBALI CALCOLATE DA MATLAB (SALVATE NEL DB)
 			StatALL = {stat.variabile: stat.valore for stat in list(impianto.infostat_set.all())}
 			impianto = impianto.__dict__
 			impianto.update(StatALL)
-			if impianto['unita_misura'] == 'mc/s':
-				QMedia_anno = DF_stat['QMean'][0]
-			else:
-				QMedia_anno = DF_stat['QMean'][0] * 1000
 
-		except Exception as e:
+		except Exception as error:
+			print(f'Errore elaborazione pagina {impianto['nome_impianto']}',type(error).__name__, "–", error)
 			impianto = impianto.__dict__
 			DF_stat = pd.DataFrame()
 			impianto['StatALL'] = {}
@@ -186,10 +199,13 @@ def impianto(request, nickname):
 		curr_anno = datetime.now().year
 
 		context = {
-			'headtitle': 'Dettaglio impianto',
+			# PAGINA
+			'link_corrispettivi': link_corrispettivi,
+			'page_title': f'Monitoragggio {impianto['nome_impianto']}',
+			'refresh': refresh_interval,
+			# DATI
 			'nickname': nickname,
 			'impianto': impianto,
-			'refresh': refresh_interval,
 			'curr_anno': curr_anno
 		}
 

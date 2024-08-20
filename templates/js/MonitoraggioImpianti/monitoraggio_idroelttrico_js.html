@@ -116,11 +116,13 @@
                     ]
                  })
 
-								center_position = ['50%','50%'];
-								detail_fontsize = 18;
+								center_position = ['50%','60%'];
+								detail_fontsize = 19;
+								title_fontsize = 17;
 
 								/* GAUGE POTENZA */
 								gaugePot.setOption({
+										grid:[{top:'3%',bottom:'3%',right:'3%', left:'3%'}],
 			              series: [
 	                      {
                             name: 'gauge Potenza', type: 'gauge', radius: '95%', min: 0, max: gauge_pot.MaxScala,
@@ -128,7 +130,7 @@
 			                          name: 'Potenza',
 			                          value: Math.round(gauge_pot.last_value),
 	                          }],
-	                          startAngle: 210, endAngle: -30, axisLabel: {fontSize: 10,}, title: {offsetCenter: [0, '50%'], fontSize: 15},
+	                          startAngle: 210, endAngle: -30, axisLabel: {fontSize: 10,}, title: {offsetCenter: [0, '50%'], fontSize: title_fontsize},
 			                      pointer: {itemStyle: {color: '#3d3d3d'},length: '95%',width: '3%',},
 			                      splitNumber: 8, axisTick: {distance: 3, lineStyle:{width: 1}}, splitLine: {distance: 3,lineStyle:{width: 2}},
 			                      axisLine: {
@@ -146,7 +148,7 @@
 			                          name: 'Portata',
 			                          value: Math.round(gauge_port.last_value *10)/10,
 	                          }],
-	                          startAngle: 210, endAngle: -30, axisLabel: {fontSize: 10,}, title: {offsetCenter: [0, '50%'], fontSize: 17},
+	                          startAngle: 210, endAngle: -30, axisLabel: {fontSize: 10,}, title: {offsetCenter: [0, '50%'], fontSize: title_fontsize},
 			                      pointer: {itemStyle: {color: '#3d3d3d'}, length: '95%', width: '3%',},
 			                      splitNumber: 8, axisTick: {distance: 3, lineStyle:{width: 1}}, splitLine: {distance: 3,lineStyle:{width: 2}},
 			                      axisLine: {
@@ -166,7 +168,7 @@
 			                          name: 'Pressione',
 			                          value: Math.round(gauge_pres.last_value * 10)/10,
 	                          }],
-	                          startAngle: 210, endAngle: -30, axisLabel: {fontSize: 10,}, title: {offsetCenter: [0, '50%'], fontSize: 17},
+	                          startAngle: 210, endAngle: -30, axisLabel: {fontSize: 10,}, title: {offsetCenter: [0, '50%'], fontSize: title_fontsize},
 			                      pointer: {itemStyle: {color: '#3d3d3d'},length: '95%',width: '3%',},
 			                      splitNumber: 8, axisTick: {distance: 3, lineStyle:{width: 1}}, splitLine: {distance: 3,lineStyle:{width: 2}},
 			                      axisLine: {
@@ -184,7 +186,7 @@
 			                          name: 'Rendimento',
 			                          value: Math.round(gauge_eta.last_value * 100 * 100)/100,
 	                          }],
-	                          startAngle: 210, endAngle: -30, axisLabel: {fontSize: 10,}, title: {offsetCenter: [0, '50%'], fontSize: 15},
+	                          startAngle: 210, endAngle: -30, axisLabel: {fontSize: 10,}, title: {offsetCenter: [0, '50%'], fontSize: title_fontsize},
 			                      pointer: {itemStyle: {color: '#3d3d3d'}, length: '95%', width: '3%',},
 			                      splitNumber: 8, axisTick: {distance: 3, lineStyle:{width: 1}}, splitLine: {distance: 3,lineStyle:{width: 2}},
 			                      axisLine: {

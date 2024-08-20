@@ -7,7 +7,7 @@
 		<!-- LINK ALLA PAGINA DELL'IMPIANTO -->
 		<a style="text-decoration: none; padding: 0 5px;" href="{% url 'monitoraggio-impianto' nickname %}" target="_blank">
 			<!-- CARD-IDRO, SI COLORA DI AZZURRO QUANDO SI FA HOVERING -->
-			<div class="card-pv">
+			<div class="card-pv" style="max-height: 7vh">
 				<!-- CORNERINO COLORATO IN ALTO A DESTRA -->
 				<div class="go-corner" style="background-color: #ded259;"><div class="go-arrow">→</div></div>
 					<!-- TABELLA, CON I VARI DATI -->
@@ -24,12 +24,10 @@
 					    <col span="1" style="width: 16%;">
 		        </colgroup>
 		        <tbody style="height: 100%">
-		          <tr style="border-collapse: collapse; font-size: 14px">
+		          <tr style="border-collapse: collapse; font-size: 14px; height: 100%">
 		            <!-- METEO -->
 		            <td style="border: none">
-			            <div>
-				            <img src="{% static 'images/weather_icons/'|add:impianto.curr_icona  %}" alt="weather" style="height: 50px">
-			            </div>
+			            <img src="{% static 'images/weather_icons/'|add:impianto.curr_icona  %}" alt="weather" style="height: 35px">
 			            <div style="margin-top: -10px">
 				            <small style="color: #939393; margin-left: 10px">{{ impianto.curr_temp }}°C</small>
 			            </div>
@@ -40,12 +38,12 @@
 		            </td>
 		            <!-- LED -->
 			          <td>
-				          <div class="container-fluid ps-3">
-					          <div class="led-box" style="background-color: rgba(255,255,255,0)"><div id="Led_{{ nickname }}" class="led-class" ></div></div>
+				          <div class="container-fluid justify-content-center">
+					          <div class="led-box" style="background-color: rgba(255,255,255,0); height: 25px; width: 25px"><div id="Led_{{ nickname }}" class="led-class" ></div></div>
 				          </div>
 		            </td>
 		            <!-- CHART -->
-		            <td style="text-align: center; border: none; "><div id="minichart_{{ nickname }}" class="minichartPV"></div></td>
+		            <td style="text-align: center; border: none;"><div id="minichart_{{ nickname }}" style="height: 85%" class="minichartPV"></div></td>
 		            <!-- DATI: POTENZA + ENERGIA -->
 		            {# "humanize" serve per mettere i numeri all'italiana #}
 			          {% load humanize %}{% load i18n %}{% load l10n %}
@@ -59,74 +57,69 @@
 		            <td style="text-align: center;"><b> - </b></td>
 		          </tr>
 		        </tbody>
-			      <tfoot >
-			      <tr style="width: 100%">
-				      <td id="lastT_{{ nickname }}" class="aggiornamento-PVTable-card" colspan="7">
-					      aggiornamento: 
-				      </td>
-			      </tr>
-		        </tfoot>
-			      
-			      <script>
-					      $(document).ready(function(){
-							      /* VARIABILI */
-					          var endpoint = '{% url 'api-monitoraggio-impianto' nickname %}';
-					          let idMiniChart = 'minichart_'.concat('{{ nickname }}');
-					          let idLastT = 'lastT_'.concat('{{ nickname }}');
-					          let idLed = 'Led_'.concat('{{ nickname }}');
-					          let idPLast = 'PLast_'.concat('{{ nickname }}');
-					          let idEnergy = 'Energy_'.concat('{{ nickname }}');
-					          let text1 = 'aggiornamento: '.concat('');
-							      
-							      /* ID GRAFICO */
-					          var MiniChart_{{ nickname }} = echarts.init(document.getElementById(idMiniChart));
-					          window.addEventListener('resize', function() {MiniChart_{{ nickname }}.resize();});
-			                  
-					          /* DEFINIZIONE GRAFICO ECHART */
-							      MiniChart_{{ nickname }}.setOption({
-							          color: ['rgb(248,123,104)'],
-							          xAxis: [{ data: [], show: false }], 
-							          yAxis: {type: 'value', min: 0, offset:80, max: {{ impianto.potenza_installata|stringformat:".2f" }}, splitLine: {show: false}, },
-							          grid:[{top:0,bottom:0,right:0,left:0}],
-							          series: [{
-									          data: [], type: 'line', areaStyle: {},showSymbol: false,lineStyle:{width: 1,}
-							          }]
-					          });
-							      
-							      /* FUNZIONE DI AGGIORNAMENTO AUTOMATICO PER I DATI */
-							      (function ajax_{{ nickname }}() {
-									      /* CHIAMATA AJAX PER I DATI */
-			                  $.ajax(endpoint).done(function(data) {
-			                      let potenza = data.pot;
-			                      let timestamps = data.time;
-			                      let last_index = data.k_last;
-			                      let last_t = timestamps[last_index];
-					                  let info = data.info;
-			                      last_t = text1.concat(last_t);
-					                  
-					                  /* INSERRISCE LED, ULTIMO TIMESTAMP E ENERGIA-GIORNO */
-			                      document.getElementById(idLed).className = data.led;
-			                      document.getElementById(idLastT).innerHTML = last_t;
-			                      if (data.PLast) {document.getElementById(idPLast).innerHTML = toLocale(data.PLast,0) + ' kW'}
-			                      if (info.energy) {document.getElementById(idEnergy).innerHTML = toLocaleKWh(info.energy,0)}
-		
-			                      /* AGGIORNA IL GRAFICO CON NUOVI DATI */
-					                  MiniChart_{{ nickname }}.setOption({
-			                          xAxis: [{ data: timestamps }],
-			                          series: [{
-			                              data: potenza,
-			                          }]
-			                      })
-			                  });
-									      /* AGGIORNAMENTO DATI OGNI 5 MINUTI */
-									      {# ANCHE SE LA PAGINA FA UN REFRESH IN AUTOMATICO #}
-									      setTimeout(ajax_{{ nickname }}, 5*60000);
-							      })()
-			          })
-		          </script>
 		      </table>
+				<div id="lastT_{{ nickname }}" class="aggiornamento-monitoraggio-card">
+					aggiornamento: 
+				</div>
     </div>
   </a>
+	<script>
+	    $(document).ready(function(){
+		      /* VARIABILI */
+	        var endpoint = '{% url 'api-monitoraggio-impianto' nickname %}';
+	        let idMiniChart = 'minichart_'.concat('{{ nickname }}');
+	        let idLastT = 'lastT_'.concat('{{ nickname }}');
+	        let idLed = 'Led_'.concat('{{ nickname }}');
+	        let idPLast = 'PLast_'.concat('{{ nickname }}');
+	        let idEnergy = 'Energy_'.concat('{{ nickname }}');
+	        let text1 = 'aggiornamento: '.concat('');
+		      
+		      /* ID GRAFICO */
+	        var MiniChart_{{ nickname }} = echarts.init(document.getElementById(idMiniChart));
+	        window.addEventListener('resize', function() {MiniChart_{{ nickname }}.resize();});
+	            
+	        /* DEFINIZIONE GRAFICO ECHART */
+		      MiniChart_{{ nickname }}.setOption({
+		          color: ['rgb(248,123,104)'],
+		          xAxis: [{ data: [], show: false }], 
+		          yAxis: {type: 'value', min: 0, offset:80, max: {{ impianto.potenza_installata|stringformat:".2f" }}, splitLine: {show: false}, },
+		          grid:[{top:0,bottom:0,right:0,left:0}],
+		          series: [{
+				          data: [], type: 'line', areaStyle: {},showSymbol: false,lineStyle:{width: 1,}
+		          }]
+	        });
+		      
+		      /* FUNZIONE DI AGGIORNAMENTO AUTOMATICO PER I DATI */
+		      (function ajax_{{ nickname }}() {
+				      /* CHIAMATA AJAX PER I DATI */
+	            $.ajax(endpoint).done(function(data) {
+	                let potenza = data.pot;
+	                let timestamps = data.time;
+	                let last_index = data.k_last;
+	                let last_t = timestamps[last_index];
+	                let info = data.info;
+	                last_t = text1.concat(last_t);
+	                
+	                /* INSERRISCE LED, ULTIMO TIMESTAMP E ENERGIA-GIORNO */
+	                document.getElementById(idLed).className = data.led;
+	                document.getElementById(idLastT).innerHTML = last_t;
+	                if (data.PLast) {document.getElementById(idPLast).innerHTML = toLocale(data.PLast,0) + ' kW'}
+	                if (info.energy) {document.getElementById(idEnergy).innerHTML = toLocaleKWh(info.energy,0)}
+	
+	                /* AGGIORNA IL GRAFICO CON NUOVI DATI */
+	                MiniChart_{{ nickname }}.setOption({
+	                    xAxis: [{ data: timestamps }],
+	                    series: [{
+	                        data: potenza,
+	                    }]
+	                })
+	            });
+				      /* AGGIORNAMENTO DATI OGNI 5 MINUTI */
+				      {# ANCHE SE LA PAGINA FA UN REFRESH IN AUTOMATICO #}
+				      setTimeout(ajax_{{ nickname }}, 5*60000);
+		      })()
+	    })
+	  </script>
 	{% endif %}
 {% endfor %}
 

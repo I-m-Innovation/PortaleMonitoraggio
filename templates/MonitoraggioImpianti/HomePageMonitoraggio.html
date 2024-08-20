@@ -1,7 +1,11 @@
 {% extends 'base_layout.html' %}
 {% load static %}
 
-{% block title %}{{ headtitle }}{% endblock %}
+{% block refresh %}
+	<meta http-equiv="refresh" content="{{ refresh }}">
+{% endblock %}
+
+{% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
 	<!-- LAYOUT-GRIGLIA -->
@@ -14,14 +18,14 @@
 		<div class="item-b">
 			<div class="container-fluid">
 				{% if alarm_matematico %}
-					<div class="row py-2">
+					<div class="row pt-2">
 					<div class="d-flex justify-content-center">
 						<h5 class="alert alert-danger my-0">⚠ ilMatematico scollegato</h5>
 					</div>
 					</div>
 				{% endif %}
 				
-				<div class="row py-0 column-gap-2 px-2">
+				<div class="row pt-2 column-gap-2 px-2">
 					<!-- SCHEDA IDROELETTRICO -->
 					<div class="col monitoraggio-card h-100">
 						<!-- RIGA COLROATA IN CIMA ALLA COLONNA -->
@@ -40,7 +44,7 @@
 						<!-- RIGA COLORATA IN CIMA ALLA COLONNA -->
 						<div class="row p-0 m-0" style="height: 15px; background: linear-gradient(135deg, #fff7b0, #eee663);"></div>
 						<h1 style="color: #4a3c54; margin-left: 20px; font-weight: lighter">Monitoraggio fotovoltaico <img src="{% static 'images/sun-symbol.png' %}" alt="Impianto idroelettrico" style="height: 35px"></h1>
-						<div class="row" style="margin: 10px; border: 0.5px solid lightgrey">
+						<div class="row" style="margin: 10px; border: 0.5px solid lightgrey; height: auto">
 							<!-- TESTA DELLA TABELLA -->
 							{% include 'MonitoraggioIMpianti/partials/table_head.html' %}
 							<!-- TABELLA FOTOVOLTAICI -->
@@ -53,6 +57,3 @@
 	</main>
 {% endblock %}
 
-{% block refresh %}
-	<meta http-equiv="refresh" content="{{ refresh }}">
-{% endblock %}

@@ -109,27 +109,17 @@ body {
 }
 
 /* posizionamento scritta 'aggiornamento:..' nelle schede di monitoraggio */
-.aggiornamento-IdroTable-card{
+.aggiornamento-monitoraggio-card{
     text-align: right;
     font-size: 12px;
     color: #a1a1a1;
-    padding: 0 2px 0 0 ;
+    position: absolute;
     margin: 0;
-    position: relative;
     overflow: hidden;
-    top: -8px;
+    bottom: 0;
     right: 0;
-}
-.aggiornamento-PVTable-card{
-    text-align: right;
-    font-size: 12px;
-    color: #a1a1a1;
-    padding: 0 2px 0 0 ;
-    margin: 0;
-    position: relative;
-    overflow: hidden;
-    top: -15px;
-    right: 0;
+    display: flex;
+    align-items: center;
 }
 
 .go-corner {
@@ -157,9 +147,8 @@ body {
     position: relative;
     /*background-color: #efefef;*/
     border-radius: 1px 6px 1px 1px;
-    padding: 10px 5px 5px 5px;
-    max-height: 9vh;
-    margin: 5px 0;
+    padding: 3px 0;
+    margin: 4px 0;
     text-decoration: none;
     z-index: 0;
     overflow: hidden;
@@ -169,12 +158,6 @@ body {
     backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
     border: 1px solid rgba(229, 229, 229, 0.32);
-}
-
-.card-pv {
-    padding: 5px 5px 5px 5px;
-    margin: 5px 0 5px 0;
-    max-height: 7vh;
 }
 
 .card-pv:hover {
@@ -232,7 +215,6 @@ body {
 .list-group-mine .list-group-item-bis:hover {
     background-color: #e5f1ff;
 }
-
 
 .backgroundBar-idro, .backgroundBar-pv, .backgroundBar-zilio {
     border-radius: 8px 8px 0 0;
