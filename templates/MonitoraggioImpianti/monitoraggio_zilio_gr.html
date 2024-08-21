@@ -8,11 +8,8 @@
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block extra_css %}
-			<!-- BASE CSS -->
-		<link rel="stylesheet" href="{% static 'css/style_battery.css' %}">
-	
-		<!-- CUSTOM JS FUNCTIONS -->
-{#		<script src="{% static 'js/battery.js' %}"></script>#}
+	<!-- CSS BATTERIA -->
+	<link rel="stylesheet" href="{% static 'css/style_battery.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -36,16 +33,24 @@
 		</div>
 	
 		<!-- GRAFICO -->
-		<div class="row px-3 pt-3" style="min-height: 53vh">
+		<div class="row px-3 pt-3" style="min-height: 52vh">
 			<div id="chart"></div>
 		</div>
 	
-		<div class="row px-2 py-3 justify-content-center">
+		<div class="row py-3 justify-content-center align-items-center">
 			<!-- GAUGE POTENZA -->
 			<div class="col">
-				<div id='gauge-potenza' style="height: 28vh"></div>
+				<div id='gauge-potenza' style="height: 23vh"></div>
 			</div>
-			<div class="col border rounded-2">
+			<!-- GAUGE POTENZA -->
+			<div class="col">
+				<div id='gauge-consumo' style="height: 23vh"></div>
+			</div>
+			<!-- GAUGE RETE -->
+			<div class="col">
+				<div id='gauge-rete' style="height: 23vh"></div>
+			</div>
+			<div class="col-3 border rounded-2" style="background-color: #eeeeee">
 				<div class="row">
 					<p style="font-size: 18px; font-weight: bolder; text-align: center">Battery Energy Storage System - ZILIO</p>
 				</div>
@@ -70,9 +75,9 @@
 				</div>
 			</div>
 			<!-- INFO VARIE ENERGIA PRODOTTA -->
-			<div class="col-5">
-				<div class="row py-3 px-3 justify-content-center">
-					<div class="col-4 info-energia mx-3">
+			<div class="col" style="min-width: 30%;">
+				<div class="row p-2 justify-content-center">
+					<div class="col info-energia mx-3">
 						<div class="info-icon">
 							<img src="{% static 'images/energy-icon.png' %}" alt="weather" style="height: 60px">
 						</div>
@@ -83,7 +88,7 @@
 							<span style="color: grey">Energia prodotta</span>
 						</div>
 					</div>
-					<div class="col-4 info-energia mx-3">
+					<div class="col info-energia mx-3">
 						<div class="info-icon">
 							<img src="{% static 'images/co2-icon.png' %}" alt="weather" style="height: 60px">
 						</div>
@@ -95,8 +100,8 @@
 						</div>
 					</div>
 				</div>
-				<div class="row py-3 px-3 justify-content-center">
-					<div class="col-4 info-energia mx-3">
+				<div class="row p-2 justify-content-center">
+					<div class="col info-energia mx-3">
 						<div class="info-icon">
 							<img src="{% static 'images/tree-icon.png' %}" alt="weather" style="height: 60px">
 						</div>
@@ -107,7 +112,7 @@
 							<span style="color: grey">Alberi equivalenti</span>
 						</div>
 					</div>
-					<div class="col-4 info-energia mx-3">
+					<div class="col info-energia mx-3">
 						<div class="info-icon">
 							<img src="{% static 'images/houses-icon.png' %}" alt="weather" style="height: 60px">
 						</div>
@@ -130,11 +135,15 @@
 					/* IDS GRAFICO E GAUGES */
 					var DayChart = echarts.init(document.getElementById('chart'));
 					var gaugePot = echarts.init(document.getElementById('gauge-potenza'));
+					var gaugeConsumo = echarts.init(document.getElementById('gauge-consumo'));
+					var gaugeRete = echarts.init(document.getElementById('gauge-rete'));
 					var gaugeBESS = echarts.init(document.getElementById('gauge-BESS'));
 					
 					/* RESIZING CHARTS */
 					window.addEventListener('resize', function() {DayChart.resize();});
 					window.addEventListener('resize', function() {gaugePot.resize();});
+					window.addEventListener('resize', function() {gaugeConsumo.resize();});
+					window.addEventListener('resize', function() {gaugeRete.resize();});
 					window.addEventListener('resize', function() {gaugeBESS.resize();});
 					
 					/* URL DATI */
@@ -236,7 +245,7 @@
 	         });
 					
 					/* CREAZIONE GAUGE POTENZA */
-					gaugePot.setOption({
+					options1 = {
 							grid:[{top:'3%',bottom:'3%',right:'3%', left:'3%'}],
 		          series: [
 		              {
@@ -244,21 +253,23 @@
 		                  data: [{
 		                      name: 'Potenza', value: 0,
 		                  }],
-			                axisLine: {lineStyle: {width: 15,},roundCap: true, },
-		                  progress: {show: true, color: {type:'linear'}, width: 15, roundCap: true,},
-		                  startAngle: 210, endAngle: -30, axisLabel: {fontSize: 12, distance: 25, formatter: value => toLocale(value,0)}, 
+			                axisLine: {lineStyle: {width: 12,},roundCap: true, },
+		                  progress: {show: true, color: {type:'linear'}, width: 12, roundCap: true,},
+		                  startAngle: 210, endAngle: -30, axisLabel: {fontSize: 10, distance: 20, formatter: value => toLocale(value,0)}, 
 			                title: {offsetCenter: [0, '50%'], fontSize: 20},
 		                  pointer: {show: false},
 		                  splitNumber: 8, axisTick: {distance: 4, lineStyle:{width: 1}}, splitLine: {distance: 5,lineStyle:{width: 2}},
 		                  {#    lineStyle: {color: [[gauge_pot.Media - gauge_pot.Dev, '#ff5858'], [gauge_pot.Media + gauge_pot.Dev, '#c9c9c9'], [1, '#8bcfea']]}#}
 		                  {# },#}
-		                  detail: {offsetCenter: [0, 0], fontSize: 28, formatter: value => toLocale(value,0) +' kW' },
+		                  detail: {offsetCenter: [0, 0], fontSize: 22, formatter: value => toLocale(value,2) +' kW' },
 		                  center: ['50%','60%'],
 		              }
 		          ]
-					});
+          }
+          gaugePot.setOption(options1);
+					gaugeConsumo.setOption(options1);
                     
-					gaugeBESS.setOption({
+					options2 = {
 							grid:[{top:'3%',bottom:'3%',right:'7%', left:'7%'}],
 		          series: [
 		              {
@@ -271,19 +282,8 @@
 						              length: '90%', width: 13, 
 						              offsetCenter: [0, '5%']
 				              },
-			                axisLine: {
-					                lineStyle: {
-							                width: 10,
-							                color: [
-									                [0.5,'#f39f63'],
-									                [1,'#65a64b']
-							                ]
-									                
-					                },
-					                roundCap: false,},
-				              axisLabel: {
-						              color: '#464646',
-						              fontSize: 15, distance: -30, rotate: 'tangential',
+			                axisLine: {lineStyle: {width: 10, color: [[0.5,'#f39f63'], [1,'#65a64b']]}, roundCap: false,},
+				              axisLabel: {color: '#464646', fontSize: 15, distance: -30, rotate: 'tangential',
 									        formatter: function (value) {
 											        if (value === 7.5) {
 													        return 'Carica';
@@ -293,18 +293,34 @@
 											        return '';
 									         }
 								      },
-				              {#axisLabel: {fontSize: 12, distance: 18, formatter: value => toLocale(value,0)},#}
-		                  progress: {show: false, color: {type:'linear'}, width: 15, roundCap: true,},
-		                  startAngle: 210, endAngle: -30,  
-			                title: {offsetCenter: [0, '60%'], fontSize: 18}, 
+		                  progress: {show: false,}, startAngle: 210, endAngle: -30, title: {offsetCenter: [0, '60%'], fontSize: 18}, 
 				              splitNumber: 8,axisTick: {distance: 2, lineStyle:{width: 1}}, splitLine: {distance: 5,lineStyle:{width: 2}},
-		                  {#    lineStyle: {color: [[gauge_pot.Media - gauge_pot.Dev, '#ff5858'], [gauge_pot.Media + gauge_pot.Dev, '#c9c9c9'], [1, '#8bcfea']]}#}
-		                  {# },#}
 		                  detail: {offsetCenter: [0, '35%'], fontSize: 20, formatter: value => toLocale(value,2) +' kW' },
 		                  center: ['50%','60%'],
 		              }
 		          ]
-					});
+					}
+					
+					gaugeRete.setOption(options2);
+					gaugeRete.setOption({
+							series: [
+                  {
+		                  axisLine: {lineStyle: {width: 10, color: [[0.5,'#f36863'], [1,'#4b83a6']]}, roundCap: false,},
+		                  axisLabel: {color: '#464646', fontSize: 15, distance: -30, rotate: 'tangential', 
+				                  formatter: function (value) {
+											        if (value === 7.5) {
+													        return 'Immissione';
+											        } else if (value === -7.5) {
+                                  return 'Prelievo';
+                              }
+											        return '';
+									        }
+		                  },
+                  }
+							]
+
+					})
+					gaugeBESS.setOption(options2);
 	                
 					/* FUNZIONE AGGIORNAMENTO AGGIORNAMENTO DATI */
 	        {# CHIAMATA AL TERMINE DEL TIMEOUT #}
@@ -319,8 +335,9 @@
 									let bess = data.bess;
 									let consumi = data.consumi;
 									let rete = data.rete;
-		              let t_last = data.t_last;
 									let PLast = data.PLast;
+									let ConsumoLast = data.ConsumoLast
+									let GridLast = data.GridLast
 									let BESSLast = data.BESSLast;
 									let SoC = data.BESSSoC;
 									let info = data.info;
@@ -375,6 +392,17 @@
 									gaugePot.setOption({
 				              series: [{
 						              data: [{value: PLast, name: 'Potenza'}],}]
+									})
+									
+									gaugeConsumo.setOption({
+				              series: [{
+						              data: [{value: ConsumoLast, name: 'Consumi'}],}]
+									})
+									
+									gaugeRete.setOption({
+				              series: [{
+						              data: [{value: GridLast, name: 'Carico Rete'}],
+				              }]
 									})
 									
 									gaugeBESS.setOption({

@@ -261,6 +261,8 @@ class DayChartData(APIView):
 					't_last': t_last,
 					'led': led,
 					'PLast': round(df_time_series.P[k_last], 2),
+					'ConsumoLast': round(df_time_series.PacHome[k_last], 2),
+					'GridLast': round(df_time_series.PacGrid[k_last], 2),
 					'BESSLast': round(df_time_series.BESS[k_last], 2),
 					'BESSSoC': round(df_time_series.SoC[k_last], 2),
 					'info': {'co2': co2_kg, 'case': case, 'alberi': alberi, 'energy': round(energy, 2), }
