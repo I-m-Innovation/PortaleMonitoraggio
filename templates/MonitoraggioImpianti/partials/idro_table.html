@@ -1,6 +1,6 @@
 {% load static %}
 
-<!-- CICLO FOR SU TUTTI GLI IMPIANTI -->
+{# CICLO SU TUTTI GLI IMPIANTI, CREA LA TABELLA PER OGNI IMPIANTO #}
 {% for nickname, impianto in plants_overview.items %}
 	<!-- FILTRO IDROELETTRICI -->
 	{% if impianto.tipo == 'Idroelettrico' %}
@@ -17,7 +17,6 @@
 						<col span="1" style="width: 8%;">
 						<col span="1" style="width: 18%;">
 						<col span="1" style="width: 8%;">
-						
 						<col span="1" style="width: 12%;">
 				    <col span="1" style="width: 22%;">
 				    <col span="1" style="width: 16%;">
@@ -47,10 +46,13 @@
 	            <!-- CHART -->
 	            <td style="border: none"><div id="minichart_{{ nickname }}" style="height: 85%" class="minichartIdro"></div></td>
 	            <!-- DATI: POTENZA + ENERGIA -->
-		          {# "humanize" serve per mettere i numeri all'italiana #}
+		          {# "humanize" serve per FORMATTARE i numeri all'italiana #}
 		          {% load humanize %}{% load i18n %}{% load l10n %}
 		          {% language 'de' %}
-	            <td style="text-align: center"><b>{% if impianto.last_power %}{{ impianto.last_power| floatformat:"0g" }} kW {% else %} - {% endif %} </b><span style="color: #9f9f9f; font-size: 12px"> / {{ impianto.potenza_installata|floatformat:"2g" }} kW</span></td>
+	            <td style="text-align: center">
+		            <b>{% if impianto.last_power %}{{ impianto.last_power| floatformat:"0g" }} kW {% else %} - {% endif %} </b>
+		            <span style="color: #9f9f9f; font-size: 12px"> / {{ impianto.potenza_installata|floatformat:"2g" }} kW</span>
+	            </td>
 	            <td style="text-align: center;"><b>{% if impianto.Energy %} {{ impianto.Energy| floatformat:"0g" }} kWh {% else %} - {% endif %} </b></td>
 		          {% endlanguage %}
 	            <!-- RENDIMENTO -->
@@ -63,18 +65,17 @@
 				</div>
 			</div>
 		</a>
-		<!-- SCRIPT PER AGGIORNAMENTO AUTOMATICO DATI, CHART ETC. -->
+		<!-- JAVASCRIPT PER AGGIORNAMENTO AUTOMATICO DATI, CHART ETC. -->
 	  <script>
-	{#				      NON è PRESENTE UN TIMEOUT PERCHè LA HOMEPAGE DI MONITORAGGIO FA UN REFRESH IN AUTOMATICO #}
+			  {# NON è PRESENTE UN TIMEOUT PERCHè LA HOMEPAGE DI MONITORAGGIO FA UN REFRESH IN AUTOMATICO #}
 	      $(document).ready(function(){
 	          /* VARIABILI */
-	          var endpoint = '{% url 'api-monitoraggio-impianto' nickname %}';
+	          let endpoint = '{% url 'api-monitoraggio-impianto' nickname %}';
 	          let idMiniChart = 'minichart_'.concat('{{ nickname }}');
 	          let idLastT = 'lastT_'.concat('{{ nickname }}');
-	          let text = 'aggiornamento: '.concat('');
 	          
 	          /* ID GRAFICO */
-	          var MiniChart = echarts.init(document.getElementById(idMiniChart));
+	          let MiniChart = echarts.init(document.getElementById(idMiniChart));
 	          window.addEventListener('resize', function() {MiniChart.resize();});
 	          
 	          /* CHIAMATA AJAX PER I DATI */
@@ -83,9 +84,9 @@
 			          let timestamps = data.timestamps;
 			          let last_index = data.last_index;
 			          let last_t = timestamps[last_index];
-			          last_t = text.concat(last_t);
+			          last_t = 'aggiornamento: '.concat(last_t);
 			          
-			          /* ULTIMO TIMESTAMP*/
+			          /* ULTIMO TIMESTAMP */
 			          document.getElementById(idLastT).innerHTML = last_t;
 			          
 			          /* CREA GRAFICO */
@@ -95,7 +96,7 @@
 					          yAxis: {type: 'value', min: 0, max: {{ impianto.potenza_installata|stringformat:".2f" }}, offset:80, show: false},
 					          grid:[{top:0,bottom:0,right:0,left:0}],
 					          series: [{
-							          data: potenza, type: 'line', areaStyle: {},showSymbol: false,lineStyle:{width: 1,}
+							          data: potenza, type: 'line', areaStyle: {},showSymbol: false, lineStyle:{width: 1,}
 					          }]
 			          })
 	          })

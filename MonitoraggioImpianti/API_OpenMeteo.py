@@ -31,7 +31,7 @@ def get_OpenMeteoData(lat, long):
 	current = response.Current()
 	current_temperature_2m = current.Variables(0).Value()
 	current_weather_code = current.Variables(1).Value()
-	return [current_weather_code,current_temperature_2m]
+	return [current_weather_code, current_temperature_2m]
 
 
 # FUNZIONI/DIZIONARIO PER IL METEO

@@ -97,7 +97,6 @@ class DayChartData(APIView):
 				'gauges': dict_gauge,
 				'led': led
 			}
-			print(nickname)
 			return Response(chart_data)
 
 		# ISolarCloud

@@ -116,8 +116,8 @@ body {
     position: absolute;
     margin: 0;
     overflow: hidden;
-    bottom: 0;
-    right: 0;
+    bottom: 3px;
+    right: 7px;
     display: flex;
     align-items: center;
 }

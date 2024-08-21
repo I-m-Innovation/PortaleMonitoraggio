@@ -1,7 +1,6 @@
 import pandas as pd
 from datetime import datetime,timedelta
 
-from django.db.models import Q
 from django.shortcuts import render, redirect
 
 from .models import *
@@ -9,16 +8,17 @@ from MonitoraggioImpianti.utils import functions as fn
 from .API_OpenMeteo import get_OpenMeteoData, get_WeatherIcon
 
 
-# Create your views here.
+# VIEW MONITORAGGIO - HOME
 def home(request):
-	# LINK PORTALE CORRISPETTIVI (NELLA NAV-BAR)
+	# PRENDO LINK PORTALE CORRISPETTIVI (NELLA NAV-BAR)
 	link_corrispettivi = linkportale.objects.filter(tag='portale-corrispettivi')[0].link
 	link_corrispettivi = 'http://localhost:8000/analisi-impianti/'
 
 	# INTERVALLO DI REFRESH DELLA HOMEPAGE (SECONDI)
-	refresh_interval = 1800
+	refresh_interval = 900
 	Now = datetime.now()
 
+	# DATI IMPIANTI
 	impianti = Impianto.objects.all()
 	df_impianti = pd.DataFrame(impianti.values())
 	nicks = list(df_impianti['nickname'])
@@ -35,7 +35,6 @@ def home(request):
 		matematico_down = [True]
 		print('Errore lettura last run matematico', type(error).__name__, "–", error)
 
-
 	# CREAZIONE DATAFRAME OER IL MONITORAGGIO GENERALE CON I DATI SULLA SCHEDA DI OGNI IMPIANTO
 	df_monitoraggio = pd.DataFrame([{nickname: None} for nickname in nicks],
 								dtype='object',
@@ -50,20 +49,19 @@ def home(request):
 
 	# --------------------------------------------------------------------------------------------------------------#
 	# OVERVIEW IMPIANTI - LETTURA "PORTALE IMPIANTI HP.CSV" CON I DATI AGGIORNATI PER LA HOMEPAGE
-	# (IDROELETTRICO, FOTOVOLTAICO TRAMITE AJAX)
+	# (CONTIENE SOLO DATI PER GLI IMPIANTI DI PROPRIETA)
 	# CONTIENE I DATI AGGIORNATI DI: TAG,Name,last_power,last_eta,state,Energy
 	try:
-
 		DF_lastDATA_impianti = fn.read_DATA('Database_Produzione', 'Portale impianti HP.csv', 'Database_Produzione')
 		DF_lastDATA_impianti = DF_lastDATA_impianti.set_index('TAG')
 	except Exception as error:
 		DF_lastDATA_impianti = pd.DataFrame()
 		print('Errore lettura lastdata impianti', type(error).__name__, "–", error)
 
+	# CREO df_monitoraggio CON I DATI da DF_lastDATA_impianti + I DATI DI:
+	# 						led + INFO VARIE (nome_impianto, tipo_impianto, potenza_installata)
 	for impianto in list(impianti):
-		# dz_impianto = dz_impianti[nick]
 		tag = impianto.tag
-
 		try:
 			if matematico_down[0]:
 				raise ValueError('matematico down, last run: {}'.format(last_run[0]))
@@ -77,25 +75,25 @@ def home(request):
 			df_monitoraggio.loc[impianto.nickname, 'tipo'] = impianto.tipo
 			df_monitoraggio.loc[impianto.nickname, 'potenza_installata'] = impianto.potenza_installata
 
-		except:
+		except Exception as error:
+			print('Errore aggiunta dati al df_monitoraggio', type(error).__name__, "–", error)
 			df_monitoraggio.loc[impianto.nickname, 'Name'] = impianto.nome_impianto
 			df_monitoraggio.loc[impianto.nickname, 'tipo'] = impianto.tipo
 			df_monitoraggio.loc[impianto.nickname, 'potenza_installata'] = impianto.potenza_installata
 
+		# API DATI METEO DA OPEN METEO
 		try:
-			# API DATI METEO DA OPEN METEO
 			[weather_code, temp] = get_OpenMeteoData(impianto.lat, impianto.lon)
 			[meteo, icona] = get_WeatherIcon(int(weather_code))
 			df_monitoraggio.loc[impianto.nickname, 'curr_weather_code'] = weather_code
 			df_monitoraggio.loc[impianto.nickname, 'curr_meteo'] = meteo
 			df_monitoraggio.loc[impianto.nickname, 'curr_temp'] = str(int(round(temp, 0)))
 			df_monitoraggio.loc[impianto.nickname, 'curr_icona'] = icona
-			print(weather_code, temp, meteo, icona)
-		except:
+		except Exception as error:
+			print('Errore lettura dati meteo', type(error).__name__, "–", error)
 			df_monitoraggio.loc[impianto.nickname, 'curr_meteo'] = '-'
 			df_monitoraggio.loc[impianto.nickname, 'curr_temp'] = '-'
 			df_monitoraggio.loc[impianto.nickname, 'curr_icona'] = '-'
-
 
 	# LED ROSSO PER SA3 MISURA IN WATT FOTVOLTAICO ZILIO_GR
 	df_monitoraggio.loc['ionico_SA3', 'state'] = 'led-red'
@@ -110,12 +108,14 @@ def home(request):
 	dz_monitoraggio = df_monitoraggio.to_dict(orient="index")
 
 	# CALCOLO INFO GENERALI, POSIZIONATE SULLA SIDEBAR
+	# TOTALE ENERGIE DEGLI IMPIANTI CHE CI SONO SU "PORTALE IMPIANTI HP.CSV"
 	tot_energy_idro = sum([dz_monitoraggio[key]['Energy'] for key in dz_monitoraggio.keys() if
 						   dz_monitoraggio[key]['Energy'] and dz_monitoraggio[key]['tipo'] == 'Idroelettrico'])
 	tot_energy_pv = sum([dz_monitoraggio[key]['Energy'] for key in dz_monitoraggio.keys() if
 						 dz_monitoraggio[key]['Energy'] and dz_monitoraggio[key]['tipo'] == 'Fotovoltaico'])
 	tot_energy = tot_energy_pv + tot_energy_idro
 	co2_kg = tot_energy * 0.457
+	# TEMPO TRASCORSO DALLA MEZZANOTTE
 	tdelta = Now - datetime(Now.year, Now.month, Now.day, 0, 0, 0)
 	if tdelta.total_seconds() > 0:
 		alberi = int(co2_kg / (tdelta.total_seconds() / 3600) * 24 * 365 / 1000)
@@ -149,20 +149,22 @@ def home(request):
 	return render(request, 'MonitoraggioImpianti/HomePageMonitoraggio.html', context)
 
 
+# VIEW MONITORAGGIO - IMPIANTO
 def impianto(request, nickname):
 	# LINK PORTALE CORRISPETTIVI (NELLA NAV-BAR)
 	link_corrispettivi = linkportale.objects.filter(tag='portale-corrispettivi')[0].link
 	link_corrispettivi = 'http://localhost:8000/analisi-impianti/'
 
-	# REFRESH PAGIN OGNI TOT PER PULIRE CACHE
+	# INTERVALLO DI REFRESH DELLA PAGINA (SECONDI)
 	refresh_interval = 3600
 
+	# DATI IMPIANTO
 	impianto = Impianto.objects.filter(nickname=nickname)[0]
 	if nickname == 'petilia_bf_canaletta':
 		return redirect('monitoraggio-home')
 
+	# SE IMPIANTI FOTOVOLTAICI
 	if impianto.tipo == 'Fotovoltaico':
-
 		curr_anno = datetime.now().year
 		impianto = impianto.__dict__
 		context = {

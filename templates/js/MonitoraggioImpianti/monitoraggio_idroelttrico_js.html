@@ -1,6 +1,6 @@
 <script>
 		$(document).ready(function(){
-				/* IDS GRAFICO E GAUGES */
+				/* ids GRAFICO E GAUGES */
 				var DayChart = echarts.init(document.getElementById('chart'));
 				var gaugePot = echarts.init(document.getElementById('gauge-potenza'));
 				var gaugePor = echarts.init(document.getElementById('gauge-portata'));
@@ -138,7 +138,9 @@
 	                          },
 	                          detail: {offsetCenter: [0, '30%'], fontSize: detail_fontsize,formatter: '{value} kW', color: gauge_colors.Power },
 			                      center: center_position,
-                        }]})
+                        }
+			              ]
+								})
 								/* GAUGE PORTATA */
 	              gaugePor.setOption({
 			              series:[
@@ -176,7 +178,9 @@
 	                          },
 	                          detail: {offsetCenter: [0, '30%'], fontSize: detail_fontsize,formatter: '{value} Bar', color: gauge_colors.Var3},
 			                      center: center_position,
-                        }]})
+	                      }
+			              ]
+	              })
 								/* GAUGE RENDIMENTO */
 	              gaugeRend.setOption({
 			              series:[
@@ -196,7 +200,7 @@
 			                      center: center_position,
                         },
                     ]
-                 });
+	              });
 						})
 		        /* AGGIORNAMENTO OGNI 120 SECONDI */
 						setTimeout(worker, 120000)

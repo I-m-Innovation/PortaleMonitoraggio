@@ -1,33 +1,37 @@
 {% extends 'base_layout.html' %}
 {% load static %}
 
+<!-- REFRESH PAGINA -->
 {% block refresh %}
 	<meta http-equiv="refresh" content="{{ refresh }}">
 {% endblock %}
 
+<!-- TITOLO PAGINA -->
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
 	<div class="container-fluid p-2">
 	<div class="col p-0 m-0 rounded-3 monitoraggio-card">
-		<!-- BARRA GRIGIA SOPRA COME SFONDO -->
+		<!-- BARRA COLORATA SOPRA COME SFONDO -->
 		<div class="row py-0 backgroundBar-idro align-items-center">
 			<!-- LED IMPIANTO -->
 			<div class="col ps-2 pt-2">
 				<div class="led-box"><div id="ledcolor" class="led-class"></div></div>
 				<small style="color: #606060">stato</small>
 			</div>
+			<!-- NOME -->
 			<div class="col-9">
 				<small style="color: #606060">impianto</small>
 				<h2 style="color: #4a3c54; display: inline">{{ impianto.nome_impianto }}</h2>
 			</div>
+			<!-- LINK A ANALISI DATI -->
 			<div class="col-2">
 				<small style="color: #606060">vedi su</small>
 				<a style="text-align: end; color: #6c4d79; font-weight: bolder" href="{% url 'analisi-impianto' nickname %}" >Visione dati - {{ curr_anno }}</a>
 			</div>
 		</div>
 		
-		<!-- GRAFICO -->
+		<!-- GRAFICO PORTATA-POTENZA -->
 		<div class="row px-3 pt-3" style="min-height: 53vh">
 			<div id="chart"></div>
 		</div>
