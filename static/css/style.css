@@ -142,7 +142,7 @@ body {
     font-family: courier, sans;
 }
 
-.card-idro, .card3, .card-pv {
+.card-idro, .card-pv {
     display: block;
     position: relative;
     /*background-color: #efefef;*/
@@ -163,10 +163,6 @@ body {
 .card-pv:hover {
     /* From https://css.glass */
     background: rgba(255, 250, 210, 0.5);
-}
-
-.card3:hover {
-    background: #e3e3e3;
 }
 
 .card-idro:hover {
@@ -233,21 +229,16 @@ body {
 }
 
 .backgroundBar-idro {
-     background-image: linear-gradient(to top, #cfe4ff, #b6d1f3, #9dbde6, #84abda, #6b98ce);
+    background-image: linear-gradient(to right bottom, #cfe4ff, #b6d1f3, #9dbde6, #84abda, #6b98ce);
+    /*background: linear-gradient(to top, #1e4273 0%, #80a2bb 100%);*/
 }
 
 .backgroundBar-pv {
-    background-image: linear-gradient(to top, #fff7b0, #fbf39d, #f7ee8b, #f3ea77, #eee663);
+    background-image: linear-gradient(to right bottom, #fffbd3, #fbf6b8, #f7f19d, #f3eb81, #eee663);
 }
 
 .backgroundBar-zilio {
     --rebecca-purple: hsl(120, 11%, 47%);
-    /*background-image: linear-gradient(*/
-    /*        to top,*/
-    /*        hsla(203, 92%, 35.5%, 0.25),*/
-    /*        var(--rebecca-purple),*/
-    /*        hsla(27.6, 87.1%, 35.7%, 0.25)*/
-    /*);*/
     background-color: var(--rebecca-purple);
 }
 

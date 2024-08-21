@@ -11,23 +11,25 @@
 
 {% block content %}
 	<div class="container-fluid p-2">
-	<div class="col p-0 m-0 rounded-3 monitoraggio-card">
+	<div class="col p-0 m-0 rounded-3 monitoraggio-card " style="background-color: whitesmoke">
 		<!-- BARRA COLORATA SOPRA COME SFONDO -->
-		<div class="row py-0 backgroundBar-idro align-items-center">
+		<div class="row py-1 backgroundBar-idro align-items-end">
 			<!-- LED IMPIANTO -->
-			<div class="col ps-2 pt-2">
+			<div class="col px-3">
 				<div class="led-box"><div id="ledcolor" class="led-class"></div></div>
 				<small style="color: #606060">stato</small>
 			</div>
 			<!-- NOME -->
-			<div class="col-9">
+			<div class="col-8 pb-2">
 				<small style="color: #606060">impianto</small>
-				<h2 style="color: #4a3c54; display: inline">{{ impianto.nome_impianto }}</h2>
+				<h1 style="display: inline; color: #534a7a">{{ impianto.nome_impianto }}</h1>
 			</div>
 			<!-- LINK A ANALISI DATI -->
-			<div class="col-2">
-				<small style="color: #606060">vedi su</small>
-				<a style="text-align: end; color: #6c4d79; font-weight: bolder" href="{% url 'analisi-impianto' nickname %}" >Visione dati - {{ curr_anno }}</a>
+			<div class="col-3 pb-2">
+				<div>
+					<small style="color: #606060">vedi su</small>
+					<a style="text-align: end; color: #6c4d79; font-weight: bolder " href="{% url 'analisi-impianto' nickname %}" >Visione dati - {{ curr_anno }}</a>
+				</div>
 			</div>
 		</div>
 		

@@ -17,19 +17,19 @@
 
 {% block content %}
 	<div class="container-fluid p-2">
-	<div class="col rounded-3 monitoraggio-card p-0 m-0">
+	<div class="col rounded-3 monitoraggio-card p-0 m-0" style="background-color: whitesmoke">
 		<!-- BARRA SOPRA COME SFONDO -->
-		<div class="row py-0 backgroundBar-zilio align-items-center" style="color: whitesmoke">
+		<div class="row py-1 backgroundBar-zilio align-items-end" style="color: whitesmoke">
 			<!-- LED IMPIANTO -->
-			<div class="col ps-2 pt-2">
+			<div class="col px-3">
 				<div class="led-box"><div id="ledcolor" class="led-class"></div></div>
 				<small>stato</small>
 			</div>
-			<div class="col-9">
+			<div class="col-8 pb-2">
 				<small>impianto</small>
-				<h2 style="color: #ddd1e5; display: inline">{{ impianto.nome_impianto }}</h2>
+				<h1 style="color: #ddd1e5; display: inline">{{ impianto.nome_impianto }}</h1>
 			</div>
-			<div class="col-2">
+			<div class="col-3 pb-2">
 				<small>vedi su</small>
 				<a style="text-align: end; color: #ddd1e5; font-weight: bolder" target="_blank" href="https://myleonardo.western.it/it/home/">MyLeonardo</a>
 			</div>

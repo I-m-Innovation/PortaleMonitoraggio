@@ -7,7 +7,7 @@
 		<!-- LINK ALLA PAGINA DELL'IMPIANTO -->
 		<a style="text-decoration: none; padding: 0 5px;" href="{% url 'monitoraggio-impianto' nickname %}" target="_blank">
 			<!-- CARD-IDRO, SI COLORA DI AZZURRO QUANDO SI FA HOVERING -->
-			<div class="card-pv" style="max-height: 7vh">
+			<div class="card-pv" style="height: 7.5vh">
 				<!-- CORNERINO COLORATO IN ALTO A DESTRA -->
 				<div class="go-corner" style="background-color: #ded259;"><div class="go-arrow">→</div></div>
 					<!-- TABELLA, CON I VARI DATI -->
@@ -43,7 +43,7 @@
 				          </div>
 		            </td>
 		            <!-- CHART -->
-		            <td style="text-align: center; border: none;"><div id="minichart_{{ nickname }}" style="height: 85%" class="minichartPV"></div></td>
+		            <td style="text-align: center; border: none;"><div id="minichart_{{ nickname }}" class="minichartPV"></div></td>
 		            <!-- DATI: POTENZA + ENERGIA -->
 		            {# "humanize" serve per mettere i numeri all'italiana #}
 			          {% load humanize %}{% load i18n %}{% load l10n %}

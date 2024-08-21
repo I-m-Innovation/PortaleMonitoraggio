@@ -7,7 +7,7 @@
     <!-- LINK ALLA PAGINA DELL'IMPIANTO -->
 		<a target="_blank" style="text-decoration: none; padding: 0 5px" href="{% url 'monitoraggio-impianto' nickname %}">
 			<!-- CARD-IDRO, SI COLORA DI AZZURRO QUANDO SI FA HOVERING -->
-			<div class="card-idro" style="max-height: 12vh;">
+			<div class="card-idro" style="height: 10vh;">
 				<!-- CORNERINO COLORATO IN ALTO A DESTRA -->
 				<div class="go-corner" style="background-color: #88a7ce;" ><div class="go-arrow">→</div></div>
 				<!-- TABELLA, CON I VARI DATI -->
@@ -44,7 +44,7 @@
 			          </div>
 	            </td>
 	            <!-- CHART -->
-	            <td style="border: none"><div id="minichart_{{ nickname }}" style="height: 85%" class="minichartIdro"></div></td>
+	            <td style="border: none"><div id="minichart_{{ nickname }}" class="minichartIdro"></div></td>
 	            <!-- DATI: POTENZA + ENERGIA -->
 		          {# "humanize" serve per FORMATTARE i numeri all'italiana #}
 		          {% load humanize %}{% load i18n %}{% load l10n %}
