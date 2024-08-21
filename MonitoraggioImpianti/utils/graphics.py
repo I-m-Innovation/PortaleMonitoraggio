@@ -47,151 +47,15 @@ def createMap(df,interactive,zoom):
   return figure._repr_html_()
 
 
-def plot_andamento_centrale(DF, max_portate, unita_misura, fontsize):
-  font = {'size': fontsize}
-  matplotlib.rc('font', **font)
-  buffer = BytesIO()
-
-  fig, ax = plt.subplots(figsize=(10, 3), dpi=300,)
-  plt.subplots_adjust(bottom=0.15, right=0.86)
-  plt.title('Dati tecnici, ultimi 24 mesi', {'fontsize': fontsize + 2})
-
-  ax.set_facecolor("none")
-  ax.tick_params(axis='x', labelrotation=45)
-  ax.spines[['top']].set_visible(False)
-
-  twin1 = ax.twinx()
-  twin2 = ax.twinx()
-  twin1.spines[['top']].set_visible(False)
-  twin2.spines[['top']].set_visible(False)
-
-  color1 = 'indianred'
-  color2 = 'steelblue'
-  color3 = 'royalblue'
-
-  # Offset the right spine of twin2. The ticks and label have already been
-  # placed on the right by twinx above.
-  twin2.spines.right.set_position(("axes", 1.1))
-
-  x = np.arange(len(DF['mesi']))
-
-  barwidth1 = 0.5
-  barwidth2 = 0.15
-  x_offset = 0.4
-  multiplier = 0
-
-  dz = DF[['energie','volumi']].to_dict('list')
-
-  for attribute, value in dz.items():
-    offset = x_offset * multiplier
-    if attribute == 'energie':
-      rects = ax.bar(x + offset, value, barwidth1, color=color1)
-      offset += barwidth1 * multiplier
-    elif attribute == 'volumi':
-      rects = twin1.bar(x + offset, value, barwidth2, color=color2)
-      offset += barwidth1 * multiplier
-    multiplier += 1
-
-  x_margin = 0.01
-  ax.margins(x=x_margin)
-  twin1.margins(x=x_margin)
-
-  x = x+x_offset-2*barwidth2
-
-  p3 = twin2.plot(x, DF['portate_medie'], label="Portata media", color=color3, linestyle='dashdot',)
-  ax.set_xticks(x, DF['mesi'])
-
-  ax.set_ylim(0,)
-  twin1.set_ylim(0,)
-  twin2.set_ylim(0, max_portate)
-
-  ax.yaxis.label.set_color(color1)
-  twin1.yaxis.label.set_color(color2)
-  twin2.yaxis.label.set_color(color3)
-  #
-  ax.tick_params(axis='y', colors=color1)
-  twin1.tick_params(axis='y', colors=color2)
-  twin2.tick_params(axis='y', colors=color3)
-
-  def fmt_number(x, pos):
-    return f'{int(x):,}'.replace(',', '.')
-  ax.yaxis.set_major_formatter(ticker.FuncFormatter(fmt_number))
-
-  def fmt_number_mln(x, pos):
-    return f'{x/1000000:.2f} mln'.replace('.', ',')
-
-  if unita_misura == 'm³/s':
-    twin1.yaxis.set_major_formatter(ticker.FuncFormatter(fmt_number_mln))
-  else:
-    twin1.yaxis.set_major_formatter(ticker.FuncFormatter(fmt_number))
-
-  ax.set_ylabel("Energia prodotta (kWh)", rotation=0)
-  ax.yaxis.set_label_coords(-0.05, 1.02)
-
-  twin1.set_ylabel("Volume d'acqua derivato (mc)", rotation=0)
-  twin1.yaxis.set_label_coords(1.05, 1.08)
-
-  twin2.set_ylabel("Portate medie ({})".format(unita_misura), rotation=0)
-  twin2.yaxis.set_label_coords(1.1, -0.05)
-
-  axb = ax.twinx()
-  plt.grid(axis='y', linewidth=0.5)
-  axb.spines[['top', 'bottom', 'left', 'right']].set_visible(False)
-  axb.spines.right.set_position(("axes", 2))
-  ax.set_zorder(ax.get_zorder() + 1)
-  twin2.set_zorder(ax.get_zorder() + 1)
-  twin1.set_zorder(ax.get_zorder() + 1)
-
-  plt.savefig(buffer, format="png")
-  return buffer
-
-# ----------------------------------------------------------------------------------------------------------------------
-def plot_corrispettivi_centrale2(DF, max_portate, unita_misura, fontsize, max_corrispettivi):
-  font = {'size': fontsize}
-  matplotlib.rc('font', **font)
-  curr_anno = str(datetime.now().year)
-  buffer = BytesIO()
-
-  fig, ax = plt.subplots(figsize=(10, 6), dpi=300,)
-  plt.title('Produzione, '+curr_anno, fontsize=fontsize+2)
-
-  barWidth = 0.42
-  y_c = np.arange(len(DF['mese']))
-  DF['corrispettivi'] = DF['aspettata_inc'] + DF['aspettata_non_inc']
-  labels_corr = ['' if amt < 2000 else f'{int(amt):,} €'.replace(',', '.') for amt in DF['corrispettivi']]
-  labels_incassi = ['' if amt < 2000 else f'{int(amt):,} €'.replace(',', '.') for amt in DF['incassi']]
-  y = [mese[:3] for mese in DF['mese']]
-
-  ax.barh(y=y_c-barWidth/2 - 0.01, width=DF['corrispettivi'], label='Corrispettivi', color='burlywood', height=barWidth)
-  ax.barh(y=y_c+barWidth/2 + 0.01, width=DF['incassi'], label='Incassi GSE', color='lightsteelblue', height=barWidth)
-  ax.invert_yaxis()
-  plt.yticks([r for r in range(len(y_c))], y)
-
-  ax.spines[['top', 'bottom', 'right']].set_visible(False)
-  ax.set_xticks([], [])
-  y_margin = 0.02
-  ax.margins(y=y_margin)
-  ax.set_xlim(0, max_corrispettivi)
-  fig.subplots_adjust(top=0.95, bottom=0.02)
-  ax.legend()
-
-  ax.bar_label(ax.containers[0], labels=labels_corr, label_type='center', padding=0.2)
-  ax.bar_label(ax.containers[0],labels=['' if amt == 0 else f'  ⚡{int(amt):,} kWh'.replace(',', '.') for amt in DF['E_incentivata']],
-               label_type='edge',)
-  plt.rc('font', weight='bold')
-  ax.bar_label(ax.containers[1], labels=labels_incassi, label_type='center', color='white')
-  plt.rc('font', weight='normal')
-
-  plt.savefig(buffer, format="png")
-  return buffer
-
-
 def plot_analisi_dati_impianto(df_TS, start, end, impianto):
   q_max = impianto.infostat_set.filter(variabile='Var2_max')[0].valore
+
   impianto = impianto.__dict__
+
   unita_misura = impianto['unita_misura']
   pot_max = impianto['potenza_installata']
   pot_BP = impianto['potenza_business_plan']
+
   day_start = datetime(end.year, end.month, end.day, 0, 0)
   td_day = (end - day_start).total_seconds() / 3600
   td_interval = (end - start).total_seconds() / 3600
@@ -220,14 +84,6 @@ def plot_analisi_dati_impianto(df_TS, start, end, impianto):
 
   # CALCOLO TARGET DI PORTATA DI CONCESSIONE
   df_TS_target = df_TS.loc[(df_TS.Q-impianto['portata_concessione']).abs().nsmallest(1000).index]
-  # if unita_misura == 'm³/s':
-  #   l = 0.01
-  # else:
-  #   l = 1
-  # DFTL_target = DFTL_target[DFTL_target['Q'] <= dz_impianto['portata_concessione'] + l]
-  # DFTL_target = DFTL_target[DFTL_target['Q'] >= dz_impianto['portata_concessione'] - l]
-  # print(unita_misura,DFTL_target.mean(), DFTL_target.std())
-  # print(P_year_mean, DFTL_target['P'].mean())
 
   df_target_portata = pd.DataFrame(data={
     'Energia': [df_TS_target['P'].mean(), df_TS_target['P'].mean()*td_day, df_TS_target['P'].mean()*td_interval, df_TS_target['P'].mean()*td_year],

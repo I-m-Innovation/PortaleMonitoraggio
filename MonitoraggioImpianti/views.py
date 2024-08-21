@@ -12,7 +12,6 @@ from .API_OpenMeteo import get_OpenMeteoData, get_WeatherIcon
 def home(request):
 	# PRENDO LINK PORTALE CORRISPETTIVI (NELLA NAV-BAR)
 	link_corrispettivi = linkportale.objects.filter(tag='portale-corrispettivi')[0].link
-	link_corrispettivi = 'http://localhost:8000/analisi-impianti/'
 
 	# INTERVALLO DI REFRESH DELLA HOMEPAGE (SECONDI)
 	refresh_interval = 900
@@ -153,7 +152,6 @@ def home(request):
 def impianto(request, nickname):
 	# LINK PORTALE CORRISPETTIVI (NELLA NAV-BAR)
 	link_corrispettivi = linkportale.objects.filter(tag='portale-corrispettivi')[0].link
-	link_corrispettivi = 'http://localhost:8000/analisi-impianti/'
 
 	# INTERVALLO DI REFRESH DELLA PAGINA (SECONDI)
 	refresh_interval = 3600
