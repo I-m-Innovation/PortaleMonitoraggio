@@ -103,12 +103,6 @@ class DayChartData(APIView):
 		elif impianto.lettura_dati == 'API_ISC':
 			Now = datetime.now()
 			nome_impianto = impianto.nome_impianto
-			# # QUANDO FACCIO LA CHIAMATA PER IL SINGOLO IMPIANTO, METTO UN QUERY PARAMETER
-			# # E SALTO IL DELAY
-			# if not request.query_params:
-			# 	delay = (impianto.id-9)*10
-			# 	print(f"delay: {delay}s")
-			# 	sleep(delay)
 
 			# PRENDO I DATI DALL'API DI iSolarCloud
 			try:
@@ -124,11 +118,14 @@ class DayChartData(APIView):
 					t_last = df_time_series_old['t'].iloc[-1]
 					# CONTROLLO L'ULTIMO TIMESTAMP
 					# SE IL TIMESTAMP è DEL GIORNO CORRENTE
-					if t_last > datetime(Now.year, Now.month, Now.day, 0, 0, 0):
+					if t_last > datetime(Now.year, Now.month, Now.day, 0, 30, 0):
 						# SCARICO I DATI A PARTIRE DALL'ULTIMO TIMESTAMP
 						df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_last, end=Now)
 						# AGGREGO I DATI
-						df_time_series = pd.concat([df_time_series_old.iloc[:-5], df_time_series[['t','Total']]], ignore_index=True)
+						if len(df_time_series) > 1:
+							df_time_series = pd.concat([df_time_series_old, df_time_series.iloc[1:]], ignore_index=True)
+						else:
+							df_time_series = df_time_series_old
 					# SE IL TIMESTAMP NON è DELLA GIORNATA CORRENTE
 					else:
 						t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
@@ -210,9 +207,12 @@ class DayChartData(APIView):
 					df_time_series_old = pd.read_csv(file_path)
 					df_time_series_old['t'] = pd.to_datetime(df_time_series_old['t'])
 					t_last = df_time_series_old['t'].iloc[-1]
-					if t_last > datetime(Now.year, Now.month, Now.day, 0, 0, 0):
+					if t_last > datetime(Now.year, Now.month, Now.day, 0, 30, 0):
 						df_time_series = LEO.get_leo_data(t_start=t_last, t_end=Now)
-						df_time_series = pd.concat([df_time_series_old.iloc[:-5], df_time_series], ignore_index=True)
+						if len(df_time_series) > 1:
+							df_time_series = pd.concat([df_time_series_old, df_time_series.iloc[1:]], ignore_index=True)
+						else:
+							df_time_series = df_time_series_old
 					else:
 						t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
 						df_time_series = LEO.get_leo_data(t_start=t_start, t_end=Now)
