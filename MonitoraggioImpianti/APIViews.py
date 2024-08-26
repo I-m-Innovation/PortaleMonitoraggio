@@ -1,4 +1,5 @@
-from datetime import datetime
+import time
+from datetime import datetime, timedelta
 import random
 from time import sleep
 import os
@@ -105,43 +106,57 @@ class DayChartData(APIView):
 			nome_impianto = impianto.nome_impianto
 
 			# PRENDO I DATI DALL'API DI iSolarCloud
+			# NOME FILE TEMPORANEO CON I DATI DI MONITORAGGIO
+			file_path = f'temporary/{nickname}/{nickname}.csv'
+			# CONTROLLO CHE CI SIA LA CARTELLA
+			os.makedirs(f'temporary/{nickname}', exist_ok=True)
 			try:
-				# NOME FILE TEMPORANEO CON I DATI DI MONITORAGGIO
-				file_path = f'temporary/{nickname}/{nickname}.csv'
-				# CONTROLLO CHE CI SIA LA CARTELLA
-				os.makedirs(f'temporary/{nickname}', exist_ok=True)
-				# SE ESISTE FILE TEMPORANEO
+				# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
+				t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
+				df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_start, end=Now)
+				df_time_series.to_csv(file_path, index=False)
+			except Exception as error:
 				if os.path.isfile(file_path):
-					# CARICO CSV TEMPORANEO
-					df_time_series_old = pd.read_csv(file_path)[['t', 'Total']]
+					df_time_series_old = pd.read_csv(file_path)
 					df_time_series_old['t'] = pd.to_datetime(df_time_series_old['t'])
-					t_last = df_time_series_old['t'].iloc[-1]
-					# CONTROLLO L'ULTIMO TIMESTAMP
-					# SE IL TIMESTAMP è DEL GIORNO CORRENTE
-					if t_last > datetime(Now.year, Now.month, Now.day, 0, 30, 0):
-						# SCARICO I DATI A PARTIRE DALL'ULTIMO TIMESTAMP
-						df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_last, end=Now)
-						# AGGREGO I DATI
-						if len(df_time_series) > 1:
-							df_time_series = pd.concat([df_time_series_old, df_time_series.iloc[1:]], ignore_index=True)
+					if len(df_time_series_old.index) > 1:
+						t_first = df_time_series_old['t'].iloc[0]
+						t_last = df_time_series_old['t'].iloc[-1]
+						# SE ULTIMO TIMESTAMP GIORNATA DI OGGI
+						if t_last > datetime(Now.year, Now.month, Now.day, 0, 30, 0):
+							df_time_series = df_time_series_old
+							try:
+								# SCARICO I DATI A PARTIRE DALL'ULTIMO TIMESTAMP
+								df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_last, end=Now)
+								# AGGREGO I DATI
+								df_time_series = pd.concat([df_time_series_old.iloc[:-1], df_time_series], ignore_index=True)
+								df_time_series.to_csv(file_path, index=False)
+							except Exception as error:
+								# RITORNO GLI ULTIMI DATI SALVATI
+								print(f'Aggiunta nuovi dati - Errore get_leo_data {nome_impianto}',
+									  type(error).__name__, "–", error)
 						else:
 							df_time_series = df_time_series_old
-					# SE IL TIMESTAMP NON è DELLA GIORNATA CORRENTE
+							print(f'Intervallo dati irregolare {nome_impianto}',
+								  type(error).__name__, "–", error)
 					else:
+						try:
+							# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
+							t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
+							df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_start, end=Now)
+							df_time_series.to_csv(file_path, index=False)
+						except Exception as error:
+							print(f'nuovo file - Errore getDATA {nome_impianto}', type(error).__name__, "–", error)
+							df_time_series = pd.DataFrame({'t': [], 'Total': []})
+				else:
+					try:
+						# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
 						t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
 						df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_start, end=Now)
-				# SE NON ESISTE IL FILE TEMPORANEO
-				else:
-					# SCARICO I FILE DA MEZZANOTTE
-					t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
-					df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_start, end=Now)
-				# SALVO I DATI SU CSV TEMPORANEO
-				df_time_series.to_csv(file_path, index=False)
-
-			except Exception as error:
-				df_time_series = pd.DataFrame({'t': [], 'P': []})
-				df_status = pd.DataFrame({'inv_key': [], 'dev_fault_status': [], 'dev_status': []})
-				print(f'Errore getDATA {nome_impianto}', type(error).__name__, "–", error)
+						df_time_series.to_csv(file_path, index=False)
+					except Exception as error:
+						print(f'nuovo file - Errore getDATA {nome_impianto}', type(error).__name__, "–", error)
+						df_time_series = pd.DataFrame({'t': [], 'Total': []})
 
 			try:
 				# RIEMPIO DATASET CON DATI NULLI FINO ALLA MEZZANOTTE
@@ -201,30 +216,56 @@ class DayChartData(APIView):
 			nome_impianto = impianto.nome_impianto
 
 			# PRENDO I DATI DALL'API DI LEONARDO E APPLICO STESSA LOGICA DEI DATI PRESI DA ISOLCLOUD
+			# CONTROLLO CHE CI SIA LA CARTELLA
+			file_path = f'temporary/{nickname}/{nickname}.csv'
+			os.makedirs(f'temporary/{nickname}', exist_ok=True)
 			try:
-				file_path = f'temporary/{nickname}/{nickname}.csv'
+				# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
+				t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
+				df_time_series = LEO.get_leo_data(t_start=t_start, t_end=Now)
+				df_time_series.to_csv(file_path, index=False)
+			except Exception as error:
 				if os.path.isfile(file_path):
 					df_time_series_old = pd.read_csv(file_path)
 					df_time_series_old['t'] = pd.to_datetime(df_time_series_old['t'])
-					t_last = df_time_series_old['t'].iloc[-1]
-					if t_last > datetime(Now.year, Now.month, Now.day, 0, 30, 0):
-						df_time_series = LEO.get_leo_data(t_start=t_last, t_end=Now)
-						if len(df_time_series) > 1:
-							df_time_series = pd.concat([df_time_series_old, df_time_series.iloc[1:]], ignore_index=True)
+					if len(df_time_series_old.index) > 1:
+						t_first = df_time_series_old['t'].iloc[0]
+						t_last = df_time_series_old['t'].iloc[-1]
+						# SE ULTIMO TIMESTAMP GIORNATA DI OGGI
+						if (t_last > datetime(Now.year, Now.month, Now.day, 0, 30, 0)) and (t_first < datetime(Now.year, Now.month, Now.day, 0, 30, 0)):
+							try:
+								# SCARICO I DATI A PARTIRE DALL'ULTIMO TIMESTAMP
+								df_time_series = LEO.get_leo_data(t_start=t_last, t_end=Now)
+								# AGGREGO I DATI
+								df_time_series = pd.concat([df_time_series_old[:-1], df_time_series], ignore_index=True)
+								df_time_series.to_csv(file_path, index=False)
+							except Exception as error:
+								# RITORNO GLI ULTIMI DATI SALVATI
+								df_time_series = df_time_series_old
+								print(f'Aggiunta nuovi dati - Errore get_leo_data {nome_impianto}',
+									  type(error).__name__, "–", error)
 						else:
 							df_time_series = df_time_series_old
+							print(f'Intervallo dati irregolare {nome_impianto}',
+								  type(error).__name__, "–", error)
 					else:
+						try:
+							# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
+							t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
+							df_time_series = LEO.get_leo_data(t_start=t_start, t_end=Now)
+							df_time_series.to_csv(file_path, index=False)
+						except Exception as error:
+							print(f'nuovo file - Errore get_leo_data {nome_impianto}', type(error).__name__, "–", error)
+							df_time_series = pd.DataFrame({'t': [], 'P': [], 'BESS': [], 'PacHome': [], 'SoC': []})
+				else:
+					try:
+						# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
 						t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
 						df_time_series = LEO.get_leo_data(t_start=t_start, t_end=Now)
-				else:
-					t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
-					df_time_series = LEO.get_leo_data(t_start=t_start, t_end=Now)
-				os.makedirs(f'temporary/{nickname}', exist_ok=True)
-				df_time_series.to_csv(file_path, index=False)
-
-			except Exception as error:
-				df_time_series = pd.DataFrame({'t': [], 'P': [], 'BESS': [], 'PacHome': [], 'SoC': []})
-				print(f'Errore get_leo_data {nome_impianto}', type(error).__name__, "–", error)
+						df_time_series.to_csv(file_path, index=False)
+					except Exception as error:
+						print(f'nuovo file - Errore get_leo_data {nome_impianto}', type(error).__name__, "–", error)
+						df_time_series = pd.DataFrame({'t': [], 'P': [], 'BESS': [], 'PacHome': [], 'SoC': []})
 
 			try:
 				df_time_series, k_last, t_last, delta = fn.fillTL(df_time_series, '5min')

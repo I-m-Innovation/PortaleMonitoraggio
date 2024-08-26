@@ -288,5 +288,5 @@ def getDATA(impianto, start, end):
 	# LINEA DI POTENZA TOTALE DELL'IMPIANTO
 	df_merged['Total'] = df_merged.iloc[:, 1:].sum(axis=1)
 
-	return df_merged, df_plant_status
+	return df_merged[['t', 'Total']], df_plant_status
 

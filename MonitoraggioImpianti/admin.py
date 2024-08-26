@@ -23,6 +23,7 @@ class InfoStatAdmin(admin.ModelAdmin):
 	list_display = [field.name for field in InfoStat._meta.fields]
 	form = InfoStatForm
 
+
 @admin.register(linkportale)
 class linkportaleAdmin(admin.ModelAdmin):
 	list_display = [field.name for field in linkportale._meta.fields]
