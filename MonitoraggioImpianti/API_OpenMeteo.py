@@ -41,7 +41,7 @@ def get_WeatherIcon(weather_code):
 		1: '1530391_clouds_sun_sunny_weather.png',  # 'Mainly clear', Principalmente Sereno
 		2: '1530391_clouds_sun_sunny_weather.png',  # Parzialmente nuvoloso
 		3: '1530369_cloudy_weather_clouds_cloud.png',  # 'Overcast', Coperto
-		45: 'Fog',  # Nebbia
+		45: '1530368_foggy_weather_fog_clouds_cloudy.png',  # Nebbia
 		48: 'Depositing rime fog',  # Depositing brina
 		51: '1530365_rain_cloud_drizzel_weather.png',  # Pioviggine: leggera, Drizzle: light
 		53: '1530365_rain_cloud_drizzel_weather.png',  # Pioviggine: moderata Drizzle: moderate

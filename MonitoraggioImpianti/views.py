@@ -65,9 +65,10 @@ def home(request):
 			if matematico_down[0]:
 				raise ValueError('matematico down, last run: {}'.format(last_run[0]))
 			# AGGIUNTA DATI DAL FILE "Portale impianti HP", PER GLI IMPIANTI CHE CI SONO NEL FILE
-			df_monitoraggio.loc[impianto.nickname] = DF_lastDATA_impianti.loc[tag]
-			# APPLICO IL LED RELATIVO ALLO STATO DELL'IMPIANTO
-			df_monitoraggio.loc[impianto.nickname, 'state'] = leds[df_monitoraggio.loc[impianto.nickname, 'state']]
+			if impianto.tipo == 'Idroelettrico':
+				df_monitoraggio.loc[impianto.nickname] = DF_lastDATA_impianti.loc[tag]
+				# APPLICO IL LED RELATIVO ALLO STATO DELL'IMPIANTO
+				df_monitoraggio.loc[impianto.nickname, 'state'] = leds[df_monitoraggio.loc[impianto.nickname, 'state']]
 
 			# INFO VARIE
 			df_monitoraggio.loc[impianto.nickname, 'Name'] = impianto.nome_impianto

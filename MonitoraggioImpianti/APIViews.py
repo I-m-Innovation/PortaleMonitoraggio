@@ -103,12 +103,12 @@ class DayChartData(APIView):
 		elif impianto.lettura_dati == 'API_ISC':
 			Now = datetime.now()
 			nome_impianto = impianto.nome_impianto
-			# QUANDO FACCIO LA CHIAMATA PER IL SINGOLO IMPIANTO, METTO UN QUERY PARAMETER
-			# E SALTO IL DELAY
-			if not request.query_params:
-				delay = (impianto.id-9)*10
-				print(f"delay: {delay}s")
-				sleep(delay)
+			# # QUANDO FACCIO LA CHIAMATA PER IL SINGOLO IMPIANTO, METTO UN QUERY PARAMETER
+			# # E SALTO IL DELAY
+			# if not request.query_params:
+			# 	delay = (impianto.id-9)*10
+			# 	print(f"delay: {delay}s")
+			# 	sleep(delay)
 
 			# PRENDO I DATI DALL'API DI iSolarCloud
 			try:
@@ -121,7 +121,7 @@ class DayChartData(APIView):
 					# CARICO CSV TEMPORANEO
 					df_time_series_old = pd.read_csv(file_path)[['t', 'Total']]
 					df_time_series_old['t'] = pd.to_datetime(df_time_series_old['t'])
-					t_last = df_time_series_old['t'].iloc[-5]
+					t_last = df_time_series_old['t'].iloc[-1]
 					# CONTROLLO L'ULTIMO TIMESTAMP
 					# SE IL TIMESTAMP è DEL GIORNO CORRENTE
 					if t_last > datetime(Now.year, Now.month, Now.day, 0, 0, 0):
@@ -209,7 +209,7 @@ class DayChartData(APIView):
 				if os.path.isfile(file_path):
 					df_time_series_old = pd.read_csv(file_path)
 					df_time_series_old['t'] = pd.to_datetime(df_time_series_old['t'])
-					t_last = df_time_series_old['t'].iloc[-5]
+					t_last = df_time_series_old['t'].iloc[-1]
 					if t_last > datetime(Now.year, Now.month, Now.day, 0, 0, 0):
 						df_time_series = LEO.get_leo_data(t_start=t_last, t_end=Now)
 						df_time_series = pd.concat([df_time_series_old.iloc[:-5], df_time_series], ignore_index=True)

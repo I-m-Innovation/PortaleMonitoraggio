@@ -93,7 +93,7 @@
 				(function worker() {
 						/* CHIAMATA AJAX */
             {# AGGIUNTA QUERY PARAMETER NELLA CHIAMATA PER IDENTIFICARE CHE SI TRATTA DELLA PAGINA DELL'IMPIANTO #}
-						$.get(endpoint, {view_impianto: true}).done(function (data) {
+						$.get(endpoint).done(function (data) {
 								/* VARIABILI */
 								let timestamps = data.time;
                 let potenza = data.pot;
