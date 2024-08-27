@@ -38,8 +38,10 @@ def info_energy(df, delta):
 class DayChartData(APIView):
 	renderer_classes = [JSONRenderer]
 
-	def get(self, request, nickname, format = None):
+	def get(self, request, nickname, format=None):
 		impianto = Impianto.objects.filter(nickname=nickname)[0]
+		Now = datetime.now()
+		# ---------------------------------------- FTP ---------------------------------------------------
 		if impianto.lettura_dati == 'ftp':
 			# NOME FILE "last24hTL"
 			time_series_day_file = impianto.filemonitoraggio_set.filter(tipo='last24hTL')[0]
@@ -100,22 +102,20 @@ class DayChartData(APIView):
 			}
 			return Response(chart_data)
 
-		# ISolarCloud
+		# ---------------------------------------- ISolarCloud ---------------------------------------------------
 		elif impianto.lettura_dati == 'API_ISC':
-			Now = datetime.now()
 			nome_impianto = impianto.nome_impianto
-
-			# PRENDO I DATI DALL'API DI iSolarCloud
 			# NOME FILE TEMPORANEO CON I DATI DI MONITORAGGIO
 			file_path = f'temporary/{nickname}/{nickname}.csv'
 			# CONTROLLO CHE CI SIA LA CARTELLA
 			os.makedirs(f'temporary/{nickname}', exist_ok=True)
 			t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
+			# SE ESISTE FILE TEMPORANEO
 			if os.path.isfile(file_path):
 				df_time_series_old = pd.read_csv(file_path)
 				df_time_series_old['t'] = pd.to_datetime(df_time_series_old['t'])
 				t_last = df_time_series_old['t'].iloc[-1]
-				# SE CONTIENE DATI
+				# SE CONTIENE DATI RILEVANTI DELLA GIORNATA
 				if (len(df_time_series_old.index) > 1) and (t_last > datetime(Now.year, Now.month, Now.day, 0, 30, 0)):
 					try:
 						# SCARICO I DATI A PARTIRE DALL'ULTIMO TIMESTAMP
@@ -129,6 +129,7 @@ class DayChartData(APIView):
 						df_status = pd.DataFrame({'dev_fault_status': []})
 						df_time_series = df_time_series_old
 						print(f'aggiunta dati - Errore getDATA {nome_impianto}', type(error).__name__, "–", error)
+				# SE NON CONTIENE DATI DELLA GIORNATA
 				else:
 					try:
 						# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
@@ -138,6 +139,7 @@ class DayChartData(APIView):
 						df_status = pd.DataFrame({'dev_fault_status': []})
 						df_time_series = pd.DataFrame({'t': [], 'Total': []})
 						print(f'nuovi dati - Errore getDATA {nome_impianto}', type(error).__name__, "–", error)
+			# SE NON ESISTE FILE TEMPORANEO
 			else:
 				try:
 					# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
@@ -194,20 +196,20 @@ class DayChartData(APIView):
 			}
 			return Response(chart_data)
 
+		# ---------------------------------------- MyLeonardo ---------------------------------------------------
 		elif impianto.lettura_dati == 'API_LEO':
-			Now = datetime.now()
 			nome_impianto = impianto.nome_impianto
 
-			# PRENDO I DATI DALL'API DI LEONARDO E APPLICO STESSA LOGICA DEI DATI PRESI DA ISOLCLOUD
 			# CONTROLLO CHE CI SIA LA CARTELLA
 			file_path = f'temporary/{nickname}/{nickname}.csv'
 			os.makedirs(f'temporary/{nickname}', exist_ok=True)
 			t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
-			# TENTATIVO LETTURA DATI IN API
+			# SE C'è FILE TEMPORANEO
 			if os.path.isfile(file_path):
 				df_time_series_old = pd.read_csv(file_path)
 				df_time_series_old['t'] = pd.to_datetime(df_time_series_old['t'])
 				t_last = df_time_series_old['t'].iloc[-1]
+				# SE CONTIENE DATI RILEVANTI
 				if (len(df_time_series_old.index) > 1) and (t_last > datetime(Now.year, Now.month, Now.day, 0, 30, 0)):
 					try:
 						# SCARICO I DATI A PARTIRE DALL'ULTIMO TIMESTAMP
