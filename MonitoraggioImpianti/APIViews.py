@@ -110,53 +110,43 @@ class DayChartData(APIView):
 			file_path = f'temporary/{nickname}/{nickname}.csv'
 			# CONTROLLO CHE CI SIA LA CARTELLA
 			os.makedirs(f'temporary/{nickname}', exist_ok=True)
-			try:
-				# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
-				t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
-				df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_start, end=Now)
-				df_time_series.to_csv(file_path, index=False)
-			except Exception as error:
-				if os.path.isfile(file_path):
-					df_time_series_old = pd.read_csv(file_path)
-					df_time_series_old['t'] = pd.to_datetime(df_time_series_old['t'])
-					if len(df_time_series_old.index) > 1:
-						t_first = df_time_series_old['t'].iloc[0]
-						t_last = df_time_series_old['t'].iloc[-1]
-						# SE ULTIMO TIMESTAMP GIORNATA DI OGGI
-						if t_last > datetime(Now.year, Now.month, Now.day, 0, 30, 0):
-							df_time_series = df_time_series_old
-							try:
-								# SCARICO I DATI A PARTIRE DALL'ULTIMO TIMESTAMP
-								df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_last, end=Now)
-								# AGGREGO I DATI
-								df_time_series = pd.concat([df_time_series_old.iloc[:-1], df_time_series], ignore_index=True)
-								df_time_series.to_csv(file_path, index=False)
-							except Exception as error:
-								# RITORNO GLI ULTIMI DATI SALVATI
-								print(f'Aggiunta nuovi dati - Errore get_leo_data {nome_impianto}',
-									  type(error).__name__, "–", error)
-						else:
-							df_time_series = df_time_series_old
-							print(f'Intervallo dati irregolare {nome_impianto}',
-								  type(error).__name__, "–", error)
-					else:
-						try:
-							# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
-							t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
-							df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_start, end=Now)
-							df_time_series.to_csv(file_path, index=False)
-						except Exception as error:
-							print(f'nuovo file - Errore getDATA {nome_impianto}', type(error).__name__, "–", error)
-							df_time_series = pd.DataFrame({'t': [], 'Total': []})
+			t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
+			if os.path.isfile(file_path):
+				df_time_series_old = pd.read_csv(file_path)
+				df_time_series_old['t'] = pd.to_datetime(df_time_series_old['t'])
+				t_last = df_time_series_old['t'].iloc[-1]
+				# SE CONTIENE DATI
+				if (len(df_time_series_old.index) > 1) and (t_last > datetime(Now.year, Now.month, Now.day, 0, 30, 0)):
+					try:
+						# SCARICO I DATI A PARTIRE DALL'ULTIMO TIMESTAMP
+						df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_last, end=Now)
+						# AGGREGO I DATI
+						df_time_series = pd.concat([df_time_series_old.iloc[:-1], df_time_series],
+												   ignore_index=True)
+						df_time_series.to_csv(file_path, index=False)
+					except Exception as error:
+						# RITORNO GLI ULTIMI DATI SALVATI
+						df_status = pd.DataFrame({'dev_fault_status': []})
+						df_time_series = df_time_series_old
+						print(f'aggiunta dati - Errore getDATA {nome_impianto}', type(error).__name__, "–", error)
 				else:
 					try:
 						# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
-						t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
 						df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_start, end=Now)
 						df_time_series.to_csv(file_path, index=False)
 					except Exception as error:
-						print(f'nuovo file - Errore getDATA {nome_impianto}', type(error).__name__, "–", error)
+						df_status = pd.DataFrame({'dev_fault_status': []})
 						df_time_series = pd.DataFrame({'t': [], 'Total': []})
+						print(f'nuovi dati - Errore getDATA {nome_impianto}', type(error).__name__, "–", error)
+			else:
+				try:
+					# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
+					df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_start, end=Now)
+					df_time_series.to_csv(file_path, index=False)
+				except Exception as error:
+					df_status = pd.DataFrame({'dev_fault_status': []})
+					df_time_series = pd.DataFrame({'t': [], 'Total': []})
+					print(f'nuovi dati - Errore getDATA {nome_impianto}', type(error).__name__, "–", error)
 
 			try:
 				# RIEMPIO DATASET CON DATI NULLI FINO ALLA MEZZANOTTE
@@ -170,7 +160,6 @@ class DayChartData(APIView):
 			try:
 				# CALCOLO ENERGIA TOTALE GIORNATA, + ALTRE INFO VARIE
 				energy, alberi, case, co2_kg = info_energy(df_time_series, delta)
-
 				# df_status contiene i dati stati degli inverter
 				# in base alla documentazion ISC se presenti 2 o 1 come valori, è presente qualche problema
 				if 2 in list(df_status.dev_fault_status):
@@ -182,33 +171,27 @@ class DayChartData(APIView):
 				else:
 					led = 'led-green'
 
-				df_time_series['t'] = df_time_series['t'].dt.strftime('%H:%M')
-				df_time_series['P'] = df_time_series['Total'].fillna('')
+				if df_status.empty:
+					led = 'led-on'
 
-				# CONTEXT
-				chart_data = {
-					'time': df_time_series.t,
-					'pot': df_time_series.P,
-					'k_last': k_last,
-					't_last': t_last,
-					'PLast': round(df_time_series.P[k_last], 2),
-					'led': led,
-					'info': {'co2': co2_kg, 'case': case, 'alberi': alberi, 'energy': round(energy, 2),}
-				}
-
-			except:
+			except Exception as error:
+				led = 'led-gray'
+				energy = alberi = case = co2_kg = None
 				print(f'Mancato ultimo passaggio dati {nome_impianto}')
 
-				chart_data = {
-					'time': [],
-					'pot': [],
-					'k_last': None,
-					't_last': None,
-					'PLast': None,
-					'irg': [],
-					'led': 'led-gray',
-					'info': {},
-				}
+			df_time_series['t'] = df_time_series['t'].dt.strftime('%H:%M')
+			df_time_series['P'] = df_time_series['Total'].fillna('')
+
+			# CONTEXT
+			chart_data = {
+				'time': df_time_series.t,
+				'pot': df_time_series.P,
+				'k_last': k_last,
+				't_last': t_last,
+				'PLast': round(df_time_series.P[k_last], 2),
+				'led': led,
+				'info': {'co2': co2_kg, 'case': case, 'alberi': alberi, 'energy': round(energy, 2),}
+			}
 			return Response(chart_data)
 
 		elif impianto.lettura_dati == 'API_LEO':
@@ -219,53 +202,42 @@ class DayChartData(APIView):
 			# CONTROLLO CHE CI SIA LA CARTELLA
 			file_path = f'temporary/{nickname}/{nickname}.csv'
 			os.makedirs(f'temporary/{nickname}', exist_ok=True)
-			try:
-				# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
-				t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
-				df_time_series = LEO.get_leo_data(t_start=t_start, t_end=Now)
-				df_time_series.to_csv(file_path, index=False)
-			except Exception as error:
-				if os.path.isfile(file_path):
-					df_time_series_old = pd.read_csv(file_path)
-					df_time_series_old['t'] = pd.to_datetime(df_time_series_old['t'])
-					if len(df_time_series_old.index) > 1:
-						t_first = df_time_series_old['t'].iloc[0]
-						t_last = df_time_series_old['t'].iloc[-1]
-						# SE ULTIMO TIMESTAMP GIORNATA DI OGGI
-						if (t_last > datetime(Now.year, Now.month, Now.day, 0, 30, 0)) and (t_first < datetime(Now.year, Now.month, Now.day, 0, 30, 0)):
-							try:
-								# SCARICO I DATI A PARTIRE DALL'ULTIMO TIMESTAMP
-								df_time_series = LEO.get_leo_data(t_start=t_last, t_end=Now)
-								# AGGREGO I DATI
-								df_time_series = pd.concat([df_time_series_old[:-1], df_time_series], ignore_index=True)
-								df_time_series.to_csv(file_path, index=False)
-							except Exception as error:
-								# RITORNO GLI ULTIMI DATI SALVATI
-								df_time_series = df_time_series_old
-								print(f'Aggiunta nuovi dati - Errore get_leo_data {nome_impianto}',
-									  type(error).__name__, "–", error)
-						else:
-							df_time_series = df_time_series_old
-							print(f'Intervallo dati irregolare {nome_impianto}',
-								  type(error).__name__, "–", error)
-					else:
-						try:
-							# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
-							t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
-							df_time_series = LEO.get_leo_data(t_start=t_start, t_end=Now)
-							df_time_series.to_csv(file_path, index=False)
-						except Exception as error:
-							print(f'nuovo file - Errore get_leo_data {nome_impianto}', type(error).__name__, "–", error)
-							df_time_series = pd.DataFrame({'t': [], 'P': [], 'BESS': [], 'PacHome': [], 'SoC': []})
+			t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
+			# TENTATIVO LETTURA DATI IN API
+			if os.path.isfile(file_path):
+				df_time_series_old = pd.read_csv(file_path)
+				df_time_series_old['t'] = pd.to_datetime(df_time_series_old['t'])
+				t_last = df_time_series_old['t'].iloc[-1]
+				if (len(df_time_series_old.index) > 1) and (t_last > datetime(Now.year, Now.month, Now.day, 0, 30, 0)):
+					try:
+						# SCARICO I DATI A PARTIRE DALL'ULTIMO TIMESTAMP
+						df_time_series = LEO.get_leo_data(t_start=t_last, t_end=Now)
+						# AGGREGO I DATI
+						df_time_series = pd.concat([df_time_series_old[:-1], df_time_series], ignore_index=True)
+						df_time_series.to_csv(file_path, index=False)
+					except Exception as error:
+						# RITORNO GLI ULTIMI DATI SALVATI
+						df_time_series = df_time_series_old
+						print(f'Aggiunta nuovi dati - Errore get_leo_data {nome_impianto}',
+							  type(error).__name__, "–", error)
 				else:
 					try:
-						# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
-						t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
+						# SCARICO I DATI A PARTIRE DALL'ULTIMO TIMESTAMP
 						df_time_series = LEO.get_leo_data(t_start=t_start, t_end=Now)
 						df_time_series.to_csv(file_path, index=False)
 					except Exception as error:
-						print(f'nuovo file - Errore get_leo_data {nome_impianto}', type(error).__name__, "–", error)
+						# RITORNO GLI ULTIMI DATI SALVATI
 						df_time_series = pd.DataFrame({'t': [], 'P': [], 'BESS': [], 'PacHome': [], 'SoC': []})
+						print(f'Aggiunta nuovi dati - Errore get_leo_data {nome_impianto}',
+							  type(error).__name__, "–", error)
+			else:
+				try:
+					# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
+					df_time_series = LEO.get_leo_data(t_start=t_start, t_end=Now)
+					df_time_series.to_csv(file_path, index=False)
+				except Exception as error:
+					print(f'nuovo file - Errore get_leo_data {nome_impianto}', type(error).__name__, "–", error)
+					df_time_series = pd.DataFrame({'t': [], 'P': [], 'BESS': [], 'PacHome': [], 'SoC': []})
 
 			try:
 				df_time_series, k_last, t_last, delta = fn.fillTL(df_time_series, '5min')
@@ -291,37 +263,26 @@ class DayChartData(APIView):
 				df_time_series = df_time_series.fillna('')
 				led = 'led-green'
 
-				# CONTEXT
-				chart_data = {
-					'time': df_time_series.t,
-					'pot': df_time_series.P,
-					'bess': df_time_series.BESS,
-					'consumi': df_time_series.PacHome,
-					'rete': df_time_series.PacGrid,
-					'k_last': k_last,
-					't_last': t_last,
-					'led': led,
-					'PLast': round(df_time_series.P[k_last], 2),
-					'ConsumoLast': round(df_time_series.PacHome[k_last], 2),
-					'GridLast': round(df_time_series.PacGrid[k_last], 2),
-					'BESSLast': round(df_time_series.BESS[k_last], 2),
-					'BESSSoC': round(df_time_series.SoC[k_last], 2),
-					'info': {'co2': co2_kg, 'case': case, 'alberi': alberi, 'energy': round(energy, 2), }
-				}
-
 			except Exception as error:
+				energy = alberi = case = co2_kg = None
+				led = 'led-gray'
 				print(f'Errore ultimo passaggio dati {nome_impianto}', type(error).__name__, "–", error)
 
-				chart_data = {
-					'time': [],
-					'pot': [],
-					'bess': [],
-					'consumi': [],
-					'k_last': None,
-					't_last': None,
-					'PLast': None,
-					'irg': [],
-					'led': 'led-gray',
-					'info': {},
-				}
+			# CONTEXT
+			chart_data = {
+				'time': df_time_series.t,
+				'pot': df_time_series.P,
+				'bess': df_time_series.BESS,
+				'consumi': df_time_series.PacHome,
+				'rete': df_time_series.PacGrid,
+				'k_last': k_last,
+				't_last': t_last,
+				'led': led,
+				'PLast': round(df_time_series.P[k_last], 2),
+				'ConsumoLast': round(df_time_series.PacHome[k_last], 2),
+				'GridLast': round(df_time_series.PacGrid[k_last], 2),
+				'BESSLast': round(df_time_series.BESS[k_last], 2),
+				'BESSSoC': round(df_time_series.SoC[k_last], 2),
+				'info': {'co2': co2_kg, 'case': case, 'alberi': alberi, 'energy': round(energy, 2), }
+			}
 			return Response(chart_data)

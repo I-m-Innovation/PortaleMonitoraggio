@@ -1,5 +1,14 @@
 <script>
 		$(document).ready(function(){
+				<!-- LOADING SPINNER -->
+				$( document ).ajaxStart(function(event, jqXHR) {
+						document.getElementById("spinner").className = "loading";
+				});
+				$( document ).ajaxStop(function(event, jqXHR) {
+						document.getElementById("spinner").className = "";
+				});    
+				
+            
 				/* ids GRAFICO E GAUGES */
 				var DayChart = echarts.init(document.getElementById('chart'));
 				var gaugePot = echarts.init(document.getElementById('gauge-potenza'));
@@ -17,6 +26,7 @@
 				/* URL DATI */
 				var endpoint = '{% url 'api-monitoraggio-impianto' nickname %}';
 
+				/* COLORI PER I GRAFICI */
 				const warmpalette = [
 						'rgb(255,227,161)', 'rgb(232,183,20)',
 						'rgb(186,164,150)','rgb(116,87,69)',
@@ -29,7 +39,6 @@
 						'rgb(37,118,117)','rgb(157,174,204)',
 						'rgb(126,183,232)','rgb(37,75,135)',
 				];
-
 				const colors = [warmpalette[7],coolpalette[3],warmpalette[2],coolpalette[2]];
 				
 				/* FUNZIONE AGGIORNAMENTO AGGIORNAMENTO DATI */
@@ -114,11 +123,11 @@
 	                          },
                         },
                     ]
-                 })
-
-								center_position = ['50%','60%'];
-								detail_fontsize = 19;
-								title_fontsize = 17;
+								})
+								
+								let center_position = ['50%','60%'];
+								let detail_fontsize = 19;
+								let title_fontsize = 17;
 
 								/* GAUGE POTENZA */
 								gaugePot.setOption({

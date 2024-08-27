@@ -11,7 +11,7 @@
 		<div class="item-b">
 			<div class="container-fluid p-3">
 				<div class="analisi-card" style="padding: 0; background-color: whitesmoke">
-					<!-- RIGA COLROATA IN CIMA ALLA COLONNA -->
+					<!-- RIGA COLORATA IN CIMA ALLA COLONNA -->
 					<div class="row p-0 m-0" style="height: 15px; background: linear-gradient(135deg, #cfe4ff,#6b98ce);"></div>
 					
 					<div class="row p-3 pt-0">
@@ -32,9 +32,10 @@
 									Genera report dei dati della centrale (<i>portata, potenza, pressione</i> e <i>rendimento</i>) nell'intervallo temporale selezionato.
 									Analisi disponibilità e resa.
 								</p>
-								<!-- FORM PER RICHIEDERE IL REPORT -->
+								<!-- FORM PER IL REPORT -->
 								<form action="{% url 'analisi-impianto' nickname %}" method="post">
 									{% csrf_token %}
+									<!-- ERRORI E MESSAGGI -->
 									{% for field in form %}
 										{% if field.errors %}
 											<div class="alert alert-danger" style="padding: 5px"><small>{{ field.label_tag }} {{ field.errors.as_text }}</small><br/></div>
@@ -47,6 +48,7 @@
 											</div>
 										</div>
 									{% endfor %}
+									<!-- FORM -->
 									<div class="row">
 										<div class="col">
 											{{ form.datetime_start.label }}<br>

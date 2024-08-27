@@ -1,5 +1,6 @@
 <script>
 		$(document).ready(function(){
+            
 				/* IDS GRAFICO E GAUGES */
 				var DayChart = echarts.init(document.getElementById('chart'));
 				var gaugePot = echarts.init(document.getElementById('gauge-potenza'));
@@ -10,21 +11,13 @@
 				
 				/* URL DATI */
 				var endpoint = '{% url 'api-monitoraggio-impianto' nickname %}';
-
+                
 				const warmpalette = [
 						'rgb(255,227,161)', 'rgb(232,183,20)',
-						'rgb(186,164,150)','rgb(116,87,69)',
+						'rgb(180,152,133)','rgb(116,87,69)',
 						'rgb(220,156,191)','rgb(160,27,104)',
 						'rgb(255,194,190)','rgb(209,65,36)',
 				];
-				const coolpalette = [
-						'rgb(173,220,145)', 'rgb(31,160,64)',
-						'rgb(137,182,181)','rgb(0,114,206)',
-						'rgb(37,118,117)','rgb(157,174,204)',
-						'rgb(126,183,232)','rgb(37,75,135)',
-				];
-
-				const colors = [warmpalette[7],coolpalette[3],warmpalette[2],coolpalette[2]];
 				
 				/* CREAZIONE DEL GRAFICO PRINCIPALE */
 				DayChart.setOption({
@@ -79,8 +72,6 @@
 		                title: {offsetCenter: [0, '50%'], fontSize: 18},
                     pointer: {show: false},
                     splitNumber: 8, axisTick: {distance: 4, lineStyle:{width: 1}}, splitLine: {distance: 5,lineStyle:{width: 2}},
-                    {#    lineStyle: {color: [[gauge_pot.Media - gauge_pot.Dev, '#ff5858'], [gauge_pot.Media + gauge_pot.Dev, '#c9c9c9'], [1, '#8bcfea']]}#}
-                    {# },#}
                     detail: {offsetCenter: [0, 0], fontSize: 25, formatter: value => toLocale(value,0) +' kW' },
                     center: ['50%','60%'],
                 }
@@ -109,11 +100,13 @@
 								document.getElementById('case').innerHTML = toLocale(info.case);
 								document.getElementById('alberi').innerHTML = toLocale(info.alberi);
 
-                DayChart.setOption({
+                /* AGGIORNAMENTO DATI GRAFICO CON I TIMESTAMPS E LE LINEE DI POTENZA */
+								DayChart.setOption({
 	                  xAxis: [{ data: timestamps }],
                     series: [{data: potenza, name: 'Potenza'},]
                 })
-								
+
+								/* AGGIORNAMENTO GAUGE */
 								gaugePot.setOption({
 			              series: [{
 					              data: [{value: PLast, name: 'Potenza'}],}]

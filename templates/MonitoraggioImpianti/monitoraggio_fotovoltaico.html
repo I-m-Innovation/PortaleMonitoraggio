@@ -13,13 +13,16 @@
 		<!-- BARRA SOPRA COME SFONDO -->
 			<div class="row py-1 backgroundBar-pv align-items-end">
 				<!-- LED IMPIANTO -->
-				<div class="col px-3">
+				<div class="col-1 px-3">
 					<div class="led-box"><div id="ledcolor" class="led-class"></div></div>
 					<small style="color: grey">stato</small>
 				</div>
-				<div class="col-8 pb-2">
+				<div class="col pb-3 pe-4" style="max-width: 35px">
+					<div id="spinner" class="loading"></div>
+				</div>
+				<div class="col pb-2">
 					<small style="color: grey">impianto</small>
-					<h1 style="color: #4a3c54; display: inline">{{ impianto.nome_impianto }}</h1>
+					<h1 style="color: #4a3c54; display: inline">{{ impianto.nome_impianto }} </h1>
 				</div>
 				<div class="col-3 pb-2">
 					<small style="color: grey">vedi su</small>

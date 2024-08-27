@@ -15,12 +15,15 @@
 		<!-- BARRA COLORATA SOPRA COME SFONDO -->
 		<div class="row py-1 backgroundBar-idro align-items-end">
 			<!-- LED IMPIANTO -->
-			<div class="col px-3">
+			<div class="col-1 px-3">
 				<div class="led-box"><div id="ledcolor" class="led-class"></div></div>
 				<small style="color: #606060">stato</small>
 			</div>
+			<div class="col pb-3 pe-4" style="max-width: 35px">
+				<div id="spinner" class="loading"></div>
+			</div>
 			<!-- NOME -->
-			<div class="col-8 pb-2">
+			<div class="col pb-2">
 				<small style="color: #606060">impianto</small>
 				<h1 style="display: inline; color: #534a7a">{{ impianto.nome_impianto }}</h1>
 			</div>

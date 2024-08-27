@@ -18,13 +18,16 @@
 		<!-- BARRA SOPRA COME SFONDO -->
 		<div class="row py-1 backgroundBar-zilio align-items-end" style="color: whitesmoke">
 			<!-- LED IMPIANTO -->
-			<div class="col px-3">
+			<div class="col-1 px-3">
 				<div class="led-box"><div id="ledcolor" class="led-class"></div></div>
 				<small>stato</small>
 			</div>
-			<div class="col-8 pb-2">
+			<div class="col pb-3 pe-4" style="max-width: 35px">
+				<div id="spinner" class="loading"></div>
+			</div>
+			<div class="col pb-2">
 				<small>impianto</small>
-				<h1 style="color: #ddd1e5; display: inline">{{ impianto.nome_impianto }}</h1>
+				<h1 style="color: #ddd1e5; display: inline">{{ impianto.nome_impianto }}</h1> <div id="spinner" role="status"></div>
 			</div>
 			<div class="col-3 pb-2">
 				<small>vedi su</small>
@@ -50,13 +53,16 @@
 			<div class="col">
 				<div id='gauge-rete' style="height: 23vh"></div>
 			</div>
+			<!-- SEZIONE BESS -->
 			<div class="col-3 border rounded-2" style="background-color: #eeeeee">
 				<div class="row">
 					<p style="font-size: 18px; font-weight: bolder; text-align: center">Battery Energy Storage System - ZILIO</p>
 				</div>
 				<div class="row">
+					<!-- LIVELLO BATTERIA -->
 					<div class="col">
 						<div class="graphic-wrapper">
+							<!-- CLASSE CHE IDENTIFICA I LIVELLI DELLA BATTERIA DA lvl0 a lvl5 -->
 							<div id="BESS-level" class="battery-icon_wrapper lvl0">
 						    <div class="battery-icon_ind"></div>
 						    <div class="battery-icon_ind"></div>
@@ -65,10 +71,12 @@
 						    <div class="battery-icon_ind"></div>
 							</div>
 						</div>
+						<!-- PERCENTUALE BATTERIA -->
 						<div class="procent-wrapper">
 						  <p id="BESS-level-text" style="font-weight: bolder"></p>
 						</div>
 					</div>
+					<!-- GAUGE CARICO BATTERIA -->
 					<div class="col-8">
 						<div id='gauge-BESS' style="height: 100%"></div>
 					</div>
@@ -132,6 +140,7 @@
 	<!-- CODICE JAVASCRIPT PER IL GRAFICO E I GAUGE -->
 	<script>
 			$(document).ready(function(){
+                
 					/* IDS GRAFICO E GAUGES */
 					var DayChart = echarts.init(document.getElementById('chart'));
 					var gaugePot = echarts.init(document.getElementById('gauge-potenza'));
@@ -148,23 +157,13 @@
 					
 					/* URL DATI */
 					var endpoint = '{% url 'api-monitoraggio-impianto' nickname %}';
-	
-					const warmpalette = [
-							'rgb(255,227,161)', 'rgb(232,183,20)',
-							'rgb(186,164,150)','rgb(116,87,69)',
-							'rgb(220,156,191)','rgb(160,27,104)',
-							'rgb(255,194,190)','rgb(209,65,36)',
-					];
-					const coolpalette = [
-							'rgb(173,220,145)', 'rgb(31,160,64)',
-							'rgb(137,182,181)','rgb(0,114,206)',
-							'rgb(37,118,117)','rgb(157,174,204)',
-							'rgb(126,183,232)','rgb(37,75,135)',
-					];
-	
+                    
+					/* COLORI PER I GRAFICI */	
 					const colors = ['rgb(37,75,135)', 'rgb(209,65,36)','rgb(231,221,73)', 'rgb(231,38,38)'];
 					
-					/* CREAZIONE DEL GRAFICO PRINCIPALE */
+					/* CREAZIONE DEL GRAFICO PRINCIPALE 
+					* 4 GRAFICI, 1 PRINCIPALE E 3 A FIANCO
+					*/
 					DayChart.setOption({
 							color: colors,
 							visualMap: [
@@ -184,9 +183,13 @@
 									{text: 'Carica(+)/Scarica(-) Batteria', left:'80%', top: '63%', textAlign: 'center', textStyle: {fontSize: 15,}},
 								  ],
 							grid:[
+									/* GRAFICO PRINCIPALE */
 			            {top: '7%', bottom: '5%', left: '4%', width: '50%'},
+									/* CONSUMI */
 			            {left: '60%', right: '3%', top: '8%', bottom: '69%'},
+									/* RETE */
 									{left: '60%', right: '3%', top: '39%', bottom: '38%'},
+									/* BATTERIA */
 									{left: '60%', right: '3%', top: '70%', bottom: '5%'},
 	            ],
 	            xAxis: [
@@ -221,21 +224,25 @@
 	                },
 	            ],
 	            series: [
+                    /* GRAFICO PRINCIPALE POTENZA */
 			            {
 	                    name: 'Consumi elettrici', type: 'line', data: [0], tooltip: {valueFormatter: value => toLocale(value,2) + ' kW'},
 	                    lineStyle: {width: 0},showSymbol: false, xAxisIndex: 1, yAxisIndex: 1,
 					            areaStyle: {},
 	                },
+			            /* CONSUMI */
 	                {
 	                    name: 'Potenza Impianto', type: 'line', data: [0], 
 	                    areaStyle: {},tooltip: {valueFormatter: value => toLocale(value,2) + ' kW'},
 	                    lineStyle: {width: 0, },showSymbol: false, xAxisIndex: 0, yAxisIndex: 0,
 	                },
+			            /* RETE */
 			            {
 	                    name: 'Carica(+)/Scarica(-) Batteria', type: 'line', data: [0],
 	                    areaStyle: {},tooltip: {valueFormatter: value => toLocale(value,2) + ' kW'},
 	                    lineStyle: {width: 0 },showSymbol: false, xAxisIndex: 3, yAxisIndex: 3,
 	                },
+			            /* BATTERIA */
 			            {
 	                    name: 'Prelievi(-)/Immissioni(+) di rete', type: 'line', data: [0],
 	                    areaStyle: {},tooltip: {valueFormatter: value => toLocale(value,2) + ' kW'},
@@ -300,7 +307,7 @@
 		              }
 		          ]
 					}
-					
+					gaugeBESS.setOption(options2);
 					gaugeRete.setOption(options2);
 					gaugeRete.setOption({
 							series: [
@@ -319,8 +326,7 @@
                   }
 							]
 
-					})
-					gaugeBESS.setOption(options2);
+					});
 	                
 					/* FUNZIONE AGGIORNAMENTO AGGIORNAMENTO DATI */
 	        {# CHIAMATA AL TERMINE DEL TIMEOUT #}
@@ -342,15 +348,16 @@
 									let SoC = data.BESSSoC;
 									let info = data.info;
 									let bess_class = '';
-									console.log(data);
 									
 									/* AGGIORNAMENTO LED IMPIANTO */
 									document.getElementById('ledcolor').className = data.led;
+									
 									/* AGGIORNAMENTO INFO */
 									document.getElementById('energy').innerHTML = toLocaleKWh(info.energy, 2);
 									document.getElementById('co2').innerHTML = toLocale(info.co2, 2) + ' kg';
 									document.getElementById('case').innerHTML = toLocale(info.case);
 									document.getElementById('alberi').innerHTML = toLocale(info.alberi);
+									
 									/*AGGIORNAMENTO BESS */
 									if (parseFloat(SoC)<=20) {
                       bess_class = 'battery-icon_wrapper lvl1';
@@ -373,14 +380,16 @@
 									document.getElementById('BESS-level').className = bess_class;
 									document.getElementById('BESS-level-text').innerHTML = toLocale(SoC) +' %';
 									
-	
+									/* AGGIORNO DATI */
 	                DayChart.setOption({
+			                /* AGGIORNAMENTO TIMESTAMPS */
 		                  xAxis: [
 				                  {data: timestamps, gridIndex: 0,}, 
 				                  {data: timestamps, gridIndex: 1,},
 				                  {data: timestamps, gridIndex: 2,},
 				                  {data: timestamps, gridIndex: 3,}
 		                  ],
+			                /* AGGIORNAMENTO LINEE DI POTENZA */
 	                    series: [
 			                    {data: consumi, name: 'Consumi elettrici', xAxisIndex: 1, yAxisIndex: 1,},
 			                    {data: potenza, name: 'Potenza Impianto', xAxisIndex: 0, yAxisIndex: 0,},
@@ -389,6 +398,7 @@
 	                    ]
 	                })
 									
+									/* AGGIORNO I DATI CON ULTIMI DATI */
 									gaugePot.setOption({
 				              series: [{
 						              data: [{value: PLast, name: 'Potenza'}],}]
