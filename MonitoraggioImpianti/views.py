@@ -169,7 +169,7 @@ def impianto(request, nickname):
 		context = {
 			# PAGINA
 			'link_corrispettivi': link_corrispettivi,
-			'page_title': f'Monitoragggio {impianto['nome_impianto']}',
+			'page_title': f'Monitoraggio {impianto['nome_impianto']}',
 			'refresh': refresh_interval,
 			# DATI
 			'nickname': nickname,
@@ -202,7 +202,7 @@ def impianto(request, nickname):
 		context = {
 			# PAGINA
 			'link_corrispettivi': link_corrispettivi,
-			'page_title': f'Monitoragggio {impianto['nome_impianto']}',
+			'page_title': f'Monitoraggio {impianto['nome_impianto']}',
 			'refresh': refresh_interval,
 			# DATI
 			'nickname': nickname,
