@@ -113,28 +113,35 @@ class DayChartData(APIView):
 			# SE ESISTE FILE TEMPORANEO
 			if os.path.isfile(file_path):
 				df_time_series_old = pd.read_csv(file_path)
-				df_time_series_old['t'] = pd.to_datetime(df_time_series_old['t'])
-				t_last = df_time_series_old['t'].iloc[-1]
+				if not df_time_series_old.empty:
+					df_time_series_old['t'] = pd.to_datetime(df_time_series_old['t'])
+					t_last = df_time_series_old['t'].iloc[-1]
+				else:
+					t_last = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
+
 				# SE CONTIENE DATI RILEVANTI DELLA GIORNATA
-				if (len(df_time_series_old.index) > 1) and (t_last > datetime(Now.year, Now.month, Now.day, 0, 30, 0)):
+				if t_last > datetime(Now.year, Now.month, Now.day, 0, 30, 0):
 					try:
 						# SCARICO I DATI A PARTIRE DALL'ULTIMO TIMESTAMP
 						df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_last, end=Now)
 						# AGGREGO I DATI
 						df_time_series = pd.concat([df_time_series_old.iloc[:-1], df_time_series],
 												   ignore_index=True)
-						df_time_series.to_csv(file_path, index=False)
+						if not df_time_series.empty:
+							df_time_series.to_csv(file_path, index=False)
 					except Exception as error:
 						# RITORNO GLI ULTIMI DATI SALVATI
 						df_status = pd.DataFrame({'dev_fault_status': []})
 						df_time_series = df_time_series_old
 						print(f'aggiunta dati - Errore getDATA {nome_impianto}', type(error).__name__, "–", error)
+
 				# SE NON CONTIENE DATI DELLA GIORNATA
 				else:
 					try:
 						# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
 						df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_start, end=Now)
-						df_time_series.to_csv(file_path, index=False)
+						if not df_time_series.empty:
+							df_time_series.to_csv(file_path, index=False)
 					except Exception as error:
 						df_status = pd.DataFrame({'dev_fault_status': []})
 						df_time_series = pd.DataFrame({'t': [], 'Total': []})
@@ -144,7 +151,8 @@ class DayChartData(APIView):
 				try:
 					# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
 					df_time_series, df_status = ISC.getDATA(nome_impianto, start=t_start, end=Now)
-					df_time_series.to_csv(file_path, index=False)
+					if not df_time_series.empty:
+						df_time_series.to_csv(file_path, index=False)
 				except Exception as error:
 					df_status = pd.DataFrame({'dev_fault_status': []})
 					df_time_series = pd.DataFrame({'t': [], 'Total': []})
@@ -207,10 +215,14 @@ class DayChartData(APIView):
 			# SE C'è FILE TEMPORANEO
 			if os.path.isfile(file_path):
 				df_time_series_old = pd.read_csv(file_path)
-				df_time_series_old['t'] = pd.to_datetime(df_time_series_old['t'])
-				t_last = df_time_series_old['t'].iloc[-1]
-				# SE CONTIENE DATI RILEVANTI
-				if (len(df_time_series_old.index) > 1) and (t_last > datetime(Now.year, Now.month, Now.day, 0, 30, 0)):
+				if not df_time_series_old.empty:
+					df_time_series_old['t'] = pd.to_datetime(df_time_series_old['t'])
+					t_last = df_time_series_old['t'].iloc[-1]
+				else:
+					t_last = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
+
+				# SE CONTIENE DATI RILEVANTI DELLA GIORNATA
+				if t_last > datetime(Now.year, Now.month, Now.day, 0, 30, 0):
 					try:
 						# SCARICO I DATI A PARTIRE DALL'ULTIMO TIMESTAMP
 						df_time_series = LEO.get_leo_data(t_start=t_last, t_end=Now)
