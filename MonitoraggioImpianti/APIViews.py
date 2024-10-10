@@ -127,7 +127,8 @@ class DayChartData(APIView):
 						# AGGREGO I DATI
 						df_time_series = pd.concat([df_time_series_old.iloc[:-1], df_time_series],
 												   ignore_index=True)
-						df_time_series.to_csv(file_path, index=False)
+						if not df_time_series.empty:
+							df_time_series.to_csv(file_path, index=False)
 					except Exception as error:
 						# RITORNO GLI ULTIMI DATI SALVATI
 						df_status = pd.DataFrame({'dev_fault_status': []})
@@ -237,8 +238,7 @@ class DayChartData(APIView):
 					try:
 						# SCARICO I DATI A PARTIRE DALL'ULTIMO TIMESTAMP
 						df_time_series = LEO.get_leo_data(t_start=t_start, t_end=Now)
-						if not df_time_series.empty:
-							df_time_series.to_csv(file_path, index=False)
+						df_time_series.to_csv(file_path, index=False)
 					except Exception as error:
 						# RITORNO GLI ULTIMI DATI SALVATI
 						df_time_series = pd.DataFrame({'t': [], 'P': [], 'BESS': [], 'PacHome': [], 'SoC': []})
@@ -248,8 +248,7 @@ class DayChartData(APIView):
 				try:
 					# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
 					df_time_series = LEO.get_leo_data(t_start=t_start, t_end=Now)
-					if not df_time_series.empty:
-						df_time_series.to_csv(file_path, index=False)
+					df_time_series.to_csv(file_path, index=False)
 				except Exception as error:
 					print(f'nuovo file - Errore get_leo_data {nome_impianto}', type(error).__name__, "–", error)
 					df_time_series = pd.DataFrame({'t': [], 'P': [], 'BESS': [], 'PacHome': [], 'SoC': []})
