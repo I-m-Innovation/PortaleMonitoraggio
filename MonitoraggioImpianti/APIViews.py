@@ -229,18 +229,22 @@ class DayChartData(APIView):
 						# AGGREGO I DATI
 						df_time_series = pd.concat([df_time_series_old[:-1], df_time_series], ignore_index=True)
 						df_time_series.to_csv(file_path, index=False)
+						led = 'led-green'
 					except Exception as error:
 						# RITORNO GLI ULTIMI DATI SALVATI
 						df_time_series = df_time_series_old
+						led = 'led-on'
 						print(f'Aggiunta nuovi dati - Errore get_leo_data {nome_impianto}',
 							  type(error).__name__, "–", error)
 				else:
 					try:
 						# SCARICO I DATI A PARTIRE DALL'ULTIMO TIMESTAMP
 						df_time_series = LEO.get_leo_data(t_start=t_start, t_end=Now)
-						df_time_series.to_csv(file_path, index=False)
+						if not df_time_series.empty:
+							df_time_series.to_csv(file_path, index=False)
 					except Exception as error:
 						# RITORNO GLI ULTIMI DATI SALVATI
+						led = 'led-gray'
 						df_time_series = pd.DataFrame({'t': [], 'P': [], 'BESS': [], 'PacHome': [], 'SoC': []})
 						print(f'Aggiunta nuovi dati - Errore get_leo_data {nome_impianto}',
 							  type(error).__name__, "–", error)
@@ -248,8 +252,10 @@ class DayChartData(APIView):
 				try:
 					# SCARICO I DATI A PARTIRE DALLA MEZZANOTTE
 					df_time_series = LEO.get_leo_data(t_start=t_start, t_end=Now)
-					df_time_series.to_csv(file_path, index=False)
+					if not df_time_series.empty:
+						df_time_series.to_csv(file_path, index=False)
 				except Exception as error:
+					led = 'led-gray'
 					print(f'nuovo file - Errore get_leo_data {nome_impianto}', type(error).__name__, "–", error)
 					df_time_series = pd.DataFrame({'t': [], 'P': [], 'BESS': [], 'PacHome': [], 'SoC': []})
 
@@ -275,11 +281,9 @@ class DayChartData(APIView):
 				energy, alberi, case, co2_kg = info_energy(df_time_series, delta)
 				df_time_series['t'] = df_time_series['t'].dt.strftime('%H:%M')
 				df_time_series = df_time_series.fillna('')
-				led = 'led-green'
 
 			except Exception as error:
 				energy = alberi = case = co2_kg = None
-				led = 'led-gray'
 				print(f'Errore ultimo passaggio dati {nome_impianto}', type(error).__name__, "–", error)
 
 			# CONTEXT
