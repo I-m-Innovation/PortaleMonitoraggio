@@ -229,7 +229,10 @@ class DayChartData(APIView):
 						# AGGREGO I DATI
 						df_time_series = pd.concat([df_time_series_old[:-1], df_time_series], ignore_index=True)
 						df_time_series.to_csv(file_path, index=False)
-						led = 'led-green'
+						dfAlarms = fn.read_DATA('Database_Produzione', 'AlarmStatesBeta.csv', 'Database_Produzione')
+						leds = {'O': 'led-green', 'A': 'led-red', 'W': 'led-yellow', 'OK': 'led-green'}
+						led = leds[dfAlarms["ZG"][0]]
+						print(led)
 					except Exception as error:
 						# RITORNO GLI ULTIMI DATI SALVATI
 						df_time_series = df_time_series_old
@@ -244,7 +247,10 @@ class DayChartData(APIView):
 							df_time_series.to_csv(file_path, index=False)
 					except Exception as error:
 						# RITORNO GLI ULTIMI DATI SALVATI
-						led = 'led-gray'
+						dfAlarms = fn.read_DATA('Database_Produzione', 'AlarmStatesBeta.csv', 'Database_Produzione')
+						leds = {'O': 'led-green', 'A': 'led-red', 'W': 'led-yellow', 'OK': 'led-green'}
+						led = leds[dfAlarms["ZG"][0]]
+						print(led)
 						df_time_series = pd.DataFrame({'t': [], 'P': [], 'BESS': [], 'PacHome': [], 'SoC': []})
 						print(f'Aggiunta nuovi dati - Errore get_leo_data {nome_impianto}',
 							  type(error).__name__, "–", error)
