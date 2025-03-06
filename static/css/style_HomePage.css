@@ -62,9 +62,8 @@ nav {
 }
 
 #ricky {
-    background-image: linear-gradient(to right bottom, #ce6bd3, #ff63a6, #ff806a, #ffb629, #e2eb12);
+    background: radial-gradient(circle at 90% 80%, rgb(87, 108, 117) 0%, rgb(76, 94, 103) 100.2%);
     /*background-image: url("/static/images/HomePage/fairy_world.png");*/
-    /*background-size: 100% 50%;*/
     /*background-repeat: repeat;*/
     /*background-color: lightpink;*/
     /* you need to match the shadow color to your background or image border for the desired effect*/

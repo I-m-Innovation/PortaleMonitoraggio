@@ -88,7 +88,7 @@ def plot_analisi_dati_impianto(df_TS, start, end, impianto):
   df_target_portata = pd.DataFrame(data={
     'Energia': [df_TS_target['P'].mean(), df_TS_target['P'].mean()*td_day, df_TS_target['P'].mean()*td_interval, df_TS_target['P'].mean()*td_year],
     'Portata': [impianto['portata_concessione'], df_TS_target['Q'].mean(), df_TS_target['Q'].std(), ''],
-    'Corrispettivi': [df_TS_target['P'].mean()*0.21, df_TS_target['P'].mean()*td_day*0.21, df_TS_target['P'].mean()*td_interval*0.21, df_TS_target['P'].mean()*td_year*0.21],
+    '': [df_TS_target['P'].mean()*0.21, df_TS_target['P'].mean()*td_day*0.21, df_TS_target['P'].mean()*td_interval*0.21, df_TS_target['P'].mean()*td_year*0.21],
   })
 
   df_misure = pd.DataFrame(data = {

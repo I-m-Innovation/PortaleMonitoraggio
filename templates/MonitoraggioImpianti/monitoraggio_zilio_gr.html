@@ -36,11 +36,11 @@
 		</div>
 	
 		<!-- GRAFICO -->
-		<div class="row px-3 pt-3" style="min-height: 52vh">
+		<div class="row px-3 pt-3" style="min-height: 60vh;">
 			<div id="chart"></div>
 		</div>
 	
-		<div class="row py-3 justify-content-center align-items-center">
+		<div class="row py-3 justify-content-center align-items-center ">
 			<!-- GAUGE POTENZA -->
 			<div class="col">
 				<div id='gauge-potenza' style="height: 23vh"></div>
@@ -158,6 +158,13 @@
 					/* URL DATI */
 					var endpoint = '{% url 'api-monitoraggio-impianto' nickname %}';
                     
+					/* CREO ARRAY DI TIMESTAMPO DA 00:00 A 23:59 OGNI 30 MINUTI */
+					var timeLabels = [];
+					for (var hour = 0; hour < 24; hour++) {
+							timeLabels.push(('0' + hour).slice(-2) + ':00');
+							timeLabels.push(('0' + hour).slice(-2) + ':30');
+					}
+					
 					/* COLORI PER I GRAFICI */	
 					const colors = ['rgb(37,75,135)', 'rgb(209,65,36)','rgb(231,221,73)', 'rgb(231,38,38)'];
 					
@@ -173,7 +180,7 @@
 													color: ['rgb(255,194,190)','rgb(209,65,36)','#171717'],
 											},show: false, seriesIndex: 1
 									},
-							],
+							]},
 	            tooltip: {trigger: 'axis'},
 	            toolbox: {show:false,},
 							title: [
@@ -193,10 +200,35 @@
 									{left: '60%', right: '3%', top: '70%', bottom: '5%'},
 	            ],
 	            xAxis: [
-			            {data: [0], gridIndex: 0},
-			            {data: [0], gridIndex: 1,axisTick: {show: false}, axisLabel: {show:false}},
-			            {data: [0], gridIndex: 2, axisTick: {show: false}, axisLabel: {show:false}},
-			            {data: [0], gridIndex: 3}],
+			            {
+			                data: timeLabels, 
+			                gridIndex: 0,
+			                axisLabel: {
+			                    rotate: 45,
+			                    fontSize: 10
+			                }
+			            },
+			            {
+			                data: timeLabels, 
+			                gridIndex: 1,
+			                axisTick: {show: false}, 
+			                axisLabel: {show:false}
+			            },
+			            {
+			                data: timeLabels, 
+			                gridIndex: 2, 
+			                axisTick: {show: false}, 
+			                axisLabel: {show:false}
+			            },
+			            {
+			                data: timeLabels, 
+			                gridIndex: 3,
+			                axisLabel: {
+			                    rotate: 45,
+			                    fontSize: 10
+			                }
+			            }
+			        ],
 							yAxis: [
 	                {
 	                    type: 'value', gridIndex: 0,
@@ -325,11 +357,10 @@
 					});
 	                
 					/* FUNZIONE AGGIORNAMENTO AGGIORNAMENTO DATI */
-	        {# CHIAMATA AL TERMINE DEL TIMEOUT #}
-	        {# OGNI VOLTA CHE VIENE CHIAMATA PRENDE I DATI E RICREA IL GRAFICO #}
+	       
 					(function worker() {
 							/* CHIAMATA AJAX */
-	            {# AGGIUNTA QUERY PARAMETER NELLA CHIAMATA PER IDENTIFICARE CHE SI TRATTA DELLA PAGINA DELL'IMPIANTO #}
+	            
 							$.get(endpoint, {view_impianto: true}).done(function (data) {
 									/* VARIABILI */
 									let timestamps = data.time;
@@ -376,22 +407,57 @@
 									document.getElementById('BESS-level').className = bess_class;
 									document.getElementById('BESS-level-text').innerHTML = toLocale(SoC) +' %';
 									
+									/* VERIFICA DEL FORMATO TIMESTAMP */
+									console.log("Timestamp ricevuti:", timestamps);
+									
+									/* NORMALIZZAZIONE DEI DATI CON CORREZIONE DELL'ORARIO */
+									let normalizedPotenza = new Array(timeLabels.length).fill(0);
+									let normalizedBess = new Array(timeLabels.length).fill(0);
+									let normalizedConsumi = new Array(timeLabels.length).fill(0);
+									let normalizedRete = new Array(timeLabels.length).fill(0);
+									
+									// Determina se è necessario un offset di fuso orario
+									// Puoi impostare questo valore in base alla tua situazione
+									const timeOffsetHours = 0; // Cambia a 1, 2, ecc. se necessario
+									const timeOffsetHalfHour = 1; // Aggiunge mezz'ora all'offset
+									
+									// Aggiungi controllo di esistenza dati prima di processarli
+									if (timestamps && timestamps.length > 0) {
+											for (let i = 0; i < timestamps.length; i++) {
+													if (timestamps[i]) {  // Verifica che il timestamp esista
+															let time = timestamps[i];
+															let timeParts = time.split(':');
+															
+															if (timeParts.length >= 2) {
+																	let hour = parseInt(timeParts[0]);
+																	let minute = parseInt(timeParts[1]);
+																	
+																	// Applica l'offset e gestisci il wraparound (ritorno a 0 dopo 23)
+																	hour = (hour + timeOffsetHours) % 24;
+																	
+																	// Calcoliamo l'indice corretto con l'offset di mezz'ora
+																	let index = (hour * 2 + (minute >= 30 ? 1 : 0) + timeOffsetHalfHour) % 48;
+																	
+																	if (index >= 0 && index < timeLabels.length) {
+																			normalizedPotenza[index] = potenza[i] !== undefined ? potenza[i] : 0;
+																			normalizedBess[index] = bess[i] !== undefined ? bess[i] : 0;
+																			normalizedConsumi[index] = consumi[i] !== undefined ? consumi[i] : 0;
+																			normalizedRete[index] = rete[i] !== undefined ? rete[i] : 0;
+																	}
+															}
+													}
+											}
+									}
+									
 									/* AGGIORNO DATI */
 	                DayChart.setOption({
-			                /* AGGIORNAMENTO TIMESTAMPS */
-		                  xAxis: [
-				                  {data: timestamps, gridIndex: 0,}, 
-				                  {data: timestamps, gridIndex: 1,},
-				                  {data: timestamps, gridIndex: 2,},
-				                  {data: timestamps, gridIndex: 3,}
-		                  ],
-			                /* AGGIORNAMENTO LINEE DI POTENZA */
-	                    series: [
-			                    {data: consumi, name: 'Consumi elettrici', xAxisIndex: 1, yAxisIndex: 1,},
-			                    {data: potenza, name: 'Potenza Impianto', xAxisIndex: 0, yAxisIndex: 0,},
-			                    {data: bess, name: 'Carica/Scarica Batteria', xAxisIndex: 3, yAxisIndex: 3,},
-			                    {data: rete, name: 'Prelievi/Immissioni rete elettrica', xAxisIndex: 2, yAxisIndex: 2,},
-	                    ]
+			                /* NON AGGIORNIAMO PIÙ I TIMESTAMPS PERCHÉ SONO FISSI */
+		                  series: [
+			                    {data: normalizedConsumi, name: 'Consumi elettrici', xAxisIndex: 1, yAxisIndex: 1,},
+			                    {data: normalizedPotenza, name: 'Potenza Impianto', xAxisIndex: 0, yAxisIndex: 0,},
+			                    {data: normalizedBess, name: 'Carica/Scarica Batteria', xAxisIndex: 3, yAxisIndex: 3,},
+			                    {data: normalizedRete, name: 'Prelievi/Immissioni rete elettrica', xAxisIndex: 2, yAxisIndex: 2,},
+		                  ]
 	                })
 									
 									/* AGGIORNO I DATI CON ULTIMI DATI */
@@ -418,11 +484,10 @@
 									})
 							})
 							/* AGGIORNAMENTO OGNI 120 SECONDI */
-							setTimeout(worker, 60000*5)
+							setTimeout(worker, 120000)
 					})();
 			})
 	</script>
 {% endblock %}
-
 
 

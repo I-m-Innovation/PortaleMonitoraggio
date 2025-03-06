@@ -75,7 +75,7 @@ body {
 
 .boldRow {
     font-weight: bold;
-    box-shadow: inset 0 0 0 9999px #88a7ce !important; !important;
+    box-shadow: inset 0 0 0 9999px #88a7ce !important; 
 }
 
 /* COLONNA CHE CONTIENE LE SCHEDE DI MONITORAGGIO */

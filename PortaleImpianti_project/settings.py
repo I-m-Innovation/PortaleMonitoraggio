@@ -47,7 +47,10 @@ INSTALLED_APPS = [
 
     # APPS
     "MonitoraggioImpianti.apps.MonitoraggioimpiantiConfig",
-    "AnalisiDatiImpianti.apps.AnalisidatiimpiantiConfig"
+    "AnalisiDatiImpianti.apps.AnalisidatiimpiantiConfig",
+    "AutomazioneDati.apps.AutomazionedatiConfig"
+    
+    
 ]
 
 MIDDLEWARE = [
