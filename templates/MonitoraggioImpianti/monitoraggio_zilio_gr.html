@@ -175,14 +175,18 @@
 							color: colors,
 							visualMap: [
 									{
-											type: 'continuous', min: 0, max: {{ impianto.potenza_installata|stringformat:".2f" }},
+											type: 'continuous',
+											min: 0,
+											max: {{ impianto.potenza_installata|stringformat:".2f" }},
 											inRange: {
-													color: ['rgb(255,194,190)','rgb(209,65,36)','#171717'],
-											},show: false, seriesIndex: 1
-									},
-							]},
-	            tooltip: {trigger: 'axis'},
-	            toolbox: {show:false,},
+													color: ['rgb(255,194,190)', 'rgb(209,65,36)', '#171717'],
+											},
+											show: false,
+											seriesIndex: 1
+									}
+							],
+							tooltip: {trigger: 'axis'},
+							toolbox: {show:false,},
 							title: [
 									{text: 'Potenza impianto', left:'30%', textAlign: 'center'},
 									{text: 'Consumi elettrici', left:'80%', textAlign: 'center', textStyle: {fontSize: 15,}},

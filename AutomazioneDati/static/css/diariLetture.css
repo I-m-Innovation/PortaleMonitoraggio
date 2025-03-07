@@ -1,0 +1,361 @@
+@import url('https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap');
+
+/* Stili globali per la pagina */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: Arial, sans-serif;
+}
+
+/* Stili per il nuovo riquadro informativo */
+.info-box {
+    width: 100%;
+    height: 25px;
+    border: 1px solid #dee2e6;
+    background-color: #ffffff;
+    margin-bottom: 15px; /* Spazio tra il riquadro e la tabella sottostante */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+/* Contenitore per centrare la tabella */
+.table-container {
+    margin: 20px auto;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+
+.table {
+    width: 100%;
+    font-size: 0.9rem;
+    table-layout: fixed; 
+    border: 1px solid #000000;
+  
+    
+}
+
+/* Regola di default per i th */
+.table th {
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+ 
+}
+
+/* Regola di default per i td */
+.table td {
+    text-align: center;
+    vertical-align: middle;
+    transition: background-color 0.3s ease-in-out;
+}
+
+/* Stile per celle con valori monetari */
+td:nth-child(14),
+td:nth-child(15),
+td:nth-child(16),
+td:nth-child(17),
+td:nth-child(18),
+td:nth-child(19) {
+    text-align: right;
+}
+
+/* La prima cella "Mese" */
+thead tr:first-child th:nth-child(1) {
+    background-color: #d9edf7; /* Blu chiaro */
+}
+
+thead tr:first-child th:nth-child(2) {
+    background-color: #fcf8e3; /* Giallo chiaro per "Prodotta" */
+}
+thead tr:first-child th:nth-child(3) {
+    background-color: #f2dede; /* Rosso chiaro per "Prelevata" */
+}
+thead tr:first-child th:nth-child(4) {
+    background-color: #dff0d8; /* Verde chiaro per "Immessa" */
+}
+
+/* Seconda riga dell'intestazione (<thead>) */
+/* Poiché la cella "Mese" ha rowspan, la seconda riga contiene 9 celle:
+   le prime 3 per "Prodotta", le successive 3 per "Prelevata" e le ultime 3 per "Immessa".
+*/
+
+/* Gruppo "Prodotta" */
+thead tr:nth-child(2) th:nth-child(1),
+thead tr:nth-child(2) th:nth-child(2),
+thead tr:nth-child(2) th:nth-child(3) {
+    background-color: #fcf8e3; /* Giallo chiaro */
+}
+
+/* Gruppo "Prelevata" */
+thead tr:nth-child(2) th:nth-child(4),
+thead tr:nth-child(2) th:nth-child(5),
+thead tr:nth-child(2) th:nth-child(6) {
+    background-color: #f2dede; /* Rosso chiaro */
+}
+
+/* Gruppo "Immessa" */
+thead tr:nth-child(2) th:nth-child(7),
+thead tr:nth-child(2) th:nth-child(8),
+thead tr:nth-child(2) th:nth-child(9) {
+    background-color: #dff0d8; /* Verde chiaro */
+}
+
+/* Per dispositivi mobili, fissa la colonna dei mesi */
+@media (max-width: 768px) {
+    .table-container {
+        position: relative;
+    }
+    
+    .table td:first-child,
+    .table th:first-child {
+        position: sticky;
+        left: 0;
+        background-color: white;
+        z-index: 1;
+        border-right: 2px solid #dee2e6;
+    }
+}
+
+
+/* Stile per il nuovo riquadro contenitore */
+.riquadro-container {
+    width: 100%;            /* Largo quanto la larghezza del contenitore padre (in questo caso la tabella) */
+    height: 35px;           /* Altezza fissa di 35px */
+    border: 1px solid #dee2e6;  /* Bordo sottile */
+    background-color: #f0f0f0;  /* Sfondo chiaro per differenziare il riquadro */
+    display: flex;          /* Utilizza flexbox per allineare gli elementi internamente */
+    align-items: center;    /* Centra verticalmente il contenuto */
+    padding: 0 10px;        /* Spazio orizzontale interno */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Leggera ombra per dare profondità */
+}
+
+/* Stile per il container del dropdown */
+.dropdown-container {
+    display: flex;
+    align-items: center;
+}
+
+.dropdown-container label {
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 24px;
+    align-items: center;
+}
+
+/* Stile per il menu a tendina personalizzato */
+.custom-select {
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    width: 100px;
+    font-size: 14px;
+    appearance: menulist; /* Mostra la freccia standard del browser */
+}
+
+.custom-select:focus {
+    outline: none;
+    border-color: #666;
+}
+
+/* Stile per la barra principale */
+.header-bar {
+    margin-top: 20px;
+    width: 100%;
+    height: 75px;
+    background-color: #2196F3; /* Colore blu come nell'immagine */
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Distribuisce gli elementi: titolo a sinistra, dropdown a destra */
+    padding: 0 40px; /* Aumentato il padding orizzontale per dare più spazio ai bordi */
+    color: white;
+    margin-bottom: 20px;
+}
+
+/* Stile per il titolo */
+.header-title {
+    font-size: 2.2rem;
+    font-weight: bold;
+}
+
+/* Stile per una card personalizzata */
+.custom-card {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    max-width: 400px;  /* Puoi regolare la larghezza massima desiderata */
+    margin: 20px auto; /* Centra la card nella pagina */
+}
+
+.custom-card .card-header {
+    background-color: #f0f0f0;
+    padding: 10px;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: bold;
+    text-align: center;
+}
+
+.custom-card .card-body {
+    padding: 10px;
+    text-align: center;
+}
+
+
+  /* Stili per il wrapper che contiene le tabelle e le icone di navigazione */
+  .table-switcher-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+/* Opzionale: Stile per le icone delle frecce, se desideri ulteriori aggiustamenti */
+.nav-arrow {
+    cursor: pointer;
+    font-size: 2em; /* Puoi modificare la dimensione in base alle tue esigenze */
+    padding: 0 15px;    
+    user-select: none;
+}
+
+/* Assicura che le celle <td> della prima tabella abbiano gli stessi colori delle <th> */
+
+/* Colonna "Mese" */
+#table1 table tbody tr td:nth-child(1) {
+    background-color: #d9edf7;  /* Blu chiaro - Mese */
+}
+
+/* Colonne "Prodotta" (colonne 2, 3, 4) */
+#table1 table tbody tr td:nth-child(2),
+#table1 table tbody tr td:nth-child(3),
+#table1 table tbody tr td:nth-child(4) {
+    background-color: #fcf8e3;  /* Giallo chiaro - Prodotta */
+}
+
+/* Colonne "Prelevata" (colonne 5, 6, 7) */
+#table1 table tbody tr td:nth-child(5),
+#table1 table tbody tr td:nth-child(6),
+#table1 table tbody tr td:nth-child(7) {
+    background-color: #f2dede;  /* Rosso chiaro - Prelevata */
+}
+
+/* Colonne "Immessa" (colonne 8, 9, 10) */
+#table1 table tbody tr td:nth-child(8),
+#table1 table tbody tr td:nth-child(9),
+#table1 table tbody tr td:nth-child(10) {
+    background-color: #dff0d8;  /* Verde chiaro - Immessa */
+}
+
+/* Stile per l'header della tabella 2: i titoli (<th>) rimangono invariati */
+#table2 table thead th {
+    background-color: #dff0d8; /* Colore base per gli header */
+    color: #000;
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #888;
+}
+
+/* Override: La prima colonna dell'header ("Mese") ha un colore diverso */
+#table2 table thead th:first-child {
+    background-color: #d9edf7; /* Colore diverso per la colonna "Mese" */
+}
+
+/* Stile per le celle dei dati della tabella 2 */
+#table2 table tbody td {
+    background-color: #dff0d8;  /* Celle con sfondo bianco */
+    padding: 8px;
+    text-align: center;
+    border: 1px solid #888;
+}
+
+/* Stile per le celle dei dati della colonna "Mese" */
+/* Applica lo stesso colore di sfondo del th corrispondente */
+#table2 table tbody td:first-child {
+    font-family: Arial, sans-serif; /* Font di default per la colonna "Mese" */
+    background-color: #d9edf7; /* Stesso colore del th della colonna "Mese" */
+}
+
+/* Celle con font "scritto a matita" per le altre colonne */
+#table2 table tbody td:not(:first-child) {
+    font-family: 'Indie Flower', cursive;
+    font-size: 1.2rem;
+    font-weight: normal;
+}
+
+/* Evidenzia la cella attualmente in editing */
+table td.editing {
+    background-color: #ffffcc;  /* Giallo chiaro */
+}
+
+/* Evidenzia la cella modificata rispetto al valore originale */
+table td.modified {
+    background-color: #ffefc5;  /* Colore per evidenziare la modifica */
+}
+
+/* Container per il pulsante di salvataggio, posizionato in basso a destra */
+.save-button-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+/* Stile per il pulsante "Salva" */
+#save-button {
+    background-color: #000000;
+    color: #ffffff;
+    border: 1px solid #000000;
+    padding: 10px 20px;
+    font-size: 1rem;
+    border-radius: 9px;
+    cursor: pointer;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+#save-button:hover {
+    background-color: #007bff;
+    color: #fff;
+}
+
+/* Custom styling per le colonne della tabella 2 */
+
+/* Intestazioni della tabella 2 */
+#table2 table thead th:nth-child(1) {
+    background-color: #d9edf7; /* Colonna "Mese" */
+}
+#table2 table thead th:nth-child(2) {
+    background-color: #f0e68c; /* Colonna "Data di presa" */
+}
+#table2 table thead th:nth-child(3),
+#table2 table thead th:nth-child(4),
+#table2 table thead th:nth-child(5) {
+    background-color: #fcf8e3; /* Colonne "A1-", "A2-", "A3-" */
+}
+#table2 table thead th:nth-child(6),
+#table2 table thead th:nth-child(7),
+#table2 table thead th:nth-child(8) {
+    background-color: #d0f0c0; /* Colonne "A1+", "A2+", "A3+" */
+}
+
+/* Celle dei dati della tabella 2 */
+#table2 table tbody td:nth-child(1) {
+    background-color: #d9edf7; /* Colonna "Mese" */
+}
+#table2 table tbody td:nth-child(2) {
+    background-color: #f0e68c; /* Colonna "Data di presa" */
+}
+#table2 table tbody td:nth-child(3),
+#table2 table tbody td:nth-child(4),
+#table2 table tbody td:nth-child(5) {
+    background-color: #fcf8e3; /* Colonne "A1-", "A2-", "A3-" */
+}
+#table2 table tbody td:nth-child(6),
+#table2 table tbody td:nth-child(7),
+#table2 table tbody td:nth-child(8) {
+    background-color: #d0f0c0; /* Colonne "A1+", "A2+", "A3+" */
+}

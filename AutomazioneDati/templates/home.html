@@ -1,45 +1,13 @@
 {% extends 'base_layout.html' %}
 {% load static %}
+
+
+
 {% block title %}Aggiornamento dati{% endblock %}
-{% block content %}
-
-<style>
-  /* Stili per il loader animato */
-  .loader {
-    border: 12px solid #f3f3f3; /* Bordo grigio chiaro per creare lo sfondo del cerchio */
-    border-top: 12px solid #000000; /* Bordo superiore colorato (blu) per evidenziare l'animazione */
-    border-radius: 50%; /* Rende il div circolare */
-    width: 100px;
-    height: 100px;
-    animation: spin 1.5s linear infinite; /* Applica l'animazione di rotazione continua */
-  }
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }   /* Inizio rotazione */
-    100% { transform: rotate(360deg); } /* Fine rotazione: un giro completo */
-  }
-  
-  .loader-wrapper {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100vh; /* Occupa l'intera altezza della finestra */
-  }
-</style>
-
-<div class="loader-wrapper">
-  <div class="loader"></div>
-  <h1 style="margin-top: 50px; font-size: 6rem; background-color: white;">COMING SOON</h1>
-</div>
-
-{% endblock %}
-
-{% comment %} {% block title %}Aggiornamento dati{% endblock %}
 
 {% block extra_css %}
 	
-	<link rel="stylesheet" href="{% static 'home.css' %}">
+	<link rel="stylesheet" href="{% static 'css/home.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -50,7 +18,10 @@
         <div class="card-body">
             <!-- Visualizza il nome dell'impianto preso dal modello -->
             <h5 class="card-title">{{ impianto.nome_impianto }}</h5>
-            <a href="#" class="btn btn-primary">Go somewhere</a>
+            <!-- Link che include il nickname dell'impianto come parametro -->
+            <a href="{% url 'diari-letture' impianto.nickname %}" class="btn btn-primary">
+                Vai a {{ impianto.nome_impianto }}
+            </a>
         </div>
     </div>
     {% empty %}
@@ -59,4 +30,4 @@
 </div>
 
 
-{% endblock %} {% endcomment %}
+{% endblock %} 
