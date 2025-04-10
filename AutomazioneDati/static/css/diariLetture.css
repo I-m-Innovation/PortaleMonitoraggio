@@ -22,6 +22,26 @@ html, body {
     color: #333;
 }
 
+.info_conattore {
+    position: absolute;
+    margin-top: 10px;
+    left: 10px;
+    margin-right: 30px;
+    z-index: 100;
+   
+
+}
+
+.tabelle-container {
+
+
+   margin-left: 50px;
+
+    
+  
+    
+}
+
 /* Contenitore per centrare la tabella */
 .table-container {
     margin: 20px auto;
@@ -225,33 +245,33 @@ thead tr:nth-child(2) th:nth-child(9) {
 /* Assicura che le celle <td> della prima tabella abbiano gli stessi colori delle <th> */
 
 /* Colonna "Mese" */
-#table1 table tbody tr td:nth-child(1) {
+#reg_segnanti table tbody tr td:nth-child(1) {
     background-color: #d9edf7;  /* Blu chiaro - Mese */
 }
 
 /* Colonne "Prodotta" (colonne 2, 3, 4) */
-#table1 table tbody tr td:nth-child(2),
-#table1 table tbody tr td:nth-child(3),
-#table1 table tbody tr td:nth-child(4) {
+#reg_segnanti table tbody tr td:nth-child(2),
+#reg_segnanti table tbody tr td:nth-child(3),
+#reg_segnanti table tbody tr td:nth-child(4) {
     background-color: #fcf8e3;  /* Giallo chiaro - Prodotta */
 }
 
 /* Colonne "Prelevata" (colonne 5, 6, 7) */
-#table1 table tbody tr td:nth-child(5),
-#table1 table tbody tr td:nth-child(6),
-#table1 table tbody tr td:nth-child(7) {
+#reg_segnanti table tbody tr td:nth-child(5),
+#reg_segnanti table tbody tr td:nth-child(6),
+#reg_segnanti table tbody tr td:nth-child(7) {
     background-color: #f2dede;  /* Rosso chiaro - Prelevata */
 }
 
 /* Colonne "Immessa" (colonne 8, 9, 10) */
-#table1 table tbody tr td:nth-child(8),
-#table1 table tbody tr td:nth-child(9),
-#table1 table tbody tr td:nth-child(10) {
+#reg_segnanti table tbody tr td:nth-child(8),
+#reg_segnanti table tbody tr td:nth-child(9),
+#reg_segnanti table tbody tr td:nth-child(10) {
     background-color: #dff0d8;  /* Verde chiaro - Immessa */
 }
 
 /* Stile per l'header della tabella 2: i titoli (<th>) rimangono invariati */
-#table2 table thead th {
+#libro_energie table thead th {
     background-color: #dff0d8; /* Colore base per gli header */
     color: #000;
     padding: 10px;
@@ -260,12 +280,12 @@ thead tr:nth-child(2) th:nth-child(9) {
 }
 
 /* Override: La prima colonna dell'header ("Mese") ha un colore diverso */
-#table2 table thead th:first-child {
+#libro_energie table thead th:first-child {
     background-color: #d9edf7; /* Colore diverso per la colonna "Mese" */
 }
 
 /* Stile per le celle dei dati della tabella 2 */
-#table2 table tbody td {
+#libro_energie table tbody td {
     background-color: #dff0d8;  /* Celle con sfondo bianco */
     padding: 8px;
     text-align: center;
@@ -274,13 +294,13 @@ thead tr:nth-child(2) th:nth-child(9) {
 
 /* Stile per le celle dei dati della colonna "Mese" */
 /* Applica lo stesso colore di sfondo del th corrispondente */
-#table2 table tbody td:first-child {
+#libro_energie table tbody td:first-child {
     font-family: Arial, sans-serif; /* Font di default per la colonna "Mese" */
     background-color: #d9edf7; /* Stesso colore del th della colonna "Mese" */
 }
 
 /* Celle con font "scritto a matita" per le altre colonne */
-#table2 table tbody td:not(:first-child) {
+#libro_energie table tbody td:not(:first-child) {
     font-family: 'Indie Flower', cursive;
     font-size: 1.2rem;
     font-weight: normal;
@@ -325,37 +345,306 @@ table td.modified {
 /* Custom styling per le colonne della tabella 2 */
 
 /* Intestazioni della tabella 2 */
-#table2 table thead th:nth-child(1) {
+#libro_energie table thead th:nth-child(1) {
     background-color: #d9edf7; /* Colonna "Mese" */
 }
-#table2 table thead th:nth-child(2) {
+#libro_energie table thead th:nth-child(2) {
     background-color: #f0e68c; /* Colonna "Data di presa" */
 }
-#table2 table thead th:nth-child(3),
-#table2 table thead th:nth-child(4),
-#table2 table thead th:nth-child(5) {
+#libro_energie table thead th:nth-child(3),
+#libro_energie table thead th:nth-child(4),
+#libro_energie table thead th:nth-child(5)
+{
     background-color: #fcf8e3; /* Colonne "A1-", "A2-", "A3-" */
 }
-#table2 table thead th:nth-child(6),
-#table2 table thead th:nth-child(7),
-#table2 table thead th:nth-child(8) {
+
+#libro_energie table thead th:nth-child(6) 
+{
+    background-color: #ffee97; /* Colonne "A1-", "A2-", "A3-" */
+}
+
+#libro_energie table thead th:nth-child(7),
+#libro_energie table thead th:nth-child(8),
+#libro_energie table thead th:nth-child(9)
+ {
     background-color: #d0f0c0; /* Colonne "A1+", "A2+", "A3+" */
+}
+#libro_energie table thead th:nth-child(10){
+    background-color: #9afd69; /* Colonne "A1+", "A2+", "A3+" */
 }
 
 /* Celle dei dati della tabella 2 */
-#table2 table tbody td:nth-child(1) {
+#libro_energie table tbody td:nth-child(1) {
     background-color: #d9edf7; /* Colonna "Mese" */
 }
-#table2 table tbody td:nth-child(2) {
+#libro_energie table tbody td:nth-child(2) {
     background-color: #f0e68c; /* Colonna "Data di presa" */
 }
-#table2 table tbody td:nth-child(3),
-#table2 table tbody td:nth-child(4),
-#table2 table tbody td:nth-child(5) {
+#libro_energie table tbody td:nth-child(3),
+#libro_energie table tbody td:nth-child(4),
+#libro_energie table tbody td:nth-child(5)
+
+{
     background-color: #fcf8e3; /* Colonne "A1-", "A2-", "A3-" */
 }
-#table2 table tbody td:nth-child(6),
-#table2 table tbody td:nth-child(7),
-#table2 table tbody td:nth-child(8) {
+
+#libro_energie table tbody td:nth-child(6)
+{
+    background-color: #ffee97; /* Colonne "A1-", "A2-", "A3-" */
+}
+
+#libro_energie table tbody td:nth-child(7), 
+#libro_energie table tbody td:nth-child(8),
+#libro_energie table tbody td:nth-child(9)
+ {
     background-color: #d0f0c0; /* Colonne "A1+", "A2+", "A3+" */
+}
+
+#libro_energie table tbody td:nth-child(10)
+{
+    background-color: #9afd69; /* Colonne "A1+", "A2+", "A3+" */
+}
+
+/* Stile per il contenitore del pulsante aggiungi contatore */
+.add-button-container {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.add-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 15px;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s;
+}
+
+.add-button:hover {
+    background-color: #0056b3;
+}
+
+.add-button i {
+    font-size: 1.2rem;
+}
+
+/* Colori per contatori di tipo PRODUZIONE */
+.contatore-produzione .table thead tr:first-child th:nth-child(1) {
+    background-color: #d9edf7; /* Blu chiaro */
+}
+
+.contatore-produzione .table thead tr:first-child th:nth-child(2) {
+    background-color: #fcf8e3; /* Giallo chiaro per "Prodotta" */
+}
+
+.contatore-produzione .table thead tr:first-child th:nth-child(3) {
+    background-color: #f2dede; /* Rosso chiaro per "Prelevata" */
+}
+
+.contatore-produzione .table thead tr:first-child th:nth-child(4) {
+    background-color: #dff0d8; /* Verde chiaro per "Immessa" */
+}
+
+/* Colori per contatori di tipo SCAMBIO */
+.contatore-scambio .table thead tr:first-child th:nth-child(1) {
+    background-color: #f0a158; /* Blu chiaro */
+}
+
+
+.contatore-scambio .table thead tr:first-child th:nth-child(2) {
+    background-color: #e0f7fa; /* Azzurro per "Prodotta" */
+}
+
+.contatore-scambio .table thead tr:first-child th:nth-child(3) {
+    background-color: #fff3e0; /* Arancione chiaro per "Prelevata" */
+}
+
+.contatore-scambio .table thead tr:first-child th:nth-child(4) {
+    background-color: #e8f5e9; /* Verde menta per "Immessa" */
+}
+
+/* Colori per contatori di tipo AUSILIARE */
+.contatore-ausiliare .table thead tr:first-child th:nth-child(1) {
+    background-color: #d9edf7; /* Blu chiaro */
+}
+
+.contatore-ausiliare .table thead tr:first-child th:nth-child(2) {
+    background-color: #f3e5f5; /* Viola chiaro per "Prodotta" */
+}
+
+.contatore-ausiliare .table thead tr:first-child th:nth-child(3) {
+    background-color: #e8eaf6; /* Indaco chiaro per "Prelevata" */
+}
+
+.contatore-ausiliare .table thead tr:first-child th:nth-child(4) {
+    background-color: #fce4ec; /* Rosa chiaro per "Immessa" */
+}
+
+/* Applicare gli stessi colori alle rispettive celle del corpo della tabella */
+
+.contatore-produzione #reg_segnanti table tbody tr td:nth-child(1) {
+    background-color: #d9edf7;
+}
+
+.contatore-produzione #reg_segnanti table tbody tr td:nth-child(2),
+.contatore-produzione #reg_segnanti table tbody tr td:nth-child(3),
+.contatore-produzione #reg_segnanti table tbody tr td:nth-child(4) {
+    background-color: #fcf8e3;
+}
+
+/* Stile per le tabelle dei contatori di tipo ausiliare */
+.ausiliare-table {
+    background-color: #f0f8ff; /* Sfondo azzurro chiaro */
+}
+
+.ausiliare-table thead th {
+    background-color: #4682b4; /* Azzurro acciaio */
+    color: white;
+}
+
+.ausiliare-table tbody tr:nth-child(odd) {
+    background-color: #e6f2ff; /* Righe alternate */
+}
+
+.ausiliare-table tbody tr:hover {
+    background-color: #b0e0e6; /* Azzurro polvere al passaggio del mouse */
+}
+
+.calculated-field {
+    background-color: #f5f5f5;
+    font-weight: bold;
+    color: #333;
+    cursor: not-allowed;
+}
+/* jhnhujjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj */
+
+/* Stili per le celle durante l'editing */
+td[contenteditable="true"].editing {
+    background-color: #e8f4f8;
+    box-shadow: 0 0 0 2px #4dabf7;
+}
+
+/* Stili per le celle modificate ma non ancora salvate */
+td.modified {
+    background-color: #fff3cd;
+}
+
+/* Stili per i campi calcolati */
+td.calculated-field {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+/* Indicatori di salvataggio */
+.save-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #17a2b8;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    z-index: 1050;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+.save-success {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    z-index: 1050;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+.save-error {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #dc3545;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    z-index: 1050;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+/* Stile per l'header della tabella Libro Kaifa */
+#libro_kaifa table thead th {
+    background-color: #f5f5dc; /* Colore base per gli header */
+    color: #000;
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #888;
+}
+
+/* Override: La prima colonna dell'header ("Mese") ha un colore diverso */
+#libro_kaifa table thead th:first-child {
+    background-color: #d9edf7; /* Blu chiaro per la colonna "Mese" */
+}
+
+/* Colori specifici per le intestazioni della tabella Kaifa */
+#libro_kaifa table thead th:nth-child(2) {
+    background-color: #f0e68c; /* Colonna "Data di presa" */
+}
+#libro_kaifa table thead th:nth-child(3) {
+    background-color: #ffe4b5; /* Colonna "1.8.0.n" */
+}
+#libro_kaifa table thead th:nth-child(4) {
+    background-color: #ffe4e1; /* Colonna TOTALE "1.8.0.n" */
+}
+
+#libro_kaifa table thead th:nth-child(5) {
+    background-color: #e2ffe1; /* Colonna "2.8.0.n" */
+}
+
+#libro_kaifa table thead th:nth-child(6) {
+    background-color: #e1f0ff; /* Colonna TOTALE "2.8.0.n" */
+}
+
+/* Stile per le celle dei dati della tabella Kaifa */
+#libro_kaifa table tbody td {
+    padding: 8px;
+    text-align: center;
+    border: 1px solid #888;
+}
+
+/* Stile per le celle dei dati della colonna "Mese" */
+#libro_kaifa table tbody td:first-child {
+    font-family: Arial, sans-serif;
+    background-color: #d9edf7; /* Stesso colore del th della colonna "Mese" */
+}
+
+/* Colori per le celle dati di Kaifa */
+#libro_kaifa table tbody td:nth-child(2) {
+    background-color: #f0e68c; /* Colonna "Data di presa" */
+}
+#libro_kaifa table tbody td:nth-child(3) {
+    background-color: #ffe4b5; /* Colonna "1.8.0.n" */
+}
+#libro_kaifa table tbody td:nth-child(4) {
+    background-color: #ffe4e1; /* Colonna "TOTALE 1.8.0.n" */
+}
+
+#libro_kaifa table tbody td:nth-child(5) {
+    background-color: #e2ffe1;/* Colonna "2.8.0.n" */
+}
+#libro_kaifa table tbody td:nth-child(6) {
+    background-color: #e1f0ff;/* Colonna "2.8.0.n" */
+}
+/* Celle con font "scritto a matita" per la tabella Kaifa */
+#libro_kaifa table tbody td:not(:first-child) {
+    font-family: 'Indie Flower', cursive;
+    font-size: 1.2rem;
+    font-weight: normal;
 }

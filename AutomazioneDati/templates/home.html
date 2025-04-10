@@ -19,7 +19,7 @@
             <!-- Visualizza il nome dell'impianto preso dal modello -->
             <h5 class="card-title">{{ impianto.nome_impianto }}</h5>
             <!-- Link che include il nickname dell'impianto come parametro -->
-            <a href="{% url 'diari-letture' impianto.nickname %}" class="btn btn-primary">
+            <a href="{% url 'panoramica-contatore' impianto.nickname %}" class="btn btn-primary">
                 Vai a {{ impianto.nome_impianto }}
             </a>
         </div>

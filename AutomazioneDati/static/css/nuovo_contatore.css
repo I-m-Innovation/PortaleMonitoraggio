@@ -1,0 +1,104 @@
+/* Stile generale per il contenitore principale */
+.registrazioneDispositivo {
+    max-width: 600px;
+    margin: 30px auto;
+    padding: 25px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    font-family: 'Arial', sans-serif;
+}
+
+/* Stile per il div centrale con il titolo */
+.central-div {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #3498db;
+}
+
+.central-div h3 {
+    color: #2c3e50;
+    font-size: 24px;
+    margin: 0;
+    font-weight: 600;
+}
+
+/* Stile per il form */
+.device-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+/* Per dispositivi piccoli, imposta una sola colonna */
+@media (max-width: 768px) {
+    .device-form {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Stile per i gruppi di input */
+.form-group {
+    margin-bottom: 15px;
+}
+
+/* Stile per le etichette */
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+/* Stile per gli input */
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.25);
+}
+
+/* Stile per il menu a tendina */
+.custom-select {
+    background-color: white;
+    cursor: pointer;
+}
+
+/* Stile per il pulsante di invio */
+button[type="submit"] {
+    grid-column: 1 / -1; /* Si estende su tutte le colonne */
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 10px;
+}
+
+button[type="submit"]:hover {
+    background-color: #2980b9;
+}
+
+/* Stile per validazione */
+.form-group input:invalid {
+    border-color: #25b800;
+}
+
+.form-group input:valid {
+    border-color: #2ecc71;
+}
