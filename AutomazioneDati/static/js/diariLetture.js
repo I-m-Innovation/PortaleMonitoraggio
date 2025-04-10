@@ -71,72 +71,48 @@ document.addEventListener('DOMContentLoaded', function() {
         let tipoContatore = '';
         let datiTabella = [];
         
-        // Determina quale tabella è attualmente visibile e raccoglie i dati
-        if (document.getElementById('libro_energie').style.display === 'block') {
+        console.log("Pulsante salva premuto. Contatore ID:", contatoreId, "Anno:", anno);
+        
+        // Determina quale tabella è visibile in base allo stile display
+        const libroEnergie = document.getElementById('libro_energie');
+        const libroKaifa = document.getElementById('libro_kaifa');
+        
+        console.log("Visibilità tabelle:", {
+            "libro_energie": libroEnergie ? libroEnergie.style.display : "elemento non trovato",
+            "libro_kaifa": libroKaifa ? libroKaifa.style.display : "elemento non trovato"
+        });
+        
+        // IMPORTANTE: Rimuoviamo il setTimeout per la tabella Kaifa
+        // Questo garantisce che i dati vengano raccolti immediatamente dopo l'aggiornamento forzato
+        if (libroEnergie && libroEnergie.style.display === 'block') {
+            console.log("Tabella ENERGIE attiva - Aggiornamento totali...");
+            updateAllDifferentials();
             tipoContatore = 'libro_energie';
             datiTabella = raccogliDatiLibroEnergie(contatoreId, anno);
-        } else if (document.getElementById('libro_kaifa').style.display === 'block') {
+        } else if (libroKaifa && libroKaifa.style.display === 'block') {
+            console.log("Tabella KAIFA attiva - Aggiornamento totali...");
+            // La funzione raccogliDatiLibroKaifa ora include forceUpdateKaifaTotals al suo interno
             tipoContatore = 'libro_kaifa';
             datiTabella = raccogliDatiLibroKaifa(contatoreId, anno);
+        } else {
+            console.warn("ATTENZIONE: Nessuna tabella attiva trovata!");
+            tipoContatore = document.getElementById('tipo-contatore-attivo') ? 
+                           document.getElementById('tipo-contatore-attivo').value : 'sconosciuto';
+            alert('Errore: impossibile determinare il tipo di tabella attiva. Tipo rilevato: ' + tipoContatore);
+            return;
         }
         
         // Se non ci sono dati da salvare, esci
         if (datiTabella.length === 0) {
-            alert('Nessun dato da salvare.');
+            alert('Nessun dato da salvare. Verificare che la tabella contenga dati.');
             return;
         }
         
         // Ottieni il token CSRF
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const csrfToken = csrfTokenElement.value;
         
-        // Prepara i dati da inviare
-        const datiDaInviare = {
-            tipo_tabella: tipoContatore,
-            rows: datiTabella
-        };
-        
-        // Mostra un indicatore di caricamento
-        const saveButton = this;
-        saveButton.disabled = true;
-        saveButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Salvataggio in corso...';
-        
-        // Invia i dati al server - usa l'endpoint corretto
-        fetch('/automazione-dati/salva-dati-letture/', {  // Modifica l'URL per puntare al corretto endpoint
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify(datiDaInviare)
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Errore nella risposta del server: ' + response.status);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.status === 'success') {
-                alert('Dati salvati con successo!');
-                // Aggiorna i dati visualizzati con quelli salvati
-                if (tipoContatore === 'libro_energie') {
-                    aggiornaTabellaDatiEnergie(data.rows);
-                } else if (tipoContatore === 'libro_kaifa') {
-                    aggiornaTabellaDatiKaifa(data.rows);
-                }
-            } else {
-                alert('Errore durante il salvataggio: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Errore:', error);
-            alert('Si è verificato un errore durante il salvataggio dei dati: ' + error.message);
-        })
-        .finally(() => {
-            // Ripristina il pulsante di salvataggio
-            saveButton.disabled = false;
-            saveButton.innerHTML = '<i class="bi bi-save"></i> Salva';
-        });
+        // Procedi con il salvataggio
+        salvaDati(this, tipoContatore, datiTabella, csrfToken);
     });
 
     // Crea elemento di stile per l'evidenziazione delle righe e celle aggiornate
@@ -317,74 +293,132 @@ function raccogliDatiLibroEnergie(contatoreId, anno) {
 function raccogliDatiLibroKaifa(contatoreId, anno) {
     const dati = [];
     const tabella = document.getElementById('libro_kaifa');
+    if (!tabella) {
+        console.error('Tabella Kaifa non trovata!');
+        return dati; // Ritorna array vuoto
+    }
+    
+    // Forza il calcolo sincrono dei totali e verifica che sia andato a buon fine
+    console.log("Forzatura aggiornamento totali Kaifa prima della raccolta...");
+    const totaliAggiornati = forceUpdateKaifaTotals();
+    if (!totaliAggiornati) {
+        console.error("Errore nell'aggiornamento dei totali Kaifa!");
+        alert("Si è verificato un errore nell'aggiornamento dei totali. Verifica i dati inseriti.");
+    } else {
+        console.log("Aggiornamento totali Kaifa completato con successo.");
+    }
+    
+    // Pausa breve per garantire che il DOM sia completamente aggiornato
+    console.log("Breve pausa prima della raccolta dati...");
+    
     const righe = tabella.querySelectorAll('tbody tr');
-
-    righe.forEach(riga => {
+    console.log(`Raccolta dati da ${righe.length} righe Kaifa`);
+    
+    // Cicla su tutte le righe
+    righe.forEach((riga, index) => {
         const mese = riga.dataset.mese;
+        if (!mese) {
+            console.warn(`Riga ${index}: attributo data-mese mancante, saltata`);
+            return; // Salta questa iterazione
+        }
+        
+        // Gestione data_presa (invariato)
         const dataPresaCell = riga.querySelector('td[data-field="data_presa"]');
-        let dataPresaISO = null; // Inizializza a null. Conterrà la data in formato YYYY-MM-DD
-
+        let dataPresaISO = null;
         if (dataPresaCell) {
-            const testoCella = dataPresaCell.textContent.trim(); // Leggi sempre il testo visibile
-            if (testoCella) {
-                // Tentativo 1: È già ISO (YYYY-MM-DD)?
-                if (/^\d{4}-\d{2}-\d{2}$/.test(testoCella)) {
-                    // Validiamo se è una data ISO sensata
-                    try {
-                        const testDate = new Date(testoCella + 'T00:00:00Z'); // Usa UTC
-                        // Verifica che la data creata corrisponda alla stringa
-                        if (!isNaN(testDate.getTime()) && testDate.toISOString().startsWith(testoCella)) {
-                            dataPresaISO = testoCella; // È una data ISO valida
-                        } else {
-                             console.warn(`Data ISO non valida trovata in 'data_presa' per Kaifa mese ${mese}: "${testoCella}". Invio null.`);
-                             // dataPresaISO rimane null
-                        }
-                    } catch (e) {
-                         console.warn(`Errore validazione data ISO in 'data_presa' per Kaifa mese ${mese}: "${testoCella}". Invio null.`);
-                         // dataPresaISO rimane null
-                    }
-                } else {
-                    // Tentativo 2: Prova a convertire da GG/MM/AAAA usando la funzione helper
-                    dataPresaISO = convertDateToISO(testoCella); // Riutilizza la funzione
-                    // Se la conversione fallisce, dataPresaISO rimarrà null
-                    if (dataPresaISO === null && testoCella !== "") {
-                         console.warn(`Formato data non riconosciuto o non valido in 'data_presa' per Kaifa mese ${mese}: "${testoCella}". Invio null.`);
-                         // Aggiungere classe di errore?
-                         // dataPresaCell.classList.add('input-error');
-                    } //else if (testoCella !== "") {
-                         // Rimuovere classe di errore?
-                         // dataPresaCell.classList.remove('input-error');
-                    //}
+            const testoCella = dataPresaCell.textContent.trim();
+            dataPresaISO = testoCella ? convertDateToISO(testoCella) : null;
+        }
+        
+        // Lettura valori numerici input (invariato)
+        const kaifa180nCell = riga.querySelector('td[data-field="kaifa_180n"]');
+        const kaifa280nCell = riga.querySelector('td[data-field="kaifa_280n"]');
+        const kaifa180n = parseNumericValue(kaifa180nCell);
+        const kaifa280n = parseNumericValue(kaifa280nCell);
+        
+        // Lettura ancora più robusta dei totali
+        const totale180nCell = riga.querySelector('td[data-field="totale_180n"]');
+        const totale280nCell = riga.querySelector('td[data-field="totale_280n"]');
+        
+        // Variabili per memorizzare i totali
+        let totale180n = null;
+        let totale280n = null;
+        
+        // L'ultimo mese (13) non ha totali
+        const isUltimoMese = parseInt(mese) === 13;
+        
+        if (!isUltimoMese) {
+            // Lettura del totale 1.8.0.n direttamente dal dataset
+            if (totale180nCell && totale180nCell.dataset.value !== undefined) {
+                totale180n = parseFloat(totale180nCell.dataset.value);
+                console.log(`Mese ${mese}: totale_180n letto da dataset.value = ${totale180n}`);
+            } else if (totale180nCell) {
+                // Fallback alla differenza tra i valori attuali e successivi
+                const rigaSuccessiva = tabella.querySelector(`tbody tr[data-mese="${parseInt(mese) + 1}"]`);
+                if (rigaSuccessiva) {
+                    const kaifa180nCorrente = parseNumericValue(kaifa180nCell);
+                    const kaifa180nSuccessiva = parseNumericValue(rigaSuccessiva.querySelector('td[data-field="kaifa_180n"]'));
+                    totale180n = kaifa180nSuccessiva - kaifa180nCorrente;
+                    console.log(`Mese ${mese}: totale_180n calcolato al volo = ${totale180n}`);
                 }
             }
-            // Se testoCella era vuoto, dataPresaISO rimane null
+            
+            // Lettura del totale 2.8.0.n direttamente dal dataset
+            if (totale280nCell && totale280nCell.dataset.value !== undefined) {
+                totale280n = parseFloat(totale280nCell.dataset.value);
+                console.log(`Mese ${mese}: totale_280n letto da dataset.value = ${totale280n}`);
+            } else if (totale280nCell) {
+                // Fallback alla differenza tra i valori attuali e successivi
+                const rigaSuccessiva = tabella.querySelector(`tbody tr[data-mese="${parseInt(mese) + 1}"]`);
+                if (rigaSuccessiva) {
+                    const kaifa280nCorrente = parseNumericValue(kaifa280nCell);
+                    const kaifa280nSuccessiva = parseNumericValue(rigaSuccessiva.querySelector('td[data-field="kaifa_280n"]'));
+                    totale280n = kaifa280nSuccessiva - kaifa280nCorrente;
+                    console.log(`Mese ${mese}: totale_280n calcolato al volo = ${totale280n}`);
+                }
+            }
         }
-
-        // --- Lettura degli altri campi Kaifa (invariata) ---
-        const kaifa180n = parseNumericValue(riga.querySelector('td[data-field="kaifa_180n"]'));
-        const kaifa280n = parseNumericValue(riga.querySelector('td[data-field="kaifa_280n"]'));
-        const totale180n = parseNumericValue(riga.querySelector('td[data-field="totale_180n"]')); // Leggi il totale calcolato
-        const totale280n = parseNumericValue(riga.querySelector('td[data-field="totale_280n"]')); // Leggi il totale calcolato
-
-        // --- Aggiunta dati all'array ---
-        dati.push({
+        
+        // Preparazione record dati con un approccio più sicuro
+        const recordDati = {
             contatore_id: contatoreId,
             anno: anno,
             mese: mese,
             tipo_tabella: 'libro_kaifa',
-            data_presa: dataPresaISO, // Invia il valore ISO convertito (o null)
+            data_presa: dataPresaISO,
             kaifa_180n: kaifa180n !== 0 ? kaifa180n : null,
             kaifa_280n: kaifa280n !== 0 ? kaifa280n : null,
-            totale_180n: totale180n, // Invia il totale letto dalla cella
-            totale_280n: totale280n  // Invia il totale letto dalla cella
-        });
+            totale_180n: (isUltimoMese || isNaN(totale180n)) ? null : totale180n,
+            totale_280n: (isUltimoMese || isNaN(totale280n)) ? null : totale280n
+        };
+        
+        // Log per debug
+        console.log(`Dati finali riga mese ${mese}:`, JSON.stringify(recordDati));
+        
+        dati.push(recordDati);
     });
-
+    
+    // Visualizza i totali prima dell'invio per debug
+    let totaliString = "Riepilogo totali da inviare:\n";
+    dati.forEach(row => {
+        if (row.mese !== '13') { // Escludi l'ultimo mese che non ha totali
+            totaliString += `Mese ${row.mese}: 1.8.0.n=${row.totale_180n}, 2.8.0.n=${row.totale_280n}\n`;
+        }
+    });
+    console.log(totaliString);
+    
+    console.log(`Totale ${dati.length} record Kaifa raccolti.`);
     return dati;
 }
 
 // Funzione per aggiornare la tabella con i dati ricevuti dal server
 function aggiornaTabellaDatiEnergie(datiAggiornati) {
+    if (!datiAggiornati || !Array.isArray(datiAggiornati)) {
+        console.warn('Nessun dato aggiornato ricevuto per la tabella Energie');
+        return;
+    }
+    console.log('Aggiornamento tabella Energie con', datiAggiornati.length, 'righe');
+    
     datiAggiornati.forEach(dato => {
         // Trova la riga corrispondente usando l'attributo data-mese
         // Assicurati che 'dato.mese' corrisponda a quello nell'HTML (1-13)
@@ -427,6 +461,12 @@ function aggiornaTabellaDatiEnergie(datiAggiornati) {
 
 // Funzione per aggiornare la tabella Kaifa con i dati ricevuti dal server
 function aggiornaTabellaDatiKaifa(datiAggiornati) {
+    if (!datiAggiornati || !Array.isArray(datiAggiornati)) {
+        console.warn('Nessun dato aggiornato ricevuto per la tabella Kaifa');
+        return;
+    }
+    console.log('Aggiornamento tabella Kaifa con', datiAggiornati.length, 'righe');
+    
     datiAggiornati.forEach(dato => {
         // Trova la riga corrispondente usando l'attributo data-mese
         // Assicurati che 'dato.mese' corrisponda a quello nell'HTML (1-13)
@@ -460,7 +500,7 @@ function aggiornaTabellaDatiKaifa(datiAggiornati) {
     });
 
      // Ricalcola i totali Kaifa dopo l'aggiornamento
-     updateAllKaifaTotals(); // Assicurati che questa funzione esista e faccia il ricalcolo
+     updateAllDifferentials(); // Utilizziamo questa funzione esistente invece di updateAllKaifaTotals
 }
 
 // Funzione di supporto per aggiornare una cella se il valore è presente
@@ -677,12 +717,27 @@ function updateRowDifferentials(riga, index, tipo, tableId) {
 // Funzione helper per aggiornare una cella calcolata
 function updateCalculatedCell(cell, value) {
     if (cell) {
-        cell.textContent = formatNumericValue(value);
-        cell.dataset.value = value; // Memorizza il valore numerico grezzo
+        // --- Modifica: Verifica se il valore è un numero valido ---
+        const numericValue = parseFloat(value); // Prova a convertire il valore in numero
+        if (isNaN(numericValue)) {
+            // Se non è un numero valido (es. NaN, Infinity)
+            console.warn(`Tentativo di aggiornare la cella ${cell.dataset.field || 'sconosciuta'} con un valore non valido: ${value}`);
+            cell.textContent = ''; // Pulisci il testo visualizzato nella cella
+            delete cell.dataset.value; // Rimuovi l'attributo dataset.value se non valido
+        } else {
+            // Se è un numero valido
+            cell.textContent = formatNumericValue(numericValue); // Formatta per la visualizzazione (es. con virgola)
+            cell.dataset.value = numericValue.toString(); // Memorizza il valore numerico grezzo come stringa nel dataset
+            // Log di conferma per vedere cosa è stato effettivamente impostato
+            console.log(`Cella ${cell.dataset.field || 'sconosciuta'} aggiornata: text='${cell.textContent}', dataset.value='${cell.dataset.value}'`);
 
-        // Aggiungi effetto visivo per indicare il cambiamento
-        cell.classList.add('updated-cell');
-        setTimeout(() => cell.classList.remove('updated-cell'), 2000);
+            // Aggiungi effetto visivo per indicare il cambiamento (invariato)
+            cell.classList.add('updated-cell');
+            setTimeout(() => cell.classList.remove('updated-cell'), 2000);
+        }
+    } else {
+        // Log se la cella non viene trovata (utile per debug)
+        // console.warn("Tentativo di aggiornare una cella calcolata non trovata.");
     }
 }
 
@@ -723,5 +778,217 @@ function setupEditableCells() {
                 e.preventDefault();
             }
         });
+    });
+}
+
+// Funzione per forzare l'aggiornamento dei totali Kaifa
+function forceUpdateKaifaTotals() {
+    console.log('Inizio calcolo forzato totali Kaifa...');
+    const tabella = document.getElementById('libro_kaifa');
+    if (!tabella) {
+        console.error('Tabella Kaifa non trovata!');
+        return false; // Restituisci false in caso di errore
+    }
+    
+    const righe = tabella.querySelectorAll('tbody tr');
+    
+    // Esegui immediatamente senza setTimeout per garantire sincronicità
+    try {
+        // Calcola i totali per ogni coppia di righe
+        for (let i = 0; i < righe.length - 1; i++) {
+            const rigaCorrente = righe[i];
+            const rigaSuccessiva = righe[i + 1];
+            const mese = rigaCorrente.dataset.mese;
+            
+            // Lettura valori 1.8.0.n
+            const kaifa180nCorrente = parseNumericValue(rigaCorrente.querySelector('td[data-field="kaifa_180n"]'));
+            const kaifa180nSuccessiva = parseNumericValue(rigaSuccessiva.querySelector('td[data-field="kaifa_180n"]'));
+            let differenza180n = kaifa180nSuccessiva - kaifa180nCorrente;
+            
+            // Lettura valori 2.8.0.n
+            const kaifa280nCorrente = parseNumericValue(rigaCorrente.querySelector('td[data-field="kaifa_280n"]'));
+            const kaifa280nSuccessiva = parseNumericValue(rigaSuccessiva.querySelector('td[data-field="kaifa_280n"]'));
+            let differenza280n = kaifa280nSuccessiva - kaifa280nCorrente;
+            
+            // Aggiorna le celle dei totali in modo più diretto
+            const totale180nCell = rigaCorrente.querySelector('td[data-field="totale_180n"]');
+            const totale280nCell = rigaCorrente.querySelector('td[data-field="totale_280n"]');
+            
+            if (totale180nCell) {
+                // Usa un metodo più diretto senza animazioni o altre operazioni
+                totale180nCell.textContent = formatNumericValue(differenza180n);
+                totale180nCell.dataset.value = differenza180n;
+                console.log(`Mese ${mese}: totale_180n impostato a ${differenza180n}, textContent="${totale180nCell.textContent}", dataset.value=${totale180nCell.dataset.value}`);
+            }
+            
+            if (totale280nCell) {
+                // Usa un metodo più diretto senza animazioni o altre operazioni
+                totale280nCell.textContent = formatNumericValue(differenza280n);
+                totale280nCell.dataset.value = differenza280n;
+                console.log(`Mese ${mese}: totale_280n impostato a ${differenza280n}, textContent="${totale280nCell.textContent}", dataset.value=${totale280nCell.dataset.value}`);
+            }
+        }
+        
+        // L'ultima riga non ha totali
+        const ultimaRiga = righe[righe.length - 1];
+        if (ultimaRiga) {
+            const totale180nCellUltima = ultimaRiga.querySelector('td[data-field="totale_180n"]');
+            const totale280nCellUltima = ultimaRiga.querySelector('td[data-field="totale_280n"]');
+            if (totale180nCellUltima) {
+                totale180nCellUltima.textContent = '';
+                delete totale180nCellUltima.dataset.value;
+            }
+            if (totale280nCellUltima) {
+                totale280nCellUltima.textContent = '';
+                delete totale280nCellUltima.dataset.value;
+            }
+        }
+        
+        console.log('Calcolo forzato totali Kaifa completato con successo.');
+        return true; // Restituisci true se il calcolo è riuscito
+    } catch (error) {
+        console.error('Errore durante il calcolo forzato dei totali Kaifa:', error);
+        return false; // Restituisci false in caso di errore
+    }
+}
+
+// Funzione per controllare se ci sono totali validi nei dati
+function checkTotaliKaifa(dati) {
+    let totaliValidi = false;
+    let messaggioDiagnostica = "Diagnostica totali Kaifa:\n";
+    
+    dati.forEach(row => {
+        if (row.mese !== '13') { // Escludi l'ultimo mese che non ha totali
+            const totale180nPresente = row.totale_180n !== null && row.totale_180n !== undefined;
+            const totale280nPresente = row.totale_280n !== null && row.totale_280n !== undefined;
+            
+            messaggioDiagnostica += `Mese ${row.mese}: `;
+            messaggioDiagnostica += totale180nPresente ? `1.8.0.n=${row.totale_180n} ✓ ` : "1.8.0.n=assente ✘ ";
+            messaggioDiagnostica += totale280nPresente ? `2.8.0.n=${row.totale_280n} ✓` : "2.8.0.n=assente ✘";
+            messaggioDiagnostica += "\n";
+            
+            if (totale180nPresente || totale280nPresente) {
+                totaliValidi = true;
+            }
+        }
+    });
+    
+    return {
+        validi: totaliValidi,
+        messaggio: messaggioDiagnostica
+    };
+}
+
+// Nuova funzione per estrarre la logica di salvataggio, migliorata per Kaifa
+function salvaDati(saveButton, tipoContatore, datiTabella, csrfToken) {
+    // Log per debug
+    console.log('Tipo tabella rilevato:', tipoContatore);
+    console.log('Dati raccolti:', datiTabella.length, 'righe');
+    
+    // Verifica che ci siano dati da salvare
+    if (!datiTabella || datiTabella.length === 0) {
+        alert('Errore: Nessun dato da salvare.');
+        return;
+    }
+    
+    // Verifica token CSRF
+    if (!csrfToken) {
+        alert('Errore: Token CSRF non trovato. Impossibile procedere con il salvataggio.');
+        return;
+    }
+    
+    // Per Kaifa, verifica che i totali siano presenti e validi
+    if (tipoContatore === 'libro_kaifa') {
+        const checkTotali = checkTotaliKaifa(datiTabella);
+        console.log(checkTotali.messaggio);
+        
+        if (!checkTotali.validi) {
+            const rispostaDiagnostica = confirm('ATTENZIONE: Non sono stati rilevati totali validi nei dati Kaifa.\n\n' + 
+                                               'Questo potrebbe causare un salvataggio incompleto.\n\n' +
+                                               'Vuoi vedere i dettagli diagnostici e continuare?');
+            
+            if (rispostaDiagnostica) {
+                alert(checkTotali.messaggio + '\n\nVerrà effettuato un nuovo tentativo di calcolo dei totali.');
+                
+                // Forza un nuovo calcolo più aggressivo dei totali
+                forceUpdateKaifaTotals();
+                
+                // Raccogli nuovamente i dati dopo il nuovo calcolo
+                const contatoreId = datiTabella[0].contatore_id;
+                const anno = datiTabella[0].anno;
+                datiTabella = raccogliDatiLibroKaifa(contatoreId, anno);
+                
+                // Verifica nuovamente
+                const nuovoCheck = checkTotaliKaifa(datiTabella);
+                if (!nuovoCheck.validi) {
+                    if (!confirm('I totali sembrano ancora mancanti. Continuare comunque con il salvataggio?')) {
+                        return; // Annulla il salvataggio
+                    }
+                }
+            } else {
+                return; // Annulla il salvataggio
+            }
+        }
+    }
+    
+    // Prepara i dati da inviare
+    const datiDaInviare = {
+        tipo_tabella: tipoContatore,
+        rows: datiTabella
+    };
+    
+    // Log del corpo completo della richiesta per debug
+    console.log('Dati completi da inviare:', JSON.stringify(datiDaInviare));
+    
+    // Mostra un indicatore di caricamento
+    saveButton.disabled = true;
+    saveButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Salvataggio in corso...';
+    
+    // Salvataggio temporaneo dei dati in localStorage in caso di errore
+    localStorage.setItem('last_save_attempt', JSON.stringify(datiDaInviare));
+    
+    // Invia i dati al server
+    fetch('/automazione-dati/salva-dati-letture/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify(datiDaInviare)
+    })
+    .then(response => {
+        console.log('Risposta server ricevuta:', response.status, response.statusText);
+        if (!response.ok) {
+            throw new Error('Errore nella risposta del server: ' + response.status + ' ' + response.statusText);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Dati ricevuti dal server:', data);
+        if (data.status === 'success') {
+            alert('Dati salvati con successo!');
+            // Aggiorna i dati visualizzati con quelli salvati
+            if (tipoContatore === 'libro_energie') {
+                aggiornaTabellaDatiEnergie(data.rows);
+            } else if (tipoContatore === 'libro_kaifa') {
+                aggiornaTabellaDatiKaifa(data.rows);
+            }
+            // Rimuovi i dati di backup
+            localStorage.removeItem('last_save_attempt');
+        } else {
+            alert('Errore durante il salvataggio: ' + data.message);
+            console.error('Errore server:', data);
+        }
+    })
+    .catch(error => {
+        console.error('Errore durante la richiesta:', error);
+        alert('Si è verificato un errore durante il salvataggio dei dati: ' + error.message + 
+              '\n\nI dati sono stati salvati temporaneamente nel browser. ' +
+              'Contattare l\'amministratore per assistenza.');
+    })
+    .finally(() => {
+        // Ripristina il pulsante di salvataggio
+        saveButton.disabled = false;
+        saveButton.innerHTML = '<i class="bi bi-save"></i> Salva';
     });
 }

@@ -405,7 +405,7 @@ def salva_reg_segnanti(request):
                                 print(f"Data convertita: {field_value} -> {iso_date}")
                     else:
                         # Per i campi numerici, convertiamo in Decimal se non vuoto
-                        if field_name in ['a1_neg', 'a2_neg', 'a3_neg', 'a1_pos', 'a2_pos', 'a3_pos', 'totale_neg', 'totale_pos', 'kaifa_180n', 'kaifa_280n']:
+                        if field_name in ['a1_neg', 'a2_neg', 'a3_neg', 'a1_pos', 'a2_pos', 'a3_pos', 'totale_neg', 'totale_pos', 'kaifa_180n', 'kaifa_280n', 'totale_180n', 'totale_280n']:
                             if field_value and field_value.strip():
                                 try:
                                     # Rimuovi tutti gli spazi
@@ -584,7 +584,7 @@ def salva_dati_letture(request):
 
 
                     # --- Blocco migliorato per campi numerici ---
-                    elif field_name in ['a1_neg', 'a2_neg', 'a3_neg', 'a1_pos', 'a2_pos', 'a3_pos', 'totale_neg', 'totale_pos', 'kaifa_180n', 'kaifa_280n']:
+                    elif field_name in ['a1_neg', 'a2_neg', 'a3_neg', 'a1_pos', 'a2_pos', 'a3_pos', 'totale_neg', 'totale_pos', 'kaifa_180n', 'kaifa_280n', 'totale_180n', 'totale_280n']:
                         # Controlla se il valore è fornito
                         if field_value is not None and field_value != '':
                             try:
