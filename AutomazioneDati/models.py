@@ -33,6 +33,8 @@ class Contatore(models.Model):
     marca = models.CharField(max_length=20, choices=MARCA_CHOICES)
     modello = models.CharField(max_length=50)
     data_installazione = models.DateField()
+    if modello == 'KAIFa':
+        variabili = ['A1-', 'A2-', 'A3-', 'A1+', 'A2+', 'A3+']
     
     def __str__(self):
         return f"{self.nome} ({self.tipologia}) - {self.impianto.nome_impianto}"
@@ -42,22 +44,13 @@ class LetturaContatore(models.Model):
     anno = models.IntegerField()
     mese = models.IntegerField()  # 1-12 per i mesi dell'anno
     tipo_tabella = models.CharField(max_length=20)  # 'reg_segnanti', 'libro_energie', 'libro_kaifa'
+
     
-    # Dati per Registro Segnanti
-    prod_campo = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
-    prod_ed = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
-    prod_gse = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
-    prel_campo = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
-    prel_ed = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
-    prel_gse = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
-    imm_campo = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
-    imm_ed = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
-    imm_gse = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
-    scambio_prelevata_campo = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
-    scambio_prelevata_ed = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
-    scambio_prelevata_gse = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
     
-    # Dati per Libro Energie
+    
+    
+    
+    # Dati per registro segnanti
     data_presa = models.DateField(null=True, blank=True)
     a1_neg = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
     a2_neg = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
@@ -103,13 +96,13 @@ class LetturaContatore(models.Model):
     def __str__(self):
         return f"{self.contatore.nome} - {self.tipo_tabella} - {self.mese}/{self.anno}"
 
-    # Potresti aggiungere un metodo per calcolare e salvare qui,
-    # ma un comando di gestione è più adatto per aggiornamenti di massa.
-    # def calcola_e_salva_imm_campo(self):
-    #     if self.totale_180n is not None and self.contatore and self.contatore.k is not None:
-    #         self.imm_campo_calcolato = self.totale_180n * self.contatore.k
-    #         self.save(update_fields=['imm_campo_calcolato']) # Salva solo questo campo
-    #     elif self.imm_campo_calcolato is not None:
-    #         # Se totale_180n diventa None, azzera anche il campo calcolato
-    #         self.imm_campo_calcolato = None
-    #         self.save(update_fields=['imm_campo_calcolato'])
+
+    
+    
+    
+    
+    
+
+            
+
+        

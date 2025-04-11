@@ -424,3 +424,95 @@ table td.modified {
     background-color: #f8d7da !important; /* Rosso chiaro */
     transition: background-color 0.3s;
 }
+/* 
+Stili specifici per il registro segnanti */
+
+/* Migliora la gestione della tabella per adattarsi a più colonne */
+ .tabellareg_segnanti .table-container {
+    overflow-x: auto;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+/* Assicura che la tabella si estenda quanto necessario */
+ .tabellareg_segnanti table {
+     width: 100%;
+    min-width: 1200px;
+    table-layout: fixed; 
+}  
+
+/* Migliora la gestione del testo nelle celle */
+.tabellareg_segnanti table th, 
+.tabellareg_segnanti table td {
+    white-space: nowrap; 
+    overflow: hidden;    
+    text-overflow: ellipsis; 
+    padding: 5px;        
+    font-size: 0.9rem;   
+} 
+
+/* Consenti alle celle modificabili di mostrare tutto il testo durante l'editing */
+ .tabellareg_segnanti table td.editing {
+    white-space: normal;
+    overflow: visible;
+} 
+
+/* Stile per il pulsante di salvataggio fisso */
+.save-button-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+} 
+
+#reg_segnanti_save {
+    background-color: #28a745;
+    color: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    padding: 8px 15px;
+} 
+
+#reg_segnanti_save:hover {
+    background-color: #218838;
+} 
+
+/* Stili per la barra di intestazione */
+ .header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap; 
+    gap: 10px; 
+}
+
+/* Stile per il titolo che si adatta */
+.header-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    flex: 1;
+    min-width: 200px; 
+}
+
+@media (max-width: 768px) {
+    .header-bar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .dropdown-container,
+    .import-container {
+        margin-top: 10px;
+    }
+}
+
+/* Stile specifico per l'importazione dati */
+.import-container {
+    margin-left: 10px;
+}
+
+/* Stile per la barra laterale con l'elenco dei contatori */
+.lista_contatori {
+    position: sticky;
+    top: 20px;
+} 

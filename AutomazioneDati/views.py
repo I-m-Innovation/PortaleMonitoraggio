@@ -204,8 +204,8 @@ def salva_contatore(request):
         )
         contatore.save()
         
-        # Reindirizza alla pagina diari-letture
-        return redirect('diari-letture', nickname=impianto_monitoraggio.nickname)
+        # Reindirizza alla pagina di panoramica contatore invece che a diari-letture
+        return redirect('panoramica-contatore', nickname=impianto_monitoraggio.nickname)
     
     # Se la richiesta non è POST, reindirizza alla home
     return redirect('automazione-dati')
