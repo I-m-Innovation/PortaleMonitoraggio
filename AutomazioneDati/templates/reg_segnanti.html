@@ -43,132 +43,107 @@
                     <div id="reg_segnanti" class="table-content" data-contatore-id="{{ contatore.id }}" data-contatore-k="{{ contatore.k }}" data-marca="{{ contatore.marca }}">
                         <table class="table table-bordered table-sm">
                             <colgroup>
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
-                                <col style="width: 10%;">
+                                <!-- Colonna fissa per il Mese -->
+                                <col style="width: 10%;"> 
                                 
-                                
-                                
-                                
-                                
+                                <!-- Ciclo per generare le colonne per ogni contatore -->
+                                {% for cnt in contatori %}
+                                    {# Ogni contatore occupa 6 colonne come definito nelle intestazioni successive #}
+                                    <col style="width: 10%;">
+                                    <col style="width: 10%;">
+                                    <col style="width: 10%;">
+                                    
+                                    <col style="width: 10%;">
+                                    <col style="width: 10%;">
+                                    <col style="width: 10%;">
+                                    
+                                {% endfor %}
                             </colgroup>
                             <thead>
                                 <tr>
                                     <th colspan="1" rowspan="3">Mese</th>
                                    
                                     {% for cnt in contatori %}
-                                        {% if cnt.id != contatore.id %}
-                                            <th colspan="6">Dati contatore: {{ cnt.nome }} - Marca: {{ cnt.marca }} - Tipologia: {{ cnt.tipologia }}</th>
-                                        {% endif %}
+                                        {# Intestazione principale per ciascun contatore, che occupa 6 colonne #}
+                                        <th colspan="6">
+                                            Dati contatore: {{ cnt.nome }} - Marca: {{ cnt.marca }} - Tipologia: {{ cnt.tipologia }} - Data installazione: {{ cnt.data_installazione|date:"d/m/Y" }}
+                                            {% if cnt.data_dismissione %}
+                                                - Data dismissione: {{ cnt.data_dismissione|date:"d/m/Y" }}
+                                            {% endif %}
+                                        </th>
                                     {% endfor %}
                                 </tr>
+                      
                                 <tr>
-                                    <th colspan="3">Prodotta</th>
-                                    <th colspan="3">Prelevata</th>
-                                    <th colspan="3">Immessa</th>
-                                    <th colspan="3">Prelevata</th>
-
-
-                                    {% comment %} {% if contatore.tipologia == 'Gesis' %} {% endcomment %}
-                                    <th colspan="3">Prodotta</th>
-                                    <th colspan="3">Prelevata</th>
-                                    {% comment %} {% endif %} {% endcomment %}
-
-                                    {% comment %} {% if contatore.tipologia == 'Kaifa' %} {% endcomment %}
-                                    <th colspan="3">Immessa</th>
-                                    <th colspan="3">Prelevata</th>
-                                    {% comment %} {% endif %} {% endcomment %}
-                                    
-
-
+                                    {# Seconda riga di intestazione: Sotto-intestazioni "Prodotta" e "Prelevata" #}
+                                    {% for cnt in contatori %}
+                                        {# Per ogni contatore, aggiungi le intestazioni per Prodotta e Prelevata #}
+                                        <th colspan="3">Prodotta</th>
+                                        <th colspan="3">Prelevata</th>
+                                    {% endfor %} 
                                 </tr>
                                 <tr>
-                                    <th>Campo kW/h</th>
-                                    <th>e-D</th>
-                                    <th>G.S.E</th>
-
-
-                                    <th>Campo kW/h</th>
-                                    <th>e-D</th>
-                                    <th>G.S.E</th>
-
-
-                                    <th>Campo kW/h</th>
-                                    <th>e-D</th>
-                                    <th>G.S.E</th>
-
-
-                                    <th>Campo kW/h</th>
-                                    <th>e-D</th>
-                                    <th>G.S.E</th>
-
-
-                                    
-                                    <th>Campo kW/h</th>
-                                    <th>e-D</th>
-                                    <th>G.S.E</th>
-
-                                    
-                                    <th>Campo kW/h</th>
-                                    <th>e-D</th>
-                                    <th>G.S.E</th>
-                                    
+                                    {# Terza riga di intestazione: Intestazioni specifiche delle colonne #}
+                                    {% for cnt in contatori %}
+                                        {# Colonne per "Prodotta" #}
+                                        <th>Campo kWh</th>
+                                        <th>e-D</th>
+                                        <th>G.S.E</th>
+                                        {# Colonne per "Prelevata" #}
+                                        <th>Campo kWh</th>
+                                        <th>e-D</th>
+                                        <th>G.S.E</th>
+                                    {% endfor %}                                     
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for i in num_rows %}
                                     {% with mese=i|add:"1" %}
                                         <tr data-mese="{{ mese }}">
-                                            <td>{{ mese }}</td>
+                                            <td>{{ mese|month_name }}</td>
                                             
-                                            <!-- Colonne per contatore Gesis (Produzione) -->
-                                            {% if dati_contatori.gesis %}
-                                                {% with lettura_gesis=dati_contatori.gesis.dati_per_mese|get_item:mese %}
-                                                    <td data-field="prod_campo">{{ lettura_gesis.prod_campo|default:"" }}</td>
-                                                    <td data-field="prod_ed">{{ lettura_gesis.prod_ed|default:"" }}</td>
-                                                    <td data-field="prod_gse">{{ lettura_gesis.prod_gse|default:"" }}</td>
-                                                    <td data-field="prel_campo">{{ lettura_gesis.prel_campo|default:"" }}</td>
-                                                    <td data-field="prel_ed">{{ lettura_gesis.prel_ed|default:"" }}</td>
-                                                    <td data-field="prel_gse">{{ lettura_gesis.prel_gse|default:"" }}</td>
+                                            <!-- Itera su tutti i contatori e mostra i dati corrispondenti -->
+                                            {% for cnt in contatori %}
+                                                {% with contatore_key="contatore_"|add:cnt.id|stringformat:"s" %}
+                                                    {% if dati_contatori|get_item:contatore_key %}
+                                                        {% with lettura=dati_contatori|get_item:contatore_key|get_item:"dati_per_mese"|get_item:mese %}
+                                                            {% if cnt.marca == 'Gesis' and cnt.tipologia == 'Produzione' %}
+                                                                <!-- Colonne per contatori Gesis (Produzione) -->
+                                                                <td data-field="prod_campo" data-contatore-id="{{ cnt.id }}">{{ lettura.prod_campo|default:"" }}</td>
+                                                                <td data-field="prod_ed" data-contatore-id="{{ cnt.id }}">{{ lettura.prod_ed|default:"" }}</td>
+                                                                <td data-field="prod_gse" data-contatore-id="{{ cnt.id }}">{{ lettura.prod_gse|default:"" }}</td>
+                                                                <td data-field="prel_campo" data-contatore-id="{{ cnt.id }}">{{ lettura.prel_campo|default:"" }}</td>
+                                                                <td data-field="prel_ed" data-contatore-id="{{ cnt.id }}">{{ lettura.prel_ed|default:"" }}</td>
+                                                                <td data-field="prel_gse" data-contatore-id="{{ cnt.id }}">{{ lettura.prel_gse|default:"" }}</td>
+                                                            {% elif cnt.marca == 'Kaifa' and cnt.tipologia == 'Scambio' %}
+                                                                <!-- Colonne per contatori Kaifa (Scambio) -->
+                                                                <td data-field="scambio_prelevata_campo" data-contatore-id="{{ cnt.id }}">{{ lettura.scambio_prelevata_campo|default:"" }}</td>
+                                                                <td data-field="scambio_prelevata_ed" data-contatore-id="{{ cnt.id }}">{{ lettura.scambio_prelevata_ed|default:"" }}</td>
+                                                                <td data-field="scambio_prelevata_gse" data-contatore-id="{{ cnt.id }}">{{ lettura.scambio_prelevata_gse|default:"" }}</td>
+                                                                <td data-field="imm_campo" data-contatore-id="{{ cnt.id }}">{{ lettura.imm_campo|default:"" }}</td>
+                                                                <td data-field="imm_ed" data-contatore-id="{{ cnt.id }}">{{ lettura.imm_ed|default:"" }}</td>
+                                                                <td data-field="imm_gse" data-contatore-id="{{ cnt.id }}">{{ lettura.imm_gse|default:"" }}</td>
+                                                            {% else %}
+                                                                <!-- Colonne generiche per altri tipi di contatori -->
+                                                                <td data-field="campo1" data-contatore-id="{{ cnt.id }}">{{ lettura.campo1|default:"" }}</td>
+                                                                <td data-field="campo2" data-contatore-id="{{ cnt.id }}">{{ lettura.campo2|default:"" }}</td>
+                                                                <td data-field="campo3" data-contatore-id="{{ cnt.id }}">{{ lettura.campo3|default:"" }}</td>
+                                                                <td data-field="campo4" data-contatore-id="{{ cnt.id }}">{{ lettura.campo4|default:"" }}</td>
+                                                                <td data-field="campo5" data-contatore-id="{{ cnt.id }}">{{ lettura.campo5|default:"" }}</td>
+                                                                <td data-field="campo6" data-contatore-id="{{ cnt.id }}">{{ lettura.campo6|default:"" }}</td>
+                                                            {% endif %}
+                                                        {% endwith %}
+                                                    {% else %}
+                                                        <!-- Celle vuote se non ci sono dati -->
+                                                        <td data-contatore-id="{{ cnt.id }}"></td>
+                                                        <td data-contatore-id="{{ cnt.id }}"></td>
+                                                        <td data-contatore-id="{{ cnt.id }}"></td>
+                                                        <td data-contatore-id="{{ cnt.id }}"></td>
+                                                        <td data-contatore-id="{{ cnt.id }}"></td>
+                                                        <td data-contatore-id="{{ cnt.id }}"></td>
+                                                    {% endif %}
                                                 {% endwith %}
-                                            
-                                            {% endif %}
-                                            
-                                            <!-- Colonne per contatore Kaifa (Scambio) -->
-                                            {% if dati_contatori.kaifa %}
-                                                {% with lettura_kaifa=dati_contatori.kaifa.dati_per_mese|get_item:mese %}
-                                                <td data-field=" scambio_prelevata_campo ">{{ lettura_kaifa.scambio_prelevata_campo|default:"" }}</td>
-                                                    <td data-field="scambio_prelevata_ed">{{ lettura_kaifa.scambio_prelevata_ed|default:"" }}</td>
-                                                    <td data-field="scambio_prelevata_gse">{{ lettura_kaifa.scambio_prelevata_gse|default:"" }}</td>
-                                                    <td data-field="imm_campo">{{ lettura_kaifa.imm_campo|default:"" }}</td>
-                                                    <td data-field="imm_ed">{{ lettura_kaifa.imm_ed|default:"" }}</td>
-                                                    <td data-field="imm_gse">{{ lettura_kaifa.imm_gse|default:"" }}</td>
-                                                    
-                                                {% endwith %}
-                           
-                                            {% endif %}
+                                            {% endfor %}
                                         </tr>
                                     {% endwith %}
                                 {% endfor %}
@@ -191,7 +166,10 @@
                             {% for contatore in contatori %}
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                     <a href="{% url 'diari-letture' impianto.nickname %}?contatore_id={{ contatore.id }}" class="contatore-link">
-                                        <span class="contatore-nome">{{ contatore.nome }}</span>
+                                        <span class="contatore-nome">{{ contatore.nome }} </span>
+                                        {% if contatore.data_dismissione %}
+                                            - Data dismissione: {{ contatore.data_dismissione|date:"d/m/Y" }}
+                                        {% endif %}
                                     </a>
                                     <span class="badge {% if contatore.tipologia == 'Produzione' %}bg-success{% elif contatore.tipologia == 'Scambio' %}bg-primary{% else %}bg-secondary{% endif %} rounded-pill">
                                         <i class="bi bi-lightning-charge-fill"></i>
@@ -208,6 +186,13 @@
                         <li class="list-group-item text-center">
                             <a href="{% url 'nuovo-contatore' impianto.nickname %}" class="btn btn-outline-primary btn-sm">
                                 <i class="bi bi-plus-circle"></i> Aggiungi Contatore
+                            </a>
+                        </li>
+
+
+                        <li class="list-group-item text-center">
+                            <a href="{% url 'sostituzione-contatore' impianto.nickname %}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-plus-circle"></i> Sostituzione Contatore
                             </a>
                         </li>
                     </ul>

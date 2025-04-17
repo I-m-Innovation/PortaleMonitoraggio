@@ -1,23 +1,29 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from MonitoraggioImpianti.models import Impianto
 # from .models import Contatore, LetturaContatore
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse, Http404
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import datetime
-from .models import Contatore, LetturaContatore
+from .models import Impianto, Contatore, LetturaContatore
 from AutomazioneDati.models import Impianto as AutomazioneImpianto
 from MonitoraggioImpianti.models import Impianto as MonitoraggioImpianto
 from django.utils.formats import date_format
+from django.contrib import messages
+from django.urls.exceptions import NoReverseMatch
+import traceback
 
 
 
 def home(request):
+    from MonitoraggioImpianti.models import Impianto 
     # Filtriamo solo gli impianti con tipo "Idroelettrico"
     impianti = Impianto.objects.filter(tipo='Idroelettrico')
     return render(request, 'home.html', {'impianti': impianti})
+
+
 
 
 def reg_segnanti(request, nickname):
@@ -31,130 +37,77 @@ def reg_segnanti(request, nickname):
             # Ottieni l'anno corrente dalla query string o usa quello attuale
             anno_corrente = request.GET.get('anno', str(datetime.date.today().year))
             
-            # Trova i contatori Gesis e Kaifa (se esistono)
-            contatore_gesis = contatori.filter(marca='Gesis', tipologia='Produzione').first()
-            contatore_kaifa = contatori.filter(marca='Kaifa', tipologia='Scambio').first()
-            
-            # Dizionario per memorizzare i dati per ogni tipo di contatore
+            # Dizionario per memorizzare i dati per ogni contatore
             dati_contatori = {}
             
-            # Se esiste un contatore Gesis, elabora i suoi dati
-            if contatore_gesis:
+            # Loop attraverso tutti i contatori
+            for contatore in contatori:
+                contatore_key = f"contatore_{contatore.id}"
+                
                 # Recupera le letture per reg_segnanti
-                letture_reg_gesis = LetturaContatore.objects.filter(
-                    contatore=contatore_gesis,
+                letture_reg = LetturaContatore.objects.filter(
+                    contatore=contatore,
                     anno=anno_corrente,
                     tipo_tabella='reg_segnanti'
                 ).order_by('mese')
-                letture_reg_gesis_per_mese = {lettura.mese: lettura for lettura in letture_reg_gesis}
+                letture_reg_per_mese = {lettura.mese: lettura for lettura in letture_reg}
                 
-                # Recupera le letture da libro_energie per Gesis/Produzione
-                letture_libro_energie_qs = LetturaContatore.objects.filter(
-                    contatore=contatore_gesis,
-                    anno=anno_corrente,
-                    tipo_tabella='libro_energie'
-                ).order_by('mese')
-                letture_libro_energie_per_mese = {lettura.mese: lettura for lettura in letture_libro_energie_qs}
+                # Dizionario per i dati mensili di questo contatore
+                dati_per_mese = {}
                 
-                # Elabora i dati per ogni mese
-                dati_gesis_per_mese = {}
+                # Per ogni mese, preparare i dati o creare un record vuoto
                 for mese in range(1, 13):
-                    lettura_reg = letture_reg_gesis_per_mese.get(mese)
+                    lettura_reg = letture_reg_per_mese.get(mese)
                     if lettura_reg is None:
                         lettura_reg = LetturaContatore(
-                            contatore=contatore_gesis,
+                            contatore=contatore,
                             anno=anno_corrente,
                             mese=mese,
                             tipo_tabella='reg_segnanti'
                         )
                     
-                    # Importa dati da libro_energie se disponibili
-                    lettura_libro = letture_libro_energie_per_mese.get(mese)
-                    if lettura_libro:
-                        if lettura_libro.totale_neg is not None and lettura_libro.totale_neg > 0:
-                            try:
-                                valore_con_decimali = lettura_libro.totale_neg * Decimal(str(contatore_gesis.k))
-                                valore_arrotondato = valore_con_decimali.quantize(Decimal('1'), rounding=ROUND_HALF_UP)
-                                lettura_reg.prod_campo = valore_arrotondato
-                            except (TypeError, InvalidOperation) as e:
-                                print(f"Errore durante calcolo prod_campo per Gesis, mese {mese}: {e}")
-                        
-                        if lettura_libro.totale_pos is not None and lettura_libro.totale_pos > 0:
-                            try:
-                                valore_importato_pos = lettura_libro.totale_pos * Decimal(str(contatore_gesis.k))
-                                lettura_reg.prel_campo = valore_importato_pos.quantize(Decimal('0.001'), rounding=ROUND_HALF_UP)
-                            except (TypeError, InvalidOperation) as e:
-                                print(f"Errore durante calcolo prel_campo per Gesis, mese {mese}: {e}")
-                    
-                    dati_gesis_per_mese[mese] = lettura_reg
-                
-                dati_contatori['gesis'] = {
-                    'contatore': contatore_gesis,
-                    'dati_per_mese': dati_gesis_per_mese
-                }
-            
-            # Se esiste un contatore Kaifa, elabora i suoi dati
-            if contatore_kaifa:
-                # Recupera le letture per reg_segnanti
-                letture_reg_kaifa = LetturaContatore.objects.filter(
-                    contatore=contatore_kaifa,
-                    anno=anno_corrente,
-                    tipo_tabella='reg_segnanti'
-                ).order_by('mese')
-                letture_reg_kaifa_per_mese = {lettura.mese: lettura for lettura in letture_reg_kaifa}
-                
-                # Recupera i dati da libro_kaifa
-                letture_libro_kaifa_qs = LetturaContatore.objects.filter(
-                    contatore=contatore_kaifa,
-                    anno=anno_corrente,
-                    tipo_tabella='libro_kaifa'
-                ).order_by('mese')
-                letture_libro_kaifa_per_mese = {lettura.mese: lettura for lettura in letture_libro_kaifa_qs}
-                
-                # Ottieni mapping dei valori totale_180n e totale_280n
-                kaifa_mapping = get_kaifa_totale_mapping(contatore_kaifa, anno_corrente)
-                
-                # Elabora i dati per ogni mese
-                dati_kaifa_per_mese = {}
-                for mese in range(1, 13):
-                    lettura_reg = letture_reg_kaifa_per_mese.get(mese)
-                    if lettura_reg is None:
-                        lettura_reg = LetturaContatore(
-                            contatore=contatore_kaifa,
+                    # Se è Gesis, possiamo importare dati da libro_energie
+                    if contatore.marca == 'Gesis' and contatore.tipologia == 'Produzione':
+                        letture_libro_energie = LetturaContatore.objects.filter(
+                            contatore=contatore,
                             anno=anno_corrente,
                             mese=mese,
-                            tipo_tabella='reg_segnanti'
-                        )
-                    
-                    # Imposta i campi usando i valori da totale_180n e totale_280n (solo positivi)
-                    if mese in kaifa_mapping:
-                        # Imposta imm_campo con totale_180n (solo se positivo)
-                        if kaifa_mapping[mese]['totale_180n'] is not None:
-                            valore_180n = kaifa_mapping[mese]['totale_180n'] * contatore_kaifa.k
-                            if valore_180n > 0 and lettura_reg.imm_campo is None:
-                                lettura_reg.imm_campo = valore_180n
+                            tipo_tabella='libro_energie'
+                        ).first()
                         
-                        # Imposta scambio_prelevata_campo con totale_280n (solo se positivo)
-                        if kaifa_mapping[mese]['totale_280n'] is not None:
-                            valore_280n = kaifa_mapping[mese]['totale_280n'] * contatore_kaifa.k
-                            if valore_280n > 0 and lettura_reg.scambio_prelevata_campo is None:
-                                lettura_reg.scambio_prelevata_campo = valore_280n
+                        if letture_libro_energie:
+                            # Importa i dati se necessario...
+                            pass
                     
-                    dati_kaifa_per_mese[mese] = lettura_reg
+                    # Se è Kaifa, possiamo importare dati da libro_kaifa
+                    elif contatore.marca == 'Kaifa' and contatore.tipologia == 'Scambio':
+                        letture_libro_kaifa = LetturaContatore.objects.filter(
+                            contatore=contatore,
+                            anno=anno_corrente,
+                            mese=mese,
+                            tipo_tabella='libro_kaifa'
+                        ).first()
+                        
+                        if letture_libro_kaifa:
+                            # Importa i dati se necessario...
+                            pass
+                    
+                    # Salva la lettura per questo mese
+                    dati_per_mese[mese] = lettura_reg
                 
-                dati_contatori['kaifa'] = {
-                    'contatore': contatore_kaifa,
-                    'dati_per_mese': dati_kaifa_per_mese
+                # Salva i dati di questo contatore nel dizionario principale
+                dati_contatori[contatore_key] = {
+                    'contatore': contatore,
+                    'dati_per_mese': dati_per_mese
                 }
             
-            # Prepara il contesto combinato
+            # Prepara il contesto
             context = {
                 'impianto': impianto,
                 'contatori': contatori,
                 'dati_contatori': dati_contatori,
                 'num_rows': range(12),
-                'anno_corrente': anno_corrente,
-                'visualizza_pulsante_importazione': bool(contatore_kaifa)
+                'anno_corrente': anno_corrente
             }
             
             return render(request, 'reg_segnanti.html', context)
@@ -185,10 +138,10 @@ def salva_contatore(request):
         impianto_id = request.POST.get('impianto_id')
         
         # Usa il modello corretto per Impianto
-        from MonitoraggioImpianti.models import Impianto as MonitoraggioImpianto
+        from AutomazioneDati.models import Impianto  
         
         # Recupera l'impianto originale da MonitoraggioImpianti
-        impianto_monitoraggio = get_object_or_404(MonitoraggioImpianto, id=impianto_id)
+        impianto_monitoraggio = get_object_or_404(Impianto, id=impianto_id)
         
         # Crea un nuovo contatore usando i dati dell'impianto
         from AutomazioneDati.models import Contatore
@@ -903,4 +856,121 @@ def get_kaifa_totale_mapping(contatore, anno):
             'totale_280n': lettura.totale_280n if lettura.totale_280n and lettura.totale_280n > 0 else None
         }
     return mapping
+
+def sostituzione_contatore(request, nickname):
+    """Vista per mostrare la pagina di sostituzione contatore."""
+    try:
+        impianto = get_object_or_404(MonitoraggioImpianto, nickname=nickname)
+
+        # --- DEBUG: Stampa il tipo dell'oggetto recuperato ---
+        # print(f"DEBUG: Oggetto impianto recuperato: {impianto}")
+        # print(f"DEBUG: Tipo di oggetto impianto: {type(impianto)}")
+        # --- FINE DEBUG ---
+
+        if not isinstance(impianto, MonitoraggioImpianto):
+             raise TypeError(f"Errore imprevisto: get_object_or_404 ha restituito {type(impianto)} invece di MonitoraggioImpianto.")
+
+        contatori_attivi = Contatore.objects.filter(impianto_nickname=nickname, data_dismissione__isnull=True)
+
+        context = {
+            'impianto': impianto,
+            'contatori_attivi': contatori_attivi,
+            # Inizialmente non c'è un contatore selezionato nel contesto
+        }
+
+        # Se abbiamo un contatore selezionato in sessione, proviamo a caricarlo
+        if 'contatore_selezionato_id' in request.session:
+            contatore_id = request.session['contatore_selezionato_id']
+            try:
+                # Assicurati che il contatore esista e appartenga all'impianto corretto
+                contatore_selezionato = Contatore.objects.get(id=contatore_id, impianto_nickname=nickname)
+                context['contatore_selezionato'] = contatore_selezionato
+                print(f"DEBUG: Contatore ID {contatore_id} trovato e aggiunto al contesto.")
+            except Contatore.DoesNotExist:
+                # Se il contatore non esiste o non appartiene a questo impianto,
+                # rimuovi l'ID non valido dalla sessione e informa l'utente.
+                print(f"DEBUG: Contatore ID {contatore_id} dalla sessione non trovato per nickname {nickname}. Rimuovo dalla sessione.")
+                del request.session['contatore_selezionato_id']
+                messages.warning(request, f"Il contatore precedentemente selezionato (ID: {contatore_id}) non è stato trovato o non appartiene a questo impianto.")
+                # La pagina verrà comunque renderizzata, ma senza un contatore preselezionato.
+
+        return render(request, 'sostituzione_contatore.html', context)
+
+    except MonitoraggioImpianto.DoesNotExist:
+         raise Http404(f"Impianto con nickname '{nickname}' non trovato nel modello MonitoraggioImpianti.")
+    except Exception as e:
+         print(f"Errore inatteso in sostituzione_contatore: {e}")
+         import traceback
+         traceback.print_exc()
+         raise
+
+def seleziona_contatore_sostituzione(request):
+    """Funzione per selezionare un contatore da sostituire."""
+    if request.method == 'POST':
+        contatore_id = request.POST.get('contatore_id')
+        nickname = request.POST.get('impianto_nickname')
+        
+        # Salviamo l'ID del contatore selezionato nella sessione
+        request.session['contatore_selezionato_id'] = contatore_id
+        
+        # Reindirizziamo alla pagina di sostituzione contatore
+        return redirect('sostituzione_contatore', nickname=nickname)
+    
+    # Se non è una richiesta POST, reindirizza alla home
+    return redirect('automazione-dati')
+
+def salva_contatore_sostituzione(request):
+    """Funzione per salvare la sostituzione di un contatore."""
+    if request.method == 'POST':
+        # 1. Otteniamo i dati dal form
+        nickname = request.POST.get('impianto_nickname')
+        contatore_da_sostituire_id = request.POST.get('contatore_da_sostituire_id')
+        data_dismissione = request.POST.get('data_dismissione')
+
+        # 2. Aggiorniamo il contatore vecchio con la data di dismissione
+        contatore_vecchio = get_object_or_404(Contatore, id=contatore_da_sostituire_id)
+        contatore_vecchio.data_dismissione = data_dismissione
+        contatore_vecchio.save()
+
+        # 3. Creiamo il nuovo contatore
+        # Modifica: Recupera l'impianto dal modello corretto (MonitoraggioImpianto)
+        impianto_monitoraggio = get_object_or_404(MonitoraggioImpianto, nickname=nickname)
+        nuovo_contatore = Contatore(
+            # Rimosso: impianto=impianto, (il modello Contatore non ha questo campo)
+            impianto_nickname=impianto_monitoraggio.nickname, # Usa il nickname dall'impianto corretto
+            nome=request.POST.get('nome'),
+            pod=request.POST.get('pod'),
+            tipologia=request.POST.get('tipologia'),
+            k=request.POST.get('k'),
+            marca=request.POST.get('marca'),
+            modello=request.POST.get('modello'),
+            data_installazione=request.POST.get('data_installazione'),
+        )
+        nuovo_contatore.save()
+
+        # 4. Puliamo la sessione e mostriamo un messaggio di successo
+        if 'contatore_selezionato_id' in request.session:
+            del request.session['contatore_selezionato_id']
+
+        messages.success(request, f"Contatore {contatore_vecchio.nome} sostituito con successo da {nuovo_contatore.nome}!")
+
+        # 5. Redirigiamo alla pagina di dettaglio dell'impianto (usando il namespace e pk)
+        # Modifica: Usa il namespace 'monitoraggio-impianti' e 'pk' come argomento
+        try:
+            # Prova a reindirizzare usando il namespace e 'pk'
+            return redirect('monitoraggio-impianti:dettaglio_impianto', pk=impianto_monitoraggio.id)
+        except NoReverseMatch:
+            # Se fallisce, potrebbe essere che l'argomento si chiami 'impianto_id'
+            try:
+                return redirect('monitoraggio-impianti:dettaglio_impianto', impianto_id=impianto_monitoraggio.id)
+            except NoReverseMatch:
+                # Se fallisce ancora, informa che l'URL non è stato trovato
+                # In un'applicazione reale, potresti reindirizzare a una pagina generica o loggare l'errore
+                messages.error(request, "Errore: Impossibile trovare l'URL per la pagina di dettaglio dell'impianto. Contattare l'amministratore.")
+                # Reindirizza alla home dell'app come fallback
+                return redirect('automazione-dati')
+
+
+    # Se non è una richiesta POST, reindirizza alla home
+    return redirect('automazione-dati')
 

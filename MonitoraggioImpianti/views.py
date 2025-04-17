@@ -2,6 +2,7 @@ import pandas as pd
 from datetime import datetime,timedelta
 
 from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
 
 from .models import *
 from MonitoraggioImpianti.utils import functions as fn
@@ -9,6 +10,7 @@ from .API_OpenMeteo import get_OpenMeteoData, get_WeatherIcon
 
 
 # VIEW MONITORAGGIO - HOME
+@login_required
 def home(request):
 	# PRENDO LINK PORTALE CORRISPETTIVI (NELLA NAV-BAR)
 	link_corrispettivi = linkportale.objects.filter(tag='portale-corrispettivi')[0].link
@@ -150,6 +152,7 @@ def home(request):
 
 
 # VIEW MONITORAGGIO - IMPIANTO
+@login_required
 def impianto(request, nickname):
 	# LINK PORTALE CORRISPETTIVI (NELLA NAV-BAR)
 	link_corrispettivi = linkportale.objects.filter(tag='portale-corrispettivi')[0].link

@@ -444,11 +444,12 @@ Stili specifici per il registro segnanti */
 /* Migliora la gestione del testo nelle celle */
 .tabellareg_segnanti table th, 
 .tabellareg_segnanti table td {
-    white-space: nowrap; 
-    overflow: hidden;    
-    text-overflow: ellipsis; 
+    white-space: normal; /* Permette al testo di andare a capo */
+    overflow: visible;   /* Rimuove il taglio del testo */
+    text-overflow: clip; /* Rimuove i puntini di sospensione */
     padding: 5px;        
     font-size: 0.9rem;   
+    min-width: 100px;    /* Imposta una larghezza minima */
 } 
 
 /* Consenti alle celle modificabili di mostrare tutto il testo durante l'editing */

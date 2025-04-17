@@ -1,0 +1,98 @@
+{% extends 'base_layout.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <!-- Inclusione del CSS personalizzato per il Diario delle Letture -->
+    <link rel="stylesheet" href="{% static 'css/nuovo_contatore.css' %}">
+    <!-- Inclusione del CSS per Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+{% endblock extra_css %}
+
+{% block content %}
+<!-- Sezione registrazione dispositivo -->
+<div class="registrazioneDispositivo">
+    <!-- Div centrale posizionato SOPRA il form -->
+    <div class="central-div">
+        <h3>
+            Sostituzione Contatore {{ impianto.nome_impianto }}
+        </h3>
+    </div>
+    
+    <!-- Form per selezionare il contatore da sostituire -->
+    <div class="form-group contatore-da-sostituire">
+        <h4>Seleziona il contatore da sostituire:</h4>
+        <form id="select-contatore-form" action="{% url 'seleziona_contatore_sostituzione' %}" method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <select name="contatore_id" id="contatore_id" class="form-control" required>
+                    <option value="">-- Seleziona un contatore --</option>
+                    {% for contatore in contatori_attivi %}
+                        <option value="{{ contatore.id }}">
+                            {{ contatore.nome }} ({{ contatore.tipologia }}) - POD: {{ contatore.pod }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <input type="hidden" name="impianto_nickname" value="{{ impianto.nickname }}">
+            <button type="submit" class="btn btn-warning">Seleziona per Sostituzione</button>
+        </form>
+    </div>
+    
+    {% if contatore_selezionato %}
+    <div class="contatore-selezionato alert alert-info">
+        <h4>Contatore da sostituire:</h4>
+        <p><strong>{{ contatore_selezionato.nome }}</strong> - POD: {{ contatore_selezionato.pod }}</p>
+        <p>Tipologia: {{ contatore_selezionato.tipologia }} - Marca: {{ contatore_selezionato.marca }}</p>
+        <p>Data installazione: {{ contatore_selezionato.data_installazione }}</p>
+    </div>
+    
+    <!-- Form per i dati del nuovo contatore -->
+    <form id="device-registration-form" action="{% url 'salva_contatore_sostituzione' %}" method="post" class="device-form">
+        {% csrf_token %}
+        <h4>Dati del nuovo contatore:</h4>
+        <div class="form-group">
+            <label for="data_dismissione">Data di dismissione del contatore vecchio</label>
+            <input type="date" id="data_dismissione" name="data_dismissione" required>
+        </div>
+        <div class="form-group">
+            <label for="nome">Nome</label>
+            <input type="text" id="nome" name="nome" required>
+        </div>
+        <div class="form-group">
+            <label for="pod">POD</label>
+            <input type="text" id="pod" name="pod" required>
+        </div>
+        <div class="form-group">
+            <label for="k">K</label>
+            <input type="number" id="k" name="k" required>
+        </div>
+        <div class="form-group">
+            <label for="marca">Marca</label>
+            <select name="marca" id="marca" class="form-control">
+                <option value="Kaifa">Kaifa</option>
+                <option value="Gesis">Gesis</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="modello">Modello</label>
+            <input type="text" id="modello" name="modello" required>
+        </div>
+        <div class="form-group">
+            <label for="data_installazione">Data di installazione</label>
+            <input type="date" id="data_installazione" name="data_installazione" required>
+        </div>
+        <div class="form-group">
+            <label for="dropdown">Tipo di contatore</label>
+            <select id="dropdown" name="tipologia" class="custom-select" required>
+                <option value="Produzione">Produzione</option>
+                <option value="Scambio">Scambio</option>
+                <option value="Ausiliare">Ausiliare</option>
+            </select>
+        </div>
+        <input type="hidden" name="impianto_nickname" value="{{ impianto.nickname }}">
+        <input type="hidden" name="contatore_da_sostituire_id" value="{{ contatore_selezionato.id }}">
+        <button type="submit" class="btn btn-primary">Registra Sostituzione</button>
+    </form>
+    {% endif %}
+</div>
+{% endblock content %}

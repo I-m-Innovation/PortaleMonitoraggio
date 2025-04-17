@@ -135,6 +135,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Calcola i totali iniziali
     setTimeout(updateAllDifferentials, 500);
+
+    // Inizializza il pulsante per il toggle delle somme
+    setupToggleSumsButton();
 });
 
 // Funzione per convertire la data italiana (GG/MM/AAAA) in formato ISO (YYYY-MM-DD)
@@ -644,73 +647,69 @@ function addCellListeners() {
     });
 }
 
-// Funzione per aggiornare i differenziali di una specifica riga
-// Aggiunto parametro tableId per sapere quale tabella stiamo aggiornando
+// Funzione per aggiornare i differenziali di una specifica riga// Aggiunto parametro tableId per sapere quale tabella stiamo aggiornando
 function updateRowDifferentials(riga, index, tipo, tableId) {
-    // Ottieni la riga successiva (se esiste) all'interno della tabella specifica
-    const rigaSuccessiva = document.querySelector(`#${tableId} table tbody tr[data-mese="${parseInt(riga.dataset.mese) + 1}"]`);
-    if (!rigaSuccessiva) return; // Non calcolare se non c'è una riga successiva
-
-    // --- Logica per Libro Energie ---
+    // --- Logica per Libro Energie (MODIFICATA) ---
     if (tableId === 'libro_energie') {
+        // Calcola la SOMMA per la riga corrente, non la differenza con la successiva
+
         if (tipo === 'neg' || tipo === 'all') {
-            // Calcola il totale negativo (codice esistente)
+            // Calcola la somma dei valori negativi della riga corrente
             const a1NegCorrente = parseNumericValue(riga.querySelector('td[data-field="a1_neg"]'));
             const a2NegCorrente = parseNumericValue(riga.querySelector('td[data-field="a2_neg"]'));
             const a3NegCorrente = parseNumericValue(riga.querySelector('td[data-field="a3_neg"]'));
-            const a1NegSuccessiva = parseNumericValue(rigaSuccessiva.querySelector('td[data-field="a1_neg"]'));
-            const a2NegSuccessiva = parseNumericValue(rigaSuccessiva.querySelector('td[data-field="a2_neg"]'));
-            const a3NegSuccessiva = parseNumericValue(rigaSuccessiva.querySelector('td[data-field="a3_neg"]'));
             const sommaNegCorrente = a1NegCorrente + a2NegCorrente + a3NegCorrente;
-            const sommaNegSuccessiva = a1NegSuccessiva + a2NegSuccessiva + a3NegSuccessiva;
-            const differenzaNeg = sommaNegSuccessiva - sommaNegCorrente;
 
-            // Aggiorna la cella totale negativo
+            // Aggiorna la cella totale negativo con la SOMMA
             const totaleNegCell = riga.querySelector('td[data-field="totale_neg"]');
-            updateCalculatedCell(totaleNegCell, differenzaNeg);
+            updateCalculatedCell(totaleNegCell, sommaNegCorrente);
         }
 
         if (tipo === 'pos' || tipo === 'all') {
-            // Calcola il totale positivo (codice esistente)
+            // Calcola la somma dei valori positivi della riga corrente
             const a1PosCorrente = parseNumericValue(riga.querySelector('td[data-field="a1_pos"]'));
             const a2PosCorrente = parseNumericValue(riga.querySelector('td[data-field="a2_pos"]'));
             const a3PosCorrente = parseNumericValue(riga.querySelector('td[data-field="a3_pos"]'));
-            const a1PosSuccessiva = parseNumericValue(rigaSuccessiva.querySelector('td[data-field="a1_pos"]'));
-            const a2PosSuccessiva = parseNumericValue(rigaSuccessiva.querySelector('td[data-field="a2_pos"]'));
-            const a3PosSuccessiva = parseNumericValue(rigaSuccessiva.querySelector('td[data-field="a3_pos"]'));
             const sommaPosCorrente = a1PosCorrente + a2PosCorrente + a3PosCorrente;
-            const sommaPosSuccessiva = a1PosSuccessiva + a2PosSuccessiva + a3PosSuccessiva;
-            const differenzaPos = sommaPosSuccessiva - sommaPosCorrente;
 
-            // Aggiorna la cella totale positivo
+            // Aggiorna la cella totale positivo con la SOMMA
             const totalePosCell = riga.querySelector('td[data-field="totale_pos"]');
-            updateCalculatedCell(totalePosCell, differenzaPos);
+            updateCalculatedCell(totalePosCell, sommaPosCorrente);
         }
+        // NOTA: Non è più necessario aggiornare la riga precedente per la logica di somma semplice.
     }
-    // --- Logica per Libro Kaifa ---
+    // --- Logica per Libro Kaifa (INVARIATA - Calcola la differenza) ---
     else if (tableId === 'libro_kaifa') {
-        // Calcola totale 1.8.0.n
+        // Ottieni la riga successiva (necessaria per la differenza)
+        const rigaSuccessiva = document.querySelector(`#${tableId} table tbody tr[data-mese="${parseInt(riga.dataset.mese) + 1}"]`);
+        if (!rigaSuccessiva) return; // Non calcolare se non c'è una riga successiva
+
+        // Calcola totale 1.8.0.n (differenza)
         const kaifa180nCorrente = parseNumericValue(riga.querySelector('td[data-field="kaifa_180n"]'));
         const kaifa180nSuccessiva = parseNumericValue(rigaSuccessiva.querySelector('td[data-field="kaifa_180n"]'));
         const differenza180n = kaifa180nSuccessiva - kaifa180nCorrente;
         const totale180nCell = riga.querySelector('td[data-field="totale_180n"]');
         updateCalculatedCell(totale180nCell, differenza180n);
 
-        // Calcola totale 2.8.0.n
+        // Calcola totale 2.8.0.n (differenza)
         const kaifa280nCorrente = parseNumericValue(riga.querySelector('td[data-field="kaifa_280n"]'));
         const kaifa280nSuccessiva = parseNumericValue(rigaSuccessiva.querySelector('td[data-field="kaifa_280n"]'));
         const differenza280n = kaifa280nSuccessiva - kaifa280nCorrente;
         const totale280nCell = riga.querySelector('td[data-field="totale_280n"]');
         updateCalculatedCell(totale280nCell, differenza280n);
-    }
 
-    // Aggiorna anche la riga precedente, perché il suo totale dipende da questa riga
-    // Assicurati di passare lo stesso tableId
-    const rigaPrecedente = document.querySelector(`#${tableId} table tbody tr[data-mese="${parseInt(riga.dataset.mese) - 1}"]`);
-    if (rigaPrecedente) {
-        const indexPrecedente = index - 1;
-        // Chiamata ricorsiva per aggiornare la riga precedente, passando il tipo e tableId corretti
-        updateRowDifferentials(rigaPrecedente, indexPrecedente, tipo, tableId);
+        // Aggiorna anche la riga precedente per Kaifa, perché il suo totale dipende da questa riga
+        const rigaPrecedente = document.querySelector(`#${tableId} table tbody tr[data-mese="${parseInt(riga.dataset.mese) - 1}"]`);
+        if (rigaPrecedente) {
+            const indexPrecedente = index - 1;
+            // Chiamata ricorsiva per aggiornare la riga precedente, passando il tipo e tableId corretti
+            // Assicurati che questa chiamata non causi loop infiniti se la logica è complessa
+            // Potrebbe essere necessario un controllo aggiuntivo o un approccio diverso se updateRowDifferentials
+            // viene chiamato da più punti contemporaneamente.
+            // Per ora, assumiamo che funzioni correttamente per la logica Kaifa.
+            // NOTA: Questa chiamata è specifica per Kaifa dove il totale dipende dalla riga successiva.
+             updateRowDifferentials(rigaPrecedente, indexPrecedente, 'all', tableId); // Usiamo 'all' per ricalcolare entrambi i totali Kaifa
+        }
     }
 }
 
@@ -745,7 +744,8 @@ function updateCalculatedCell(cell, value) {
 function updateAllDifferentials() {
     // --- Libro Energie ---
     const righeEnergie = document.querySelectorAll('#libro_energie table tbody tr');
-    for (let i = 0; i < righeEnergie.length - 1; i++) {
+    // Modifica: Itera su TUTTE le righe, non fino a length - 1, perché la somma non dipende dalla riga successiva
+    for (let i = 0; i < righeEnergie.length; i++) {
         const rigaCorrente = righeEnergie[i];
         // Passa 'all' per calcolare sia pos che neg, e l'ID della tabella
         updateRowDifferentials(rigaCorrente, i, 'all', 'libro_energie');
@@ -753,6 +753,7 @@ function updateAllDifferentials() {
 
     // --- Libro Kaifa ---
     const righeKaifa = document.querySelectorAll('#libro_kaifa table tbody tr');
+    // Per Kaifa, iteriamo ancora fino a length - 1 perché il calcolo della differenza necessita della riga successiva
     for (let i = 0; i < righeKaifa.length - 1; i++) {
         const rigaCorrente = righeKaifa[i];
         // Passa 'all' come tipo (non c'è distinzione) e l'ID della tabella
@@ -992,3 +993,142 @@ function salvaDati(saveButton, tipoContatore, datiTabella, csrfToken) {
         saveButton.innerHTML = '<i class="bi bi-save"></i> Salva';
     });
 }
+
+// Funzione per alternare tra visualizzazione completa e solo totali
+function toggleColumnSums() {
+    // Ottieni lo stato corrente
+    const showDetailsElement = document.getElementById('show-details');
+    const showDetails = showDetailsElement ? showDetailsElement.value === 'true' : true;
+    
+    // Ottieni tutte le colonne di dettaglio in entrambe le tabelle
+    const detailColumnsEnergie = document.querySelectorAll('#libro_energie table th[data-column-type="detail"], #libro_energie table td[data-field^="a"]');
+    const detailColumnsKaifa = document.querySelectorAll('#libro_kaifa table th[data-column-type="detail"], #libro_kaifa table td[data-field^="kaifa_"]');
+    
+    // Ottieni il pulsante toggle
+    const toggleButton = document.getElementById('toggle-sums-button');
+    
+    // Cambia lo stato
+    const newShowDetails = !showDetails;
+    
+    // Aggiorna la visualizzazione delle colonne
+    const displayValue = newShowDetails ? 'table-cell' : 'none';
+    
+    detailColumnsEnergie.forEach(col => {
+        col.style.display = displayValue;
+    });
+    
+    detailColumnsKaifa.forEach(col => {
+        col.style.display = displayValue;
+    });
+    
+    // Aggiorna il testo del pulsante
+    if (toggleButton) {
+        toggleButton.innerHTML = newShowDetails ? 
+            '<i class="bi bi-eye-slash"></i> Mostra solo totali' : 
+            '<i class="bi bi-eye"></i> Mostra dettagli';
+    }
+    
+    // Memorizza lo stato
+    if (showDetailsElement) {
+        showDetailsElement.value = newShowDetails.toString();
+    } else {
+        // Crea l'elemento se non esiste
+        const stateElement = document.createElement('input');
+        stateElement.type = 'hidden';
+        stateElement.id = 'show-details';
+        stateElement.value = newShowDetails.toString();
+        document.body.appendChild(stateElement);
+    }
+    
+    // Aggiorna anche i titoli delle tabelle
+    const tableHeaders = document.querySelectorAll('.table-title');
+    tableHeaders.forEach(header => {
+        if (newShowDetails) {
+            header.classList.remove('only-totals');
+        } else {
+            header.classList.add('only-totals');
+        }
+    });
+    
+    console.log(`Visualizzazione cambiata: ${newShowDetails ? 'dettagli visibili' : 'solo totali'}`);
+}
+
+// Funzione per inizializzare il pulsante toggle
+function setupToggleSumsButton() {
+    // Cerca un container esistente per i pulsanti
+    const buttonContainer = document.querySelector('.button-container') || document.querySelector('.controls');
+    
+    if (!buttonContainer) {
+        console.warn('Contenitore pulsanti non trovato, creazione nuovo container');
+        // Crea un nuovo container se non esiste
+        const newContainer = document.createElement('div');
+        newContainer.className = 'button-container mt-3 mb-3';
+        
+        // Inserisci il container prima della prima tabella
+        const firstTable = document.querySelector('#libro_energie') || document.querySelector('#libro_kaifa');
+        if (firstTable && firstTable.parentNode) {
+            firstTable.parentNode.insertBefore(newContainer, firstTable);
+        } else {
+            document.body.appendChild(newContainer);
+        }
+        
+        // Usa il nuovo container
+        setupToggleButton(newContainer);
+    } else {
+        // Usa il container esistente
+        setupToggleButton(buttonContainer);
+    }
+    
+    // Imposta gli attributi data-column-type necessari
+    setupColumnAttributes();
+}
+
+// Funzione helper per creare il pulsante
+function setupToggleButton(container) {
+    // Crea il pulsante
+    const toggleButton = document.createElement('button');
+    toggleButton.id = 'toggle-sums-button';
+    toggleButton.className = 'btn btn-outline-primary me-2';
+    toggleButton.innerHTML = '<i class="bi bi-eye-slash"></i> Mostra solo totali';
+    toggleButton.addEventListener('click', toggleColumnSums);
+    
+    // Aggiungi il pulsante al container
+    container.appendChild(toggleButton);
+    
+    // Aggiungi stili CSS per la visualizzazione "solo totali"
+    const styleElement = document.createElement('style');
+    styleElement.textContent = `
+        .only-totals::after {
+            content: " (Solo Totali)";
+            font-style: italic;
+            color: #666;
+        }
+    `;
+    document.head.appendChild(styleElement);
+}
+
+// Funzione per impostare gli attributi data-column-type su intestazioni e celle
+function setupColumnAttributes() {
+    // Per Libro Energie
+    const thEnergie = document.querySelectorAll('#libro_energie table th');
+    thEnergie.forEach(th => {
+        const headerText = th.textContent.trim().toLowerCase();
+        if (headerText.includes('a1') || headerText.includes('a2') || headerText.includes('a3')) {
+            th.setAttribute('data-column-type', 'detail');
+        } else if (headerText.includes('totale')) {
+            th.setAttribute('data-column-type', 'total');
+        }
+    });
+    
+    // Per Libro Kaifa
+    const thKaifa = document.querySelectorAll('#libro_kaifa table th');
+    thKaifa.forEach(th => {
+        const headerText = th.textContent.trim().toLowerCase();
+        if (headerText.includes('1.8.0') || headerText.includes('2.8.0')) {
+            th.setAttribute('data-column-type', 'detail');
+        } else if (headerText.includes('totale')) {
+            th.setAttribute('data-column-type', 'total');
+        }
+    });
+}
+

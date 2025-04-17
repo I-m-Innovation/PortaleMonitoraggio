@@ -33,23 +33,22 @@ class Contatore(models.Model):
     marca = models.CharField(max_length=20, choices=MARCA_CHOICES)
     modello = models.CharField(max_length=50)
     data_installazione = models.DateField()
-    if modello == 'KAIFa':
-        variabili = ['A1-', 'A2-', 'A3-', 'A1+', 'A2+', 'A3+']
+    # --- NUOVO CAMPO ---
+    # Aggiungiamo il campo per la data di dismissione.
+    # Può essere vuoto (null=True) per i contatori attivi.
+    data_dismissione = models.DateField(null=True, blank=True) 
+    # --- FINE NUOVO CAMPO ---
     
     def __str__(self):
-        return f"{self.nome} ({self.tipologia}) - {self.impianto.nome_impianto}"
+        # Modifichiamo la rappresentazione testuale per indicare se è dismesso
+        stato = " (Dismesso)" if self.data_dismissione else ""
+        return f"{self.nome} ({self.tipologia}) - {self.impianto.nome_impianto}{stato}"
 
 class LetturaContatore(models.Model):
     contatore = models.ForeignKey(Contatore, on_delete=models.CASCADE, related_name='letture')
     anno = models.IntegerField()
-    mese = models.IntegerField()  # 1-12 per i mesi dell'anno
-    tipo_tabella = models.CharField(max_length=20)  # 'reg_segnanti', 'libro_energie', 'libro_kaifa'
-
-    
-    
-    
-    
-    
+    mese = models.IntegerField()  # 1-12 per i mesi dell'anno 
+    tipo_tabella = models.CharField(max_length=20)  # , 'libro_energie', 'libro_kaifa'
     # Dati per registro segnanti
     data_presa = models.DateField(null=True, blank=True)
     a1_neg = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
@@ -66,7 +65,7 @@ class LetturaContatore(models.Model):
     totale_180n = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
     totale_280n = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
     
-    # --- NUOVO CAMPO ---
+
     # Aggiungiamo il campo per memorizzare il valore calcolato (totale_180n * k)
     imm_campo_calcolato = models.DecimalField(
         max_digits=15,
@@ -75,16 +74,7 @@ class LetturaContatore(models.Model):
         blank=True,
         verbose_name="Immissione Calcolata (totale_180n * k)"
     )
-    # --- FINE NUOVO CAMPO ---
 
-    # Campi per la tabella reg_segnanti (se li salvi qui)
-    prod_campo = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
-    prelevata_campo = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
-    # Nota: Il campo 'imm_campo' originale nella tabella HTML ora userà 'imm_campo_calcolato'
-
-    data_presa = models.DateField(null=True, blank=True)
-    data_reg = models.DateField(null=True, blank=True)
-    note = models.TextField(blank=True, null=True)
 
 
     class Meta:
@@ -99,8 +89,7 @@ class LetturaContatore(models.Model):
 
     
     
-    
-    
+
     
 
             
