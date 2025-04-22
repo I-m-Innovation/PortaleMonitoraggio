@@ -88,12 +88,12 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log("Tabella ENERGIE attiva - Aggiornamento totali...");
             updateAllDifferentials();
             tipoContatore = 'libro_energie';
-            datiTabella = raccogliDatiLibroEnergie(contatoreId, anno);
+            datiTabella = raccogliDatiTabella('libro_energie');
         } else if (libroKaifa && libroKaifa.style.display === 'block') {
             console.log("Tabella KAIFA attiva - Aggiornamento totali...");
             // La funzione raccogliDatiLibroKaifa ora include forceUpdateKaifaTotals al suo interno
             tipoContatore = 'libro_kaifa';
-            datiTabella = raccogliDatiLibroKaifa(contatoreId, anno);
+            datiTabella = raccogliDatiTabella('libro_kaifa');
         } else {
             console.warn("ATTENZIONE: Nessuna tabella attiva trovata!");
             tipoContatore = document.getElementById('tipo-contatore-attivo') ? 
@@ -138,6 +138,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Inizializza il pulsante per il toggle delle somme
     setupToggleSumsButton();
+
+    // Imposta la gestione dell'input dell'ora
+    setupTimeInputHandling();
 });
 
     
@@ -366,7 +369,7 @@ function aggiornaTabellaDatiEnergie(datiAggiornati) {
         return;
     }
     console.log('Aggiornamento tabella Energie con', datiAggiornati.length, 'righe');
-    
+
     datiAggiornati.forEach(dato => {
         // Trova la riga corrispondente usando l'attributo data-mese
         // Assicurati che 'dato.mese' corrisponda a quello nell'HTML (1-13)
@@ -380,13 +383,29 @@ function aggiornaTabellaDatiEnergie(datiAggiornati) {
         riga.classList.add('updated-row');
         setTimeout(() => riga.classList.remove('updated-row'), 2000);
 
-        // Aggiorna la data di presa
+        // Aggiorna la data di presa e l'ora
         const cellaPresa = riga.querySelector('td[data-field="data_presa"]');
         if (cellaPresa) {
             // dato.data_presa arriva dal backend come stringa YYYY-MM-DD o null
-            cellaPresa.dataset.rawvalue = dato.data_presa || ''; // Aggiorna rawvalue con ISO o stringa vuota
-            cellaPresa.textContent = formatDateDisplay(dato.data_presa); // Mostra formato GG/MM/AAAA o vuoto
-            if (dato.data_presa) { // Evidenzia solo se c'è una data
+            // dato.ora_lettura arriva come stringa HH:MM o null
+            const dataISO = dato.data_presa || '';
+            const ora = dato.ora_lettura || '';
+
+            cellaPresa.dataset.rawvalue = dataISO; // Aggiorna rawvalue con ISO o stringa vuota
+            if (ora) {
+                cellaPresa.dataset.ora = ora; // Aggiorna data-ora se presente
+            } else {
+                delete cellaPresa.dataset.ora; // Rimuovi data-ora se non presente
+            }
+
+            // Combina data formattata e ora per la visualizzazione
+            let displayText = formatDateDisplay(dataISO); // Mostra formato GG/MM/AAAA o vuoto
+            if (displayText && ora) { // Aggiungi l'ora solo se c'è una data visualizzata
+                displayText += ' ' + ora;
+            }
+            cellaPresa.textContent = displayText;
+
+            if (dataISO) { // Evidenzia solo se c'è una data
                  cellaPresa.classList.add('updated-cell');
                  setTimeout(() => cellaPresa.classList.remove('updated-cell'), 2000);
             }
@@ -1084,44 +1103,128 @@ function setupColumnAttributes() {
     });
 }
 
-// Funzione migliorata per convertire date in formato ISO e gestire l'ora
-function convertDateToISO(dateString) {
-    if (!dateString || dateString.trim() === '') {
+// Funzione migliorata per gestire solo l'ora (rimossa la data)
+function convertTimeFormat(timeString) {
+    if (!timeString || timeString.trim() === '') {
         return null;
     }
-    
-    // Separa data e ora se presenti
-    let datePart = dateString;
-    let timePart = null;
-    
-    if (dateString.includes(' ')) {
-        const parts = dateString.split(' ');
-        datePart = parts[0];
-        timePart = parts.length > 1 ? parts[1] : null;
-    }
-    
-    // Converti la parte data
-    let isoDate = null;
-    
-    // Prova formato italiano GG/MM/AAAA
-    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(datePart)) {
-        const parts = datePart.split('/');
-        if (parts.length === 3) {
-            const day = parseInt(parts[0], 10);
-            const month = parseInt(parts[1], 10);
-            const year = parseInt(parts[2], 10);
-            
-            // Verifica validità data
-            if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
-                isoDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-            }
+
+    // Gestisce la conversione dell'ora
+    try {
+        // Verifica che l'ora sia nel formato HH:MM
+        const timeRegex = /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/;
+        if (timeRegex.test(timeString.trim())) {
+            // Normalizza il formato dell'ora a HH:MM (con zero iniziale)
+            const [hours, minutes] = timeString.trim().split(':');
+            return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+        } else {
+            console.warn(`Formato ora non valido: ${timeString}`);
+            return null;
         }
+    } catch (error) {
+        console.error(`Errore nella conversione dell'ora: ${timeString}`, error);
+        return null;
     }
+}
+
+// Funzione per gestire l'input e il salvataggio dell'ora
+function setupTimeInputHandling() {
+    // Seleziona tutte le celle dell'ora
+    const oraCells = document.querySelectorAll('td[data-field="ora_lettura"]');
     
-    // Restituisci oggetto con data ISO e ora
-    return {
-        date: isoDate,
-        time: timePart && /^\d{1,2}:\d{1,2}$/.test(timePart) ? timePart : null
-    };
+    oraCells.forEach(cell => {
+        // Gestisci il focus e il blur sulle celle dell'ora
+        cell.addEventListener('focus', function() {
+            // Salva il valore originale
+            cell.dataset.oldValue = cell.textContent.trim();
+        });
+        
+        // Quando la cella perde il focus (si clicca fuori)
+        cell.addEventListener('blur', function() {
+            const newValue = cell.textContent.trim();
+            
+            // Se è cambiato, formatta e valida
+            if (newValue !== cell.dataset.oldValue) {
+                const formattedTime = convertTimeFormat(newValue);
+                
+                if (formattedTime) {
+                    // Se il formato è valido, aggiorna la cella
+                    cell.textContent = formattedTime;
+                    cell.dataset.ora = formattedTime;
+                    cell.classList.add('modified');
+                } else {
+                    // Se il formato non è valido, ripristina il valore precedente o lascia vuoto
+                    if (cell.dataset.oldValue && cell.dataset.oldValue !== '') {
+                        cell.textContent = cell.dataset.oldValue;
+                    } else {
+                        cell.textContent = '';
+                    }
+                    delete cell.dataset.ora;
+                }
+            }
+        });
+        
+        // Limita l'input a caratteri numerici e ":"
+        cell.addEventListener('keypress', function(e) {
+            // Permetti solo numeri, due punti e tasti di controllo
+            const isNumber = /[0-9:]/.test(e.key);
+            const isControl = ['Enter', 'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key);
+            
+            if (!isNumber && !isControl) {
+                e.preventDefault();
+            }
+        });
+    });
+}
+
+// Funzione per raccogliere i dati per il salvataggio (modifica per utilizzare ora_lettura)
+function raccogliDatiTabella(tableId) {
+    const tabella = document.getElementById(tableId);
+    const contatoreId = tabella.dataset.contatoreId;
+    const anno = document.getElementById('year-select').value;
+    const righe = tabella.querySelectorAll('tbody tr');
+    const dati = [];
+    
+    righe.forEach(riga => {
+        const mese = riga.dataset.mese;
+        const datiRiga = {
+            contatore_id: contatoreId,
+            anno: anno,
+            mese: mese
+        };
+        
+        // Raccogli tutti i campi della riga
+        riga.querySelectorAll('td[data-field]').forEach(cella => {
+            const fieldName = cella.dataset.field;
+            let value = null;
+            
+            // Trattamento speciale per ora_lettura
+            if (fieldName === 'ora_lettura') {
+                if (cella.dataset.ora) {
+                    value = cella.dataset.ora;
+                } else if (cella.textContent.trim() !== '') {
+                    value = convertTimeFormat(cella.textContent.trim());
+                }
+            } else {
+                // Per altri campi, usa dataset.value se disponibile, altrimenti il contenuto
+                value = cella.dataset.value !== undefined ? cella.dataset.value : cella.textContent.trim();
+                
+                // Converti stringhe vuote in null
+                if (value === '') {
+                    value = null;
+                } 
+                // Converti in numeri dove appropriato
+                else if (!isNaN(value) && fieldName !== 'ora_lettura') {
+                    value = parseFloat(value);
+                }
+            }
+            
+            datiRiga[fieldName] = value;
+        });
+        
+        dati.push(datiRiga);
+    });
+    
+    return dati;
 }
 

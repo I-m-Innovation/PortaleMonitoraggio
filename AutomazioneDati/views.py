@@ -191,13 +191,13 @@ def diari_letture(request, nickname):
     impianto = get_object_or_404(Impianto, nickname=nickname)
     contatore_id = request.GET.get('contatore_id')
     contatore = get_object_or_404(Contatore, id=contatore_id, impianto_nickname=nickname)
-    anno_selezionato_str = request.GET.get('anno', str(datetime.date.today().year)) # Usa l'anno corrente come default
+    anno_selezionato_str = request.GET.get('anno', str(datetime.date.today().year))
 
     try:
         anno_selezionato = int(anno_selezionato_str)
         anno_successivo = anno_selezionato + 1
 
-        # Recupera le letture per l'anno selezionato e per Gennaio dell'anno successivo
+        # Recupera le letture Energie per l'anno selezionato e Gennaio dell'anno successivo
         letture_libro_energie_qs = LetturaContatore.objects.filter(
             contatore=contatore,
             tipo_tabella='libro_energie',
@@ -205,9 +205,11 @@ def diari_letture(request, nickname):
         ).order_by('anno', 'mese')
 
         # Crea un dizionario per accesso rapido: chiave=(anno, mese)
-        letture_energie_per_anno_mese = {(l.anno, l.mese): l for l in letture_libro_energie_qs}
+        letture_energie_per_anno_mese = {}
+        for l in letture_libro_energie_qs:
+            letture_energie_per_anno_mese[(l.anno, l.mese)] = l
 
-        # Prepara la lista di dati per il template (13 elementi)
+        # Prepara la lista di dati Energie per il template (13 elementi)
         libro_energie_dati = []
         for mese_indice in range(1, 14): # Itera da 1 a 13
             anno_corrente_loop = anno_selezionato
@@ -221,34 +223,46 @@ def diari_letture(request, nickname):
             # Cerca la lettura nel dizionario
             lettura = letture_energie_per_anno_mese.get((anno_corrente_loop, mese_corrente_loop))
 
-            # Se non esiste, crea un oggetto temporaneo
-            if lettura is None:
-                lettura = LetturaContatore(
-                    contatore=contatore,
-                    anno=anno_corrente_loop,
-                    mese=mese_corrente_loop, # Mese effettivo (1-12)
-                    tipo_tabella='libro_energie'
-                )
-                
-            
+            # Se non esiste, crea un oggetto temporaneo (o usa None)
+            # Modifichiamo per passare None se non c'è lettura, più semplice da gestire
+            # if lettura is None:
+            #     lettura = LetturaContatore(
+            #         contatore=contatore,
+            #         anno=anno_corrente_loop,
+            #         mese=mese_corrente_loop, # Mese effettivo (1-12)
+            #         tipo_tabella='libro_energie'
+            #     )
 
             # Aggiungi i dati alla lista, includendo il mese "logico" (1-13) per il template
-            # e la data formattata
-            libro_energie_dati.append({
-                'mese': mese_indice, # Mese logico (1-13) per l'attributo data-mese nel template
-                'anno': anno_corrente_loop, # Anno effettivo
-                'mese_effettivo': mese_corrente_loop, # Mese effettivo (1-12)
-                
-                
-                'a1_neg': lettura.a1_neg,
-                'a2_neg': lettura.a2_neg,
-                'a3_neg': lettura.a3_neg,
-                'totale_neg': lettura.totale_neg, # Questo viene calcolato da JS, ma lo passiamo se esiste
-                'a1_pos': lettura.a1_pos,
-                'a2_pos': lettura.a2_pos,
-                'a3_pos': lettura.a3_pos,
-                'totale_pos': lettura.totale_pos, # Questo viene calcolato da JS, ma lo passiamo se esiste
-            })
+            # e la data/ora formattata
+            if lettura:
+                 libro_energie_dati.append({
+                    'mese': mese_indice, # Mese logico (1-13) per l'attributo data-mese nel template
+                    'anno': anno_corrente_loop, # Anno effettivo
+                    'mese_effettivo': mese_corrente_loop, # Mese effettivo (1-12)
+                    'data_presa': lettura.data_presa, # Passa l'oggetto DateField
+                    'ora_lettura': lettura.ora_lettura, # <<< MODIFICA: Aggiungi ora_lettura
+                    'a1_neg': lettura.a1_neg,
+                    'a2_neg': lettura.a2_neg,
+                    'a3_neg': lettura.a3_neg,
+                    'totale_neg': lettura.totale_neg,
+                    'a1_pos': lettura.a1_pos,
+                    'a2_pos': lettura.a2_pos,
+                    'a3_pos': lettura.a3_pos,
+                    'totale_pos': lettura.totale_pos,
+                })
+            else:
+                 # Se non c'è lettura per quel mese/anno, aggiungi un placeholder
+                 # con i dati minimi necessari per il template
+                 libro_energie_dati.append({
+                    'mese': mese_indice,
+                    'anno': anno_corrente_loop,
+                    'mese_effettivo': mese_corrente_loop,
+                    'data_presa': None,
+                    'ora_lettura': None, # <<< MODIFICA: Aggiungi ora_lettura anche qui
+                    'a1_neg': None, 'a2_neg': None, 'a3_neg': None, 'totale_neg': None,
+                    'a1_pos': None, 'a2_pos': None, 'a3_pos': None, 'totale_pos': None,
+                 })
 
         # Recupera le letture Kaifa per l'anno selezionato e Gennaio dell'anno successivo
         letture_libro_kaifa_qs = LetturaContatore.objects.filter(
@@ -283,28 +297,22 @@ def diari_letture(request, nickname):
             'impianto': impianto,
             'contatore': contatore,
             'anno_corrente': anno_selezionato_str, # Passa l'anno come stringa
-            'libro_energie_dati': libro_energie_dati, # Lista con 13 elementi
+            'libro_energie_dati': libro_energie_dati, # Lista con 13 elementi (dizionari)
             'libro_kaifa_dati': libro_kaifa_dati, # Lista con 13 elementi (oggetti LetturaContatore o None)
             'num_rows': range(13), # Usato per iterare 13 volte nel template Kaifa
         }
         return render(request, 'diariLetture.html', context)
 
-    except ValueError:
-        # Gestisci il caso in cui l'anno non sia un numero valido
-        # Potresti reindirizzare a una pagina di errore o usare un anno di default
-        # Per ora, ritorniamo un errore semplice o reindirizziamo
-        # (Questa parte dipende da come vuoi gestire l'errore)
-        from django.http import HttpResponseBadRequest
-        return HttpResponseBadRequest("Anno non valido.")
     except Exception as e:
-        # Log dell'errore per debug
         print(f"Errore in diari_letture: {e}")
         import traceback
         traceback.print_exc()
-        # Mostra una pagina di errore generica o gestisci diversamente
-        # (Questa parte dipende dalla gestione errori della tua applicazione)
-        # Potresti voler rendere una pagina di errore specifica
-        return render(request, 'error.html', {'message': 'Si è verificato un errore nel caricamento dei dati.'})
+        
+        # Usa un template esistente invece di error.html
+        return render(request, 'base_layout.html', {
+            'errore': 'Si è verificato un errore nel caricamento dei dati.',
+            'dettaglio': str(e)
+        })
 
 @csrf_exempt
 def salva_reg_segnanti(request):

@@ -75,9 +75,9 @@
                             {% for dati in libro_energie_dati %}
                             <tr data-mese="{{ dati.mese }}">
                                 <td class="mese-con-anno"></td>
-                                <td data-field="data_presa" contenteditable="true" class="editable-cell"
-                                    {% if dati.data_presa %}data-rawvalue="{{ dati.data_presa|date:'Y-m-d' }}"{% endif %}>
-                                    {{ dati.data_presa_display }}
+                                <td data-field="ora_lettura" contenteditable="true" class="editable-cell"
+                                    {% if dati.ora_lettura %}data-ora="{{ dati.ora_lettura|time:'H:i' }}"{% endif %}>
+                                    {% if dati.ora_lettura %}{{ dati.ora_lettura|time:"H:i" }}{% endif %}
                                 </td> 
                                 <td data-field="a1_neg" contenteditable="true" class="editable-cell">
                                     {% if dati.a1_neg is not None %}{{ dati.a1_neg|format_decimal }}{% endif %}
@@ -128,12 +128,9 @@
                             {% with lettura_kaifa=libro_kaifa_dati|get_item:i %}
                             <tr data-mese="{{ i|add:1 }}">
                                 <td class="mese-con-anno"></td>
-                                <td data-field="data_presa" contenteditable="true" class="editable-cell"
-                                    {% if lettura_kaifa and lettura_kaifa.data_presa %}data-rawvalue="{{ lettura_kaifa.data_presa|date:'Y-m-d' }}"{% endif %}
+                                <td data-field="ora_lettura" contenteditable="true" class="editable-cell"
                                     {% if lettura_kaifa and lettura_kaifa.ora_lettura %}data-ora="{{ lettura_kaifa.ora_lettura|time:'H:i' }}"{% endif %}>
-                                    {% if lettura_kaifa and lettura_kaifa.data_presa %}
-                                        {{ lettura_kaifa.data_presa|date:"d/m/Y" }}{% if lettura_kaifa.ora_lettura %} {{ lettura_kaifa.ora_lettura|time:"H:i" }}{% endif %}
-                                    {% endif %}
+                                    {% if lettura_kaifa and lettura_kaifa.ora_lettura %}{{ lettura_kaifa.ora_lettura|time:"H:i" }}{% endif %}
                                 </td>
                                 <td data-field="kaifa_180n" contenteditable="true" class="editable-cell">
                                     {% if lettura_kaifa and lettura_kaifa.kaifa_180n is not None %}

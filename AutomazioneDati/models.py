@@ -90,6 +90,9 @@ class LetturaContatore(models.Model):
     imm_ed = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
     imm_gse = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
 
+    # Aggiungi qui il campo data_presa
+    data_presa = models.DateField(null=True, blank=True)
+
     class Meta:
         # Assicurati che ci sia un vincolo di unicità per contatore, anno, mese, tipo_tabella
         unique_together = ('contatore', 'anno', 'mese', 'tipo_tabella')
