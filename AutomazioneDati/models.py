@@ -50,7 +50,7 @@ class LetturaContatore(models.Model):
     mese = models.IntegerField()  # 1-12 per i mesi dell'anno 
     tipo_tabella = models.CharField(max_length=20)  # , 'libro_energie', 'libro_kaifa'
     # Dati per registro segnanti
-    data_presa = models.DateField(null=True, blank=True)
+    ora_lettura = models.TimeField(null=True, blank=True)
     a1_neg = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
     a2_neg = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
     a3_neg = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
@@ -65,7 +65,6 @@ class LetturaContatore(models.Model):
     totale_180n = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
     totale_280n = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
     
-
     # Aggiungiamo il campo per memorizzare il valore calcolato (totale_180n * k)
     imm_campo_calcolato = models.DecimalField(
         max_digits=15,
@@ -75,7 +74,21 @@ class LetturaContatore(models.Model):
         verbose_name="Immissione Calcolata (totale_180n * k)"
     )
 
-
+    # Aggiungiamo i campi per il registro segnanti
+    prod_campo = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
+    prod_ed = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
+    prod_gse = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
+    prel_campo = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
+    prel_ed = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
+    prel_gse = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
+    
+    # Per i contatori Kaifa
+    autocons_campo = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
+    autocons_ed = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
+    autocons_gse = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
+    imm_campo = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
+    imm_ed = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
+    imm_gse = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
 
     class Meta:
         # Assicurati che ci sia un vincolo di unicità per contatore, anno, mese, tipo_tabella

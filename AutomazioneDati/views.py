@@ -1,9 +1,10 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from MonitoraggioImpianti.models import Impianto
-# from .models import Contatore, LetturaContatore
-from django.http import HttpResponseRedirect, JsonResponse, Http404
+
+from django.http import  JsonResponse, Http404
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 import json
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import datetime
@@ -13,7 +14,8 @@ from MonitoraggioImpianti.models import Impianto as MonitoraggioImpianto
 from django.utils.formats import date_format
 from django.contrib import messages
 from django.urls.exceptions import NoReverseMatch
-import traceback
+import re
+
 
 
 
@@ -42,7 +44,8 @@ def reg_segnanti(request, nickname):
             
             # Loop attraverso tutti i contatori
             for contatore in contatori:
-                contatore_key = f"contatore_{contatore.id}"
+                # Usa l'ID del contatore direttamente come chiave
+                contatore_key = contatore.id
                 
                 # Recupera le letture per reg_segnanti
                 letture_reg = LetturaContatore.objects.filter(
@@ -76,8 +79,20 @@ def reg_segnanti(request, nickname):
                         ).first()
                         
                         if letture_libro_energie:
-                            # Importa i dati se necessario...
-                            pass
+                            # Importa il totale_neg nel campo prod_campo
+                            if letture_libro_energie.totale_neg is not None:
+                                lettura_reg.prod_campo = letture_libro_energie.totale_neg
+                                print(f"Mese {mese}: Assegnato totale_neg {letture_libro_energie.totale_neg} a prod_campo")
+                            
+                            # Importa il totale_pos nel campo prel_campo
+                            if letture_libro_energie.totale_pos is not None:
+                                lettura_reg.prel_campo = letture_libro_energie.totale_pos
+                                print(f"Mese {mese}: Assegnato totale_pos {letture_libro_energie.totale_pos} a prel_campo")
+                            
+                            # Salva la lettura se è nuova o modificata
+                            if lettura_reg.id is None:
+                                lettura_reg.save()
+                                print(f"Salvata nuova lettura per mese {mese}")
                     
                     # Se è Kaifa, possiamo importare dati da libro_kaifa
                     elif contatore.marca == 'Kaifa' and contatore.tipologia == 'Scambio':
@@ -89,8 +104,17 @@ def reg_segnanti(request, nickname):
                         ).first()
                         
                         if letture_libro_kaifa:
-                            # Importa i dati se necessario...
-                            pass
+                            # Importa il totale_180n nel campo autocons_campo
+                            if letture_libro_kaifa.totale_180n is not None:
+                                # Calcola il valore moltiplicato per k
+                                valore_moltiplicato = letture_libro_kaifa.totale_180n * Decimal(contatore.k)
+                                lettura_reg.autocons_campo = valore_moltiplicato
+                                print(f"Mese {mese}: Assegnato totale_180n * k ({letture_libro_kaifa.totale_180n} * {contatore.k} = {valore_moltiplicato}) a autocons_campo")
+                            
+                            # Salva la lettura se è nuova o modificata
+                            if lettura_reg.id is None:
+                                lettura_reg.save()
+                                print(f"Salvata nuova lettura per mese {mese}")
                     
                     # Salva la lettura per questo mese
                     dati_per_mese[mese] = lettura_reg
@@ -205,10 +229,8 @@ def diari_letture(request, nickname):
                     mese=mese_corrente_loop, # Mese effettivo (1-12)
                     tipo_tabella='libro_energie'
                 )
-                data_presa_display = "" # Nessuna data da mostrare
-            else:
-                # Formatta la data per la visualizzazione se esiste
-                data_presa_display = date_format(lettura.data_presa, "d/m/Y") if lettura.data_presa else "" # Formato GG/MM/AAAA
+                
+            
 
             # Aggiungi i dati alla lista, includendo il mese "logico" (1-13) per il template
             # e la data formattata
@@ -216,8 +238,8 @@ def diari_letture(request, nickname):
                 'mese': mese_indice, # Mese logico (1-13) per l'attributo data-mese nel template
                 'anno': anno_corrente_loop, # Anno effettivo
                 'mese_effettivo': mese_corrente_loop, # Mese effettivo (1-12)
-                'data_presa': lettura.data_presa, # Data grezza per data-rawvalue
-                'data_presa_display': data_presa_display, # Data formattata per la visualizzazione
+                
+                
                 'a1_neg': lettura.a1_neg,
                 'a2_neg': lettura.a2_neg,
                 'a3_neg': lettura.a3_neg,
@@ -505,28 +527,55 @@ def salva_dati_letture(request):
 
                     valore_attuale = getattr(lettura, field_name, None)
 
-                    # --- Blocco specifico per data_presa ---
+                    # --- Blocco specifico per data_presa e ora_lettura ---
                     if field_name == 'data_presa':
-                        iso_date = None # Inizializza a None
+                        iso_date = None
+                        ora_lettura = None
                         try:
                             field_value_str = str(field_value).strip() if field_value is not None else ""
-                            if field_value_str: # Se c'è un valore non vuoto dopo strip
+                            if field_value_str:
                                 print(f"--- DEBUG [data_presa]: Mese {mese_logico}, Ricevuto: '{field_value_str}'")
-                                iso_date = convert_date_format(field_value_str)
-                                print(f"--- DEBUG [data_presa]: Mese {mese_logico}, Convertito in: '{iso_date}'")
+                                
+                                # Controlla se c'è un'ora inclusa
+                                date_parts = field_value_str.split(' ')
+                                date_str = date_parts[0]
+                                time_str = date_parts[1] if len(date_parts) > 1 else None
+                                
+                                # Converti la data
+                                iso_date = convert_date_format(date_str)
+                                print(f"--- DEBUG [data_presa]: Mese {mese_logico}, Data convertita in: '{iso_date}'")
+                                
+                                # Gestisci l'ora se presente
+                                if time_str and re.match(r'^\d{1,2}:\d{1,2}$', time_str):
+                                    ora_lettura = time_str
+                                    print(f"--- DEBUG [ora_lettura]: Mese {mese_logico}, Ora estratta: '{ora_lettura}'")
+                                
+                                # Confronta il valore attuale della data con quello nuovo
+                                valore_attuale_str = valore_attuale.strftime('%Y-%m-%d') if isinstance(valore_attuale, datetime.date) else None
+                                if valore_attuale_str != iso_date:
+                                    setattr(lettura, field_name, iso_date)
+                                    modificato = True
+                                    print(f"--- DEBUG [data_presa]: Mese {mese_logico}, Modificato: {valore_attuale_str} -> {iso_date}")
+                                
+                                # Confronta il valore attuale dell'ora con quello nuovo
+                                ora_attuale = lettura.ora_lettura.strftime('%H:%M') if lettura.ora_lettura else None
+                                if ora_attuale != ora_lettura:
+                                    setattr(lettura, 'ora_lettura', ora_lettura)
+                                    modificato = True
+                                    print(f"--- DEBUG [ora_lettura]: Mese {mese_logico}, Modificato: {ora_attuale} -> {ora_lettura}")
+                                
+                                # Aggiungi al dizionario di risposta
+                                dati_riga_aggiornati[field_name] = iso_date
+                                dati_riga_aggiornati['ora_lettura'] = ora_lettura
                             else:
-                                # Se il valore ricevuto è None, vuoto o solo spazi
-                                iso_date = None
-                                print(f"--- DEBUG [data_presa]: Mese {mese_logico}, Ricevuto vuoto/None, impostato a None")
-
-                            # Confronta il valore attuale (come stringa YYYY-MM-DD o None) con quello nuovo
-                            valore_attuale_str = valore_attuale.strftime('%Y-%m-%d') if isinstance(valore_attuale, datetime.date) else None
-                            if valore_attuale_str != iso_date:
-                                setattr(lettura, field_name, iso_date)
+                                # Se il valore ricevuto è vuoto, imposta entrambi a None
+                                setattr(lettura, field_name, None)
+                                setattr(lettura, 'ora_lettura', None)
                                 modificato = True
-                                print(f"--- DEBUG [data_presa]: Mese {mese_logico}, Modificato: {valore_attuale_str} -> {iso_date}")
-                            dati_riga_aggiornati[field_name] = iso_date # Aggiungi al dizionario di risposta
-
+                                print(f"--- DEBUG [data_presa/ora_lettura]: Mese {mese_logico}, Impostati a None (erano vuoti)")
+                                
+                                dati_riga_aggiornati[field_name] = None
+                                dati_riga_aggiornati['ora_lettura'] = None
                         except ValueError as e:
                             # Errore durante la conversione della data
                             print(f"--- ERRORE [data_presa]: Mese {mese_logico}, Valore: '{field_value}', Errore: {e}")
@@ -973,4 +1022,57 @@ def salva_contatore_sostituzione(request):
 
     # Se non è una richiesta POST, reindirizza alla home
     return redirect('automazione-dati')
+
+@require_POST
+def elimina_contatore(request, contatore_id):
+    """
+    Elimina un contatore specifico e le sue letture associate.
+    Accetta solo richieste POST.
+    """
+    try:
+        # 1. Trova il contatore nel database usando l'ID fornito nell'URL.
+        #    get_object_or_404 restituisce l'oggetto se esiste,
+        #    altrimenti genera automaticamente un errore 404 (Not Found).
+        contatore = get_object_or_404(Contatore, id=contatore_id)
+
+        # 2. Salva il nickname dell'impianto e il nome del contatore PRIMA di eliminarlo.
+        #    Ci serviranno per il reindirizzamento e per il messaggio di conferma.
+        nickname_impianto = contatore.impianto_nickname
+        nome_contatore = contatore.nome
+
+        # 3. Elimina l'oggetto contatore dal database.
+        #    Grazie a `on_delete=models.CASCADE` nel modello LetturaContatore,
+        #    Django eliminerà automaticamente anche tutte le letture associate
+        #    a questo contatore.
+        contatore.delete()
+
+        # 4. Mostra un messaggio di successo all'utente.
+        #    Questi messaggi vengono solitamente mostrati nel template base.
+        messages.success(request, f"Il contatore '{nome_contatore}' e tutte le sue letture sono stati eliminati con successo.")
+
+        # 5. Reindirizza l'utente alla pagina da cui probabilmente proveniva,
+        #    cioè la panoramica dei contatori per quell'impianto.
+        return redirect('panoramica-contatore', nickname=nickname_impianto)
+
+    except Http404:
+        # Questo blocco viene eseguito se get_object_or_404 non trova il contatore.
+        messages.error(request, f"Errore: Impossibile trovare il contatore con ID {contatore_id}.")
+        # Reindirizza a una pagina generica o alla home dell'app,
+        # dato che non abbiamo il nickname dell'impianto se il contatore non è stato trovato.
+        return redirect('automazione-dati') # O un'altra pagina di fallback appropriata
+
+    except Exception as e:
+        # Gestisce qualsiasi altro errore imprevisto durante il processo.
+        messages.error(request, f"Si è verificato un errore imprevisto durante l'eliminazione del contatore: {e}")
+        # Tenta di reindirizzare alla pagina dell'impianto se abbiamo il nickname,
+        # altrimenti alla pagina di fallback.
+        try:
+            # Se l'errore è avvenuto dopo aver recuperato il nickname
+            if nickname_impianto:
+                 return redirect('panoramica-contatore', nickname=nickname_impianto)
+            else:
+                 # Se l'errore è avvenuto prima (improbabile con get_object_or_404)
+                 return redirect('automazione-dati')
+        except NameError: # Se nickname_impianto non è stato definito a causa dell'errore
+             return redirect('automazione-dati')
 

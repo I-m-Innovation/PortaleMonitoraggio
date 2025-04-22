@@ -140,56 +140,10 @@ document.addEventListener('DOMContentLoaded', function() {
     setupToggleSumsButton();
 });
 
-// Funzione per convertire la data italiana (GG/MM/AAAA) in formato ISO (YYYY-MM-DD)
-// Restituisce la stringa ISO o null se il formato/data non è valido.
-function convertDateToISO(italianDate) {
-    if (!italianDate || typeof italianDate !== 'string') {
-        return null; // Input non valido
-    }
-    const parts = italianDate.trim().split('/');
-    if (parts.length === 3) {
-        const day = parts[0].padStart(2, '0');
-        const month = parts[1].padStart(2, '0');
-        const year = parts[2];
-        // Verifica base della validità dei componenti
-        if (parseInt(day) > 0 && parseInt(day) <= 31 && parseInt(month) > 0 && parseInt(month) <= 12 && year.length === 4 && parseInt(year) > 1000) {
-             // Verifica aggiuntiva creando un oggetto Date per validare giorni/mesi
-             // Nota: Mesi in JS Date sono 0-indicizzati (0=Gen, 11=Dic)
-             const testDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-             // Controlla se l'oggetto Date creato corrisponde ai valori originali
-             if (testDate && testDate.getFullYear() == year && testDate.getMonth() == month - 1 && testDate.getDate() == day) {
-                 return `${year}-${month}-${day}`; // Data valida, restituisci ISO
-             }
-        }
-    }
-    // Se il formato non è GG/MM/AAAA o la data non è valida
-    console.warn(`Formato data non valido o data non valida: "${italianDate}". Impossibile convertire in ISO.`);
-    return null; // Restituisce null per indicare fallimento
-}
+    
 
-// Funzione per formattare la data ISO (YYYY-MM-DD) in GG/MM/AAAA per la visualizzazione
-function formatDateDisplay(isoDate) {
-    if (!isoDate || typeof isoDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
-        return ""; // Restituisce stringa vuota se l'input non è una data ISO valida
-    }
-    try {
-        // Dividi la stringa ISO
-        const parts = isoDate.split('-');
-        const year = parts[0];
-        const month = parts[1];
-        const day = parts[2];
-        // Verifica base della validità dei componenti (già fatta dal regex, ma doppia sicurezza)
-        if (parseInt(day) > 0 && parseInt(day) <= 31 && parseInt(month) > 0 && parseInt(month) <= 12 && year.length === 4) {
-             return `${day}/${month}/${year}`; // Ritorna formato GG/MM/AAAA
-        } else {
-             console.warn(`Data ISO non valida ricevuta per la visualizzazione: ${isoDate}`);
-             return ""; // Data ISO non valida
-        }
-    } catch (e) {
-        console.error("Errore formattazione data display:", isoDate, e);
-        return ""; // Restituisce stringa vuota in caso di errore
-    }
-}
+
+
 
 // Funzione per raccogliere i dati dalla tabella Libro Energie
 function raccogliDatiLibroEnergie(contatoreId, anno) {
@@ -201,12 +155,15 @@ function raccogliDatiLibroEnergie(contatoreId, anno) {
         const mese = riga.dataset.mese;
         const dataPresaCell = riga.querySelector('td[data-field="data_presa"]');
         let dataPresaISO = null; // Inizializza a null. Conterrà la data in formato YYYY-MM-DD
+        let oraLettura = null;
 
         if (dataPresaCell) {
             const testoCella = dataPresaCell.textContent.trim(); // Leggi sempre il testo visibile
             if (testoCella) {
                 // Prova a convertire il testo visualizzato (che dovrebbe essere GG/MM/AAAA) in ISO
-                dataPresaISO = convertDateToISO(testoCella);
+                const dateTimeInfo = convertDateToISO(testoCella);
+                dataPresaISO = dateTimeInfo.date;
+                oraLettura = dateTimeInfo.time;
                 // Se la conversione fallisce, dataPresaISO rimarrà null (gestito da convertDateToISO)
                 // Potresti aggiungere un feedback all'utente qui se la conversione fallisce
                 if (dataPresaISO === null && testoCella !== "") {
@@ -278,6 +235,7 @@ function raccogliDatiLibroEnergie(contatoreId, anno) {
             mese: mese,
             tipo_tabella: 'libro_energie',
             data_presa: dataPresaISO, // Invia il valore ISO convertito (o null)
+            ora_lettura: oraLettura,
             a1_neg: a1Neg !== 0 ? a1Neg : null,
             a2_neg: a2Neg !== 0 ? a2Neg : null,
             a3_neg: a3Neg !== 0 ? a3Neg : null,
@@ -294,30 +252,15 @@ function raccogliDatiLibroEnergie(contatoreId, anno) {
 
 // Funzione per raccogliere i dati dalla tabella Libro Kaifa
 function raccogliDatiLibroKaifa(contatoreId, anno) {
-    const dati = [];
-    const tabella = document.getElementById('libro_kaifa');
+    const tabella = document.querySelector('#libro_kaifa table');
     if (!tabella) {
-        console.error('Tabella Kaifa non trovata!');
-        return dati; // Ritorna array vuoto
+        console.error('Tabella Libro Kaifa non trovata');
+        return [];
     }
-    
-    // Forza il calcolo sincrono dei totali e verifica che sia andato a buon fine
-    console.log("Forzatura aggiornamento totali Kaifa prima della raccolta...");
-    const totaliAggiornati = forceUpdateKaifaTotals();
-    if (!totaliAggiornati) {
-        console.error("Errore nell'aggiornamento dei totali Kaifa!");
-        alert("Si è verificato un errore nell'aggiornamento dei totali. Verifica i dati inseriti.");
-    } else {
-        console.log("Aggiornamento totali Kaifa completato con successo.");
-    }
-    
-    // Pausa breve per garantire che il DOM sia completamente aggiornato
-    console.log("Breve pausa prima della raccolta dati...");
     
     const righe = tabella.querySelectorAll('tbody tr');
-    console.log(`Raccolta dati da ${righe.length} righe Kaifa`);
+    const dati = [];
     
-    // Cicla su tutte le righe
     righe.forEach((riga, index) => {
         const mese = riga.dataset.mese;
         if (!mese) {
@@ -325,12 +268,18 @@ function raccogliDatiLibroKaifa(contatoreId, anno) {
             return; // Salta questa iterazione
         }
         
-        // Gestione data_presa (invariato)
+        // Gestione data_presa con ora
         const dataPresaCell = riga.querySelector('td[data-field="data_presa"]');
         let dataPresaISO = null;
+        let oraLettura = null;
+        
         if (dataPresaCell) {
             const testoCella = dataPresaCell.textContent.trim();
-            dataPresaISO = testoCella ? convertDateToISO(testoCella) : null;
+            if (testoCella) {
+                const dateTimeInfo = convertDateToISO(testoCella);
+                dataPresaISO = dateTimeInfo.date;
+                oraLettura = dateTimeInfo.time;
+            }
         }
         
         // Lettura valori numerici input (invariato)
@@ -382,23 +331,19 @@ function raccogliDatiLibroKaifa(contatoreId, anno) {
             }
         }
         
-        // Preparazione record dati con un approccio più sicuro
-        const recordDati = {
+        // Aggiungi i dati all'array includendo l'ora
+        dati.push({
             contatore_id: contatoreId,
             anno: anno,
             mese: mese,
             tipo_tabella: 'libro_kaifa',
             data_presa: dataPresaISO,
+            ora_lettura: oraLettura,
             kaifa_180n: kaifa180n !== 0 ? kaifa180n : null,
             kaifa_280n: kaifa280n !== 0 ? kaifa280n : null,
             totale_180n: (isUltimoMese || isNaN(totale180n)) ? null : totale180n,
             totale_280n: (isUltimoMese || isNaN(totale280n)) ? null : totale280n
-        };
-        
-        // Log per debug
-        console.log(`Dati finali riga mese ${mese}:`, JSON.stringify(recordDati));
-        
-        dati.push(recordDati);
+        });
     });
     
     // Visualizza i totali prima dell'invio per debug
@@ -486,12 +431,19 @@ function aggiornaTabellaDatiKaifa(datiAggiornati) {
         // Aggiorna la data di presa
         const cellaPresa = riga.querySelector('td[data-field="data_presa"]');
         if (cellaPresa) {
-            // dato.data_presa arriva dal backend come stringa YYYY-MM-DD o null
-            cellaPresa.dataset.rawvalue = dato.data_presa || ''; // Aggiorna rawvalue con ISO o stringa vuota
-            cellaPresa.textContent = formatDateDisplay(dato.data_presa); // Mostra formato GG/MM/AAAA o vuoto
-            if (dato.data_presa) { // Evidenzia solo se c'è una data
-                 cellaPresa.classList.add('updated-cell');
-                 setTimeout(() => cellaPresa.classList.remove('updated-cell'), 2000);
+            cellaPresa.dataset.rawvalue = dato.data_presa || '';
+            
+            // Formatta la visualizzazione della data con ora
+            let displayText = formatDateDisplay(dato.data_presa);
+            if (dato.ora_lettura) {
+                displayText += ' ' + dato.ora_lettura;
+            }
+            
+            cellaPresa.textContent = displayText;
+            
+            if (dato.data_presa) {
+                cellaPresa.classList.add('updated-cell');
+                setTimeout(() => cellaPresa.classList.remove('updated-cell'), 2000);
             }
         }
 
@@ -1130,5 +1082,46 @@ function setupColumnAttributes() {
             th.setAttribute('data-column-type', 'total');
         }
     });
+}
+
+// Funzione migliorata per convertire date in formato ISO e gestire l'ora
+function convertDateToISO(dateString) {
+    if (!dateString || dateString.trim() === '') {
+        return null;
+    }
+    
+    // Separa data e ora se presenti
+    let datePart = dateString;
+    let timePart = null;
+    
+    if (dateString.includes(' ')) {
+        const parts = dateString.split(' ');
+        datePart = parts[0];
+        timePart = parts.length > 1 ? parts[1] : null;
+    }
+    
+    // Converti la parte data
+    let isoDate = null;
+    
+    // Prova formato italiano GG/MM/AAAA
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(datePart)) {
+        const parts = datePart.split('/');
+        if (parts.length === 3) {
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10);
+            const year = parseInt(parts[2], 10);
+            
+            // Verifica validità data
+            if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+                isoDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+            }
+        }
+    }
+    
+    // Restituisci oggetto con data ISO e ora
+    return {
+        date: isoDate,
+        time: timePart && /^\d{1,2}:\d{1,2}$/.test(timePart) ? timePart : null
+    };
 }
 
