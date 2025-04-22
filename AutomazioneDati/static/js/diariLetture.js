@@ -1205,6 +1205,7 @@ function raccogliDatiTabella(tableId) {
                 } else if (cella.textContent.trim() !== '') {
                     value = convertTimeFormat(cella.textContent.trim());
                 }
+                console.log(`DEBUG ora_lettura per mese ${mese}: valore raccolto = "${value}"`);
             } else {
                 // Per altri campi, usa dataset.value se disponibile, altrimenti il contenuto
                 value = cella.dataset.value !== undefined ? cella.dataset.value : cella.textContent.trim();

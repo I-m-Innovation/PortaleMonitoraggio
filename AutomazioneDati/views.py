@@ -535,28 +535,20 @@ def salva_dati_letture(request):
 
                     valore_attuale = getattr(lettura, field_name, None)
 
-                    # --- Blocco specifico per data_presa e ora_lettura ---
+                    # --- Blocco specifico per data_presa (SOLO DATA) ---
                     if field_name == 'data_presa':
                         iso_date = None
-                        ora_lettura = None
                         try:
                             field_value_str = str(field_value).strip() if field_value is not None else ""
                             if field_value_str:
                                 print(f"--- DEBUG [data_presa]: Mese {mese_logico}, Ricevuto: '{field_value_str}'")
                                 
-                                # Controlla se c'è un'ora inclusa
-                                date_parts = field_value_str.split(' ')
-                                date_str = date_parts[0]
-                                time_str = date_parts[1] if len(date_parts) > 1 else None
+                                # Prendi solo la parte della data (ignora eventuale ora qui)
+                                date_str = field_value_str.split(' ')[0]
                                 
                                 # Converti la data
                                 iso_date = convert_date_format(date_str)
                                 print(f"--- DEBUG [data_presa]: Mese {mese_logico}, Data convertita in: '{iso_date}'")
-                                
-                                # Gestisci l'ora se presente
-                                if time_str and re.match(r'^\d{1,2}:\d{1,2}$', time_str):
-                                    ora_lettura = time_str
-                                    print(f"--- DEBUG [ora_lettura]: Mese {mese_logico}, Ora estratta: '{ora_lettura}'")
                                 
                                 # Confronta il valore attuale della data con quello nuovo
                                 valore_attuale_str = valore_attuale.strftime('%Y-%m-%d') if isinstance(valore_attuale, datetime.date) else None
@@ -565,33 +557,59 @@ def salva_dati_letture(request):
                                     modificato = True
                                     print(f"--- DEBUG [data_presa]: Mese {mese_logico}, Modificato: {valore_attuale_str} -> {iso_date}")
                                 
-                                # Confronta il valore attuale dell'ora con quello nuovo
-                                ora_attuale = lettura.ora_lettura.strftime('%H:%M') if lettura.ora_lettura else None
-                                if ora_attuale != ora_lettura:
-                                    setattr(lettura, 'ora_lettura', ora_lettura)
-                                    modificato = True
-                                    print(f"--- DEBUG [ora_lettura]: Mese {mese_logico}, Modificato: {ora_attuale} -> {ora_lettura}")
-                                
                                 # Aggiungi al dizionario di risposta
                                 dati_riga_aggiornati[field_name] = iso_date
-                                dati_riga_aggiornati['ora_lettura'] = ora_lettura
+                               
                             else:
-                                # Se il valore ricevuto è vuoto, imposta entrambi a None
-                                setattr(lettura, field_name, None)
-                                setattr(lettura, 'ora_lettura', None)
-                                modificato = True
-                                print(f"--- DEBUG [data_presa/ora_lettura]: Mese {mese_logico}, Impostati a None (erano vuoti)")
+                                # Se il valore ricevuto è vuoto, imposta a None
+                                if getattr(lettura, field_name) is not None:
+                                    setattr(lettura, field_name, None)
+                                    modificato = True
+                                    print(f"--- DEBUG [data_presa]: Mese {mese_logico}, Impostato a None (era vuoto)")
                                 
                                 dati_riga_aggiornati[field_name] = None
-                                dati_riga_aggiornati['ora_lettura'] = None
                         except ValueError as e:
                             # Errore durante la conversione della data
                             print(f"--- ERRORE [data_presa]: Mese {mese_logico}, Valore: '{field_value}', Errore: {e}")
                             errore_in_riga = True # Segna che c'è stato un errore in questa riga
                             righe_con_errore_data.append({'mese': mese_logico, 'valore': field_value, 'errore': str(e)})
                             # Non interrompere, ma questa riga non verrà salvata se modificato=True
-                            dati_riga_aggiornati[field_name] = valore_attuale_str # Restituisci il valore vecchio in caso di errore
+                            dati_riga_aggiornati[field_name] = valore_attuale.strftime('%Y-%m-%d') if isinstance(valore_attuale, datetime.date) else None # Restituisci il valore vecchio in caso di errore
 
+                    # --- NUOVO Blocco specifico per ora_lettura ---
+                    elif field_name == 'ora_lettura':
+                        ora_da_salvare = None
+                        try:
+                            field_value_str = str(field_value).strip() if field_value is not None else ""
+                            print(f"--- DEBUG [ora_lettura]: Mese {mese_logico}, Ricevuto: '{field_value_str}'")
+                            
+                            if field_value_str and re.match(r'^\d{1,2}:\d{2}$', field_value_str): # Verifica formato HH:MM o H:MM
+                                # Normalizza a HH:MM se necessario (Django TimeField lo accetta comunque)
+                                parts = field_value_str.split(':')
+                                ora_normalizzata = f"{parts[0].zfill(2)}:{parts[1]}"
+                                ora_da_salvare = ora_normalizzata # Django gestirà la conversione a oggetto time
+                                print(f"--- DEBUG [ora_lettura]: Mese {mese_logico}, Ora valida trovata: '{ora_da_salvare}'")
+                            elif field_value_str:
+                                # Formato non valido ricevuto
+                                print(f"--- ATTENZIONE [ora_lettura]: Mese {mese_logico}, Formato ora non valido ricevuto: '{field_value_str}'")
+                                # Non impostare errore_in_riga, ma non salvare l'ora
+                                ora_da_salvare = None # Non salvare un formato errato
+                            
+                            # Confronta il valore attuale dell'ora con quello nuovo
+                            ora_attuale_str = valore_attuale.strftime('%H:%M') if isinstance(valore_attuale, datetime.time) else None
+                            
+                            if ora_attuale_str != ora_da_salvare:
+                                setattr(lettura, field_name, ora_da_salvare) # Passa la stringa HH:MM o None
+                                modificato = True
+                                print(f"--- DEBUG [ora_lettura]: Mese {mese_logico}, Modificato: {ora_attuale_str} -> {ora_da_salvare}")
+                            
+                            # Aggiungi al dizionario di risposta (anche se None)
+                            dati_riga_aggiornati[field_name] = ora_da_salvare
+                            
+                        except Exception as e: # Cattura eccezioni generiche per sicurezza
+                             print(f"--- ERRORE [ora_lettura]: Mese {mese_logico}, Valore: '{field_value}', Errore: {e}")
+                             errore_in_riga = True # Segna errore se qualcosa va storto qui
+                             dati_riga_aggiornati[field_name] = valore_attuale.strftime('%H:%M') if isinstance(valore_attuale, datetime.time) else None
 
                     # --- Blocco migliorato per campi numerici ---
                     elif field_name in ['a1_neg', 'a2_neg', 'a3_neg', 'a1_pos', 'a2_pos', 'a3_pos', 'totale_neg', 'totale_pos', 'kaifa_180n', 'kaifa_280n', 'totale_180n', 'totale_280n']:
