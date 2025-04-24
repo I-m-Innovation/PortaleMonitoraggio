@@ -10,42 +10,42 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Inizializza i nomi dei mesi nelle intestazioni
-    updateMonths();
+    // updateMonths();
 
-    // Funzione che aggiorna i nomi dei mesi nelle intestazioni delle tabelle (non tocca le date nelle celle)
-    function updateMonths() {
-        const months = ['Gennaio 01/01 0:00', 'Febbraio 01/02 0:00', 'Marzo 01/03 0:00', 'Aprile 01/04 0:00', 'Maggio 01/05 0:00', 'Giugno 01/06 0:00',
-                        'Luglio 01/07 0:00', 'Agosto 01/08 0:00', 'Settembre 01/09 0:00', 'Ottobre 01/10 0:00', 'Novembre 01/11 0:00', 'Dicembre 01/12 0:00', 'Gennaio 01/01 0:00'];
+    // // Funzione che aggiorna i nomi dei mesi nelle intestazioni delle tabelle (non tocca le date nelle celle)
+    // function updateMonths() {
+    //     const months = ['Gennaio 01/01 ', 'Febbraio 01/02 ', 'Marzo 01/03 ', 'Aprile 01/04 ', 'Maggio 01/05 ', 'Giugno 01/06 ',
+    //                     'Luglio 01/07 ', 'Agosto 01/08 ', 'Settembre 01/09 ', 'Ottobre 01/10 ', 'Novembre 01/11 ', 'Dicembre 01/12 ', 'Gennaio 01/01 '];
 
-        const selectedYear = yearSelect.value;
+    //     const selectedYear = yearSelect.value;
 
-        // Aggiorna le celle speciali mese-con-anno
-        document.querySelectorAll('.mese-con-anno').forEach((cell, index) => {
-            const row = cell.closest('tr');
-            // Assumiamo che data-mese sia sempre presente e corretto (1-13)
-            const meseNumber = row ? parseInt(row.dataset.mese) : (index + 1);
+    //     // Aggiorna le celle speciali mese-con-anno
+    //     document.querySelectorAll('.mese-con-anno').forEach((cell, index) => {
+    //         const row = cell.closest('tr');
+    //         // Assumiamo che data-mese sia sempre presente e corretto (1-13)
+    //         const meseNumber = row ? parseInt(row.dataset.mese) : (index + 1);
 
-            if (meseNumber >= 1 && meseNumber <= 13) {
-                let yearToShow = selectedYear;
-                if (meseNumber === 13) {
-                    yearToShow = parseInt(selectedYear) + 1;
-                }
-                // Usiamo l'indice 0-based per l'array months
-                cell.textContent = months[meseNumber - 1] + ' ' + yearToShow;
-            }
-        });
+    //         if (meseNumber >= 1 && meseNumber <= 13) {
+    //             let yearToShow = selectedYear;
+    //             if (meseNumber === 13) {
+    //                 yearToShow = parseInt(selectedYear) + 1;
+    //             }
+    //             // Usiamo l'indice 0-based per l'array months
+    //             cell.textContent = months[meseNumber - 1] + ' ' + yearToShow;
+    //         }
+    //     });
 
-        // Aggiorna le altre celle del mese (senza anno) - Questa logica sembra complessa e potrebbe essere semplificata se non necessaria
-        document.querySelectorAll('.table-content table tbody tr').forEach((row, index) => {
-             // Assicurati che questa logica sia corretta per le tue tabelle
-            if (index < 12 || (index === 12 && !row.closest('#reg_segnanti'))) { // Attenzione a questa condizione
-                const firstCell = row.querySelector('td:first-child:not(.mese-con-anno)');
-                if (firstCell && index < months.length) { // Usa l'indice della riga se corrisponde ai mesi
-                    firstCell.textContent = months[index];
-                }
-            }
-        });
-    }
+    //     // Aggiorna le altre celle del mese (senza anno) - Questa logica sembra complessa e potrebbe essere semplificata se non necessaria
+    //     document.querySelectorAll('.table-content table tbody tr').forEach((row, index) => {
+    //          // Assicurati che questa logica sia corretta per le tue tabelle
+    //         if (index < 12 || (index === 12 && !row.closest('#reg_segnanti'))) { // Attenzione a questa condizione
+    //             const firstCell = row.querySelector('td:first-child:not(.mese-con-anno)');
+    //             if (firstCell && index < months.length) { // Usa l'indice della riga se corrisponde ai mesi
+    //                 firstCell.textContent = months[index];
+    //             }
+    //         }
+    //     });
+    // }
 
     // Listener per evento "change" sul menu a tendina dell'anno
     yearSelect.addEventListener('change', function() {
@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inizializza il pulsante per il toggle delle somme
     setupToggleSumsButton();
 
-    // Imposta la gestione dell'input dell'ora
+    // Imposta la gestione dell'input della data e ora
     setupTimeInputHandling();
 });
 
@@ -420,6 +420,40 @@ function aggiornaTabellaDatiEnergie(datiAggiornati) {
         updateCellIfPresent(riga, 'a2_pos', dato.a2_pos);
         updateCellIfPresent(riga, 'a3_pos', dato.a3_pos);
         updateCellIfPresent(riga, 'totale_pos', dato.totale_pos, true); // true per indicare che è calcolato/non-editabile
+
+        // Aggiorna la data e ora di lettura
+        const cellaDateTime = riga.querySelector('td[data-field="data_ora_lettura"]');
+        if (cellaDateTime) {
+            // dato.data_ora_lettura arriva dal backend come stringa YYYY-MM-DD HH:MM o null
+            const datetimeISO = dato.data_ora_lettura || '';
+
+            if (datetimeISO) {
+                cellaDateTime.dataset.datetime = datetimeISO;
+                
+                // Converti in formato visualizzazione italiana
+                const parts = datetimeISO.split(' '); // Divide data e ora
+                let display = '';
+                
+                if (parts[0]) {
+                    // Converti YYYY-MM-DD in DD/MM/YYYY
+                    const dateParts = parts[0].split('-');
+                    if (dateParts.length === 3) {
+                        display = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+                    }
+                }
+                
+                if (parts[1]) {
+                    display += ' ' + parts[1]; // Aggiungi l'ora
+                }
+                
+                cellaDateTime.textContent = display;
+                cellaDateTime.classList.add('updated-cell');
+                setTimeout(() => cellaDateTime.classList.remove('updated-cell'), 2000);
+            } else {
+                delete cellaDateTime.dataset.datetime;
+                cellaDateTime.textContent = '';
+            }
+        }
     });
 
     // Ricalcola i totali dopo l'aggiornamento per assicurare coerenza
@@ -1127,13 +1161,13 @@ function convertTimeFormat(timeString) {
     }
 }
 
-// Funzione per gestire l'input e il salvataggio dell'ora
+// Funzione per gestire l'input e il salvataggio della data e ora
 function setupTimeInputHandling() {
-    // Seleziona tutte le celle dell'ora
-    const oraCells = document.querySelectorAll('td[data-field="ora_lettura"]');
+    // Seleziona tutte le celle della data/ora
+    const datetimeCells = document.querySelectorAll('td[data-field="data_ora_lettura"]');
     
-    oraCells.forEach(cell => {
-        // Gestisci il focus e il blur sulle celle dell'ora
+    datetimeCells.forEach(cell => {
+        // Gestisci il focus e il blur sulle celle
         cell.addEventListener('focus', function() {
             // Salva il valore originale
             cell.dataset.oldValue = cell.textContent.trim();
@@ -1145,12 +1179,13 @@ function setupTimeInputHandling() {
             
             // Se è cambiato, formatta e valida
             if (newValue !== cell.dataset.oldValue) {
-                const formattedTime = convertTimeFormat(newValue);
+                // Tenta di convertire e formattare la data/ora
+                const formattedDateTime = convertDateTimeFormat(newValue);
                 
-                if (formattedTime) {
+                if (formattedDateTime) {
                     // Se il formato è valido, aggiorna la cella
-                    cell.textContent = formattedTime;
-                    cell.dataset.ora = formattedTime;
+                    cell.textContent = formattedDateTime.display;
+                    cell.dataset.datetime = formattedDateTime.iso;
                     cell.classList.add('modified');
                 } else {
                     // Se il formato non è valido, ripristina il valore precedente o lascia vuoto
@@ -1159,22 +1194,87 @@ function setupTimeInputHandling() {
                     } else {
                         cell.textContent = '';
                     }
-                    delete cell.dataset.ora;
+                    delete cell.dataset.datetime;
                 }
             }
         });
-        
-        // Limita l'input a caratteri numerici e ":"
-        cell.addEventListener('keypress', function(e) {
-            // Permetti solo numeri, due punti e tasti di controllo
-            const isNumber = /[0-9:]/.test(e.key);
-            const isControl = ['Enter', 'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key);
-            
-            if (!isNumber && !isControl) {
-                e.preventDefault();
-            }
-        });
     });
+}
+
+// Funzione per convertire e formattare la data/ora input dall'utente
+function convertDateTimeFormat(input) {
+    if (!input || input.trim() === '') {
+        return null;
+    }
+    
+    // Rimuovi spazi extra
+    input = input.trim();
+    
+    try {
+        // Supporta diversi formati di input comuni in italiano
+        // GG/MM/AAAA HH:MM o GG-MM-AAAA HH:MM o GG.MM.AAAA HH:MM
+        let parts = input.split(/\s+/);
+        let datePart = parts[0];
+        let timePart = parts[1] || '';
+        
+        // Converti la data
+        let dateMatch = datePart.match(/^(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{2,4})$/);
+        if (!dateMatch) {
+            console.log('Formato data non valido:', datePart);
+            return null;
+        }
+        
+        let day = parseInt(dateMatch[1], 10);
+        let month = parseInt(dateMatch[2], 10);
+        let year = parseInt(dateMatch[3], 10);
+        
+        // Correzione anno se necessario (es. 23 -> 2023)
+        if (year < 100) {
+            year += 2000;
+        }
+        
+        // Validazione date
+        if (month < 1 || month > 12 || day < 1 || day > 31) {
+            console.log('Data non valida:', day, month, year);
+            return null;
+        }
+        
+        // Converti l'ora (se presente)
+        let hours = 0;
+        let minutes = 0;
+        if (timePart) {
+            let timeMatch = timePart.match(/^(\d{1,2}):(\d{2})$/);
+            if (!timeMatch) {
+                console.log('Formato ora non valido:', timePart);
+                return null;
+            }
+            
+            hours = parseInt(timeMatch[1], 10);
+            minutes = parseInt(timeMatch[2], 10);
+            
+            // Validazione ora
+            if (hours > 23 || minutes > 59) {
+                console.log('Ora non valida:', hours, minutes);
+                return null;
+            }
+        }
+        
+        // Formatta data e ora per ISO e display
+        const isoDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+        const isoTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        const isoDateTime = `${isoDate} ${isoTime}`;
+        
+        const displayDate = `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
+        const displayDateTime = `${displayDate} ${isoTime}`;
+        
+        return {
+            iso: isoDateTime,
+            display: displayDateTime
+        };
+    } catch (e) {
+        console.error('Errore durante la conversione della data/ora:', e);
+        return null;
+    }
 }
 
 // Funzione per raccogliere i dati per il salvataggio (modifica per utilizzare ora_lettura)
@@ -1198,14 +1298,15 @@ function raccogliDatiTabella(tableId) {
             const fieldName = cella.dataset.field;
             let value = null;
             
-            // Trattamento speciale per ora_lettura
-            if (fieldName === 'ora_lettura') {
-                if (cella.dataset.ora) {
-                    value = cella.dataset.ora;
+            // Trattamento speciale per data_ora_lettura
+            if (fieldName === 'data_ora_lettura') {
+                if (cella.dataset.datetime) {
+                    value = cella.dataset.datetime;
                 } else if (cella.textContent.trim() !== '') {
-                    value = convertTimeFormat(cella.textContent.trim());
+                    const converted = convertDateTimeFormat(cella.textContent.trim());
+                    value = converted ? converted.iso : null;
                 }
-                console.log(`DEBUG ora_lettura per mese ${mese}: valore raccolto = "${value}"`);
+                console.log(`DEBUG data_ora_lettura per mese ${mese}: valore raccolto = "${value}"`);
             } else {
                 // Per altri campi, usa dataset.value se disponibile, altrimenti il contenuto
                 value = cella.dataset.value !== undefined ? cella.dataset.value : cella.textContent.trim();
@@ -1215,7 +1316,7 @@ function raccogliDatiTabella(tableId) {
                     value = null;
                 } 
                 // Converti in numeri dove appropriato
-                else if (!isNaN(value) && fieldName !== 'ora_lettura') {
+                else if (!isNaN(value) && fieldName !== 'data_ora_lettura') {
                     value = parseFloat(value);
                 }
             }

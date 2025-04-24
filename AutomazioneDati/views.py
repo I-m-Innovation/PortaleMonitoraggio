@@ -2,19 +2,18 @@ from django.shortcuts import render, get_object_or_404, redirect
 from MonitoraggioImpianti.models import Impianto
 
 from django.http import  JsonResponse, Http404
-from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 import json
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import datetime
-from .models import Impianto, Contatore, LetturaContatore
-from AutomazioneDati.models import Impianto as AutomazioneImpianto
+from .models import Impianto, Contatore, LetturaContatore, regsegnanti
 from MonitoraggioImpianti.models import Impianto as MonitoraggioImpianto
-from django.utils.formats import date_format
 from django.contrib import messages
 from django.urls.exceptions import NoReverseMatch
 import re
+from django.utils.dateparse import parse_datetime
+from django.db import models
 
 
 
@@ -32,22 +31,29 @@ def reg_segnanti(request, nickname):
     impianto = get_object_or_404(Impianto, nickname=nickname)
     
     try:
-        # Ottieni tutti i contatori dell'impianto
-        contatori = Contatore.objects.filter(impianto_nickname=nickname)
+        # Ottieni l'anno corrente dalla query string o usa quello attuale
+        anno_corrente = request.GET.get('anno', str(datetime.date.today().year))
+        
+        # Recupera tutti i contatori associati all'impianto
+        # ma esclude i contatori dismessi quando l'anno selezionato è successivo all'anno di dismissione
+        contatori = Contatore.objects.filter(impianto_nickname=nickname).filter(
+            # Condizione: O non ha data_dismissione, OPPURE anno corrente <= anno dismissione 
+            models.Q(data_dismissione__isnull=True) | 
+            models.Q(data_dismissione__year__gte=int(anno_corrente))
+        )
         
         if contatori.exists():
-            # Ottieni l'anno corrente dalla query string o usa quello attuale
-            anno_corrente = request.GET.get('anno', str(datetime.date.today().year))
-            
-            # Dizionario per memorizzare i dati per ogni contatore
+            # Dizionario per memorizzare i dati per ciascun contatore
             dati_contatori = {}
             
-            # Loop attraverso tutti i contatori
+            # Dizionario per memorizzare i totali mensili per i contatori Gesis (Produzione)
+            mesi_totali = {mese: Decimal('0.0') for mese in range(1, 12)}
+            
+            # Loop per ogni contatore
             for contatore in contatori:
-                # Usa l'ID del contatore direttamente come chiave
                 contatore_key = contatore.id
                 
-                # Recupera le letture per reg_segnanti
+                # Recupera le letture già esistenti di tipo "reg_segnanti" per questo contatore
                 letture_reg = LetturaContatore.objects.filter(
                     contatore=contatore,
                     anno=anno_corrente,
@@ -55,10 +61,9 @@ def reg_segnanti(request, nickname):
                 ).order_by('mese')
                 letture_reg_per_mese = {lettura.mese: lettura for lettura in letture_reg}
                 
-                # Dizionario per i dati mensili di questo contatore
+                # Dizionario per memorizzare i dati per ogni mese per il contatore corrente
                 dati_per_mese = {}
                 
-                # Per ogni mese, preparare i dati o creare un record vuoto
                 for mese in range(1, 13):
                     lettura_reg = letture_reg_per_mese.get(mese)
                     if lettura_reg is None:
@@ -69,69 +74,87 @@ def reg_segnanti(request, nickname):
                             tipo_tabella='reg_segnanti'
                         )
                     
-                    # Se è Gesis, possiamo importare dati da libro_energie
+                    # Calcolo per contatori Gesis di tipo Produzione: utilizzare totale_neg
                     if contatore.marca == 'Gesis' and contatore.tipologia == 'Produzione':
-                        letture_libro_energie = LetturaContatore.objects.filter(
-                            contatore=contatore,
-                            anno=anno_corrente,
-                            mese=mese,
-                            tipo_tabella='libro_energie'
-                        ).first()
-                        
-                        if letture_libro_energie:
-                            # Importa il totale_neg nel campo prod_campo
-                            if letture_libro_energie.totale_neg is not None:
-                                lettura_reg.prod_campo = letture_libro_energie.totale_neg
-                                print(f"Mese {mese}: Assegnato totale_neg {letture_libro_energie.totale_neg} a prod_campo")
+                        # Esiste il mese successivo? (calcolo eseguibile solo per mesi da 1 a 11)
+                        if mese < 12:
+                            libro_corrente = LetturaContatore.objects.filter(
+                                contatore=contatore,
+                                anno=anno_corrente,
+                                mese=mese,
+                                tipo_tabella='libro_energie'
+                            ).first()
+                            libro_successivo = LetturaContatore.objects.filter(
+                                contatore=contatore,
+                                anno=anno_corrente,
+                                mese=mese + 1,
+                                tipo_tabella='libro_energie'
+                            ).first()
                             
-                            # Importa il totale_pos nel campo prel_campo
-                            if letture_libro_energie.totale_pos is not None:
-                                lettura_reg.prel_campo = letture_libro_energie.totale_pos
-                                print(f"Mese {mese}: Assegnato totale_pos {letture_libro_energie.totale_pos} a prel_campo")
-                            
-                            # Salva la lettura se è nuova o modificata
-                            if lettura_reg.id is None:
-                                lettura_reg.save()
-                                print(f"Salvata nuova lettura per mese {mese}")
+                            # Se entrambi i dati sono presenti e contengono un valore per totale_neg
+                            if (libro_corrente and libro_successivo and 
+                                libro_corrente.totale_neg is not None and 
+                                libro_successivo.totale_neg is not None):
+                                k_decimal = Decimal(contatore.k)
+                                prod_valore = (libro_successivo.totale_neg - libro_corrente.totale_neg) * k_decimal
+                                lettura_reg.prod_campo = prod_valore
+                                mesi_totali[mese] += prod_valore
+                                print(f"Mese {mese}: Calcolato prod_campo = {prod_valore} dalla differenza: {libro_successivo.totale_neg} - {libro_corrente.totale_neg} * {k_decimal}")
+                            else:
+                                print(f"Mese {mese}: Dati insufficienti per calcolare prod_campo")
+                        else:
+                            print(f"Mese {mese}: Nessun dato per mese successivo, prod_campo non calcolato")
                     
-                    # Se è Kaifa, possiamo importare dati da libro_kaifa
+                    # Calcolo per contatori Kaifa di tipo Scambio: utilizzare totale_pos
                     elif contatore.marca == 'Kaifa' and contatore.tipologia == 'Scambio':
-                        letture_libro_kaifa = LetturaContatore.objects.filter(
-                            contatore=contatore,
-                            anno=anno_corrente,
-                            mese=mese,
-                            tipo_tabella='libro_kaifa'
-                        ).first()
-                        
-                        if letture_libro_kaifa:
-                            # Importa il totale_180n nel campo autocons_campo
-                            if letture_libro_kaifa.totale_180n is not None:
-                                # Calcola il valore moltiplicato per k
-                                valore_moltiplicato = letture_libro_kaifa.totale_180n * Decimal(contatore.k)
-                                lettura_reg.autocons_campo = valore_moltiplicato
-                                print(f"Mese {mese}: Assegnato totale_180n * k ({letture_libro_kaifa.totale_180n} * {contatore.k} = {valore_moltiplicato}) a autocons_campo")
+                        if mese < 12:
+                            libro_corrente = LetturaContatore.objects.filter(
+                                contatore=contatore,
+                                anno=anno_corrente,
+                                mese=mese,
+                                tipo_tabella='libro_energie'
+                            ).first()
+                            libro_successivo = LetturaContatore.objects.filter(
+                                contatore=contatore,
+                                anno=anno_corrente,
+                                mese=mese + 1,
+                                tipo_tabella='libro_energie'
+                            ).first()
                             
-                            # Salva la lettura se è nuova o modificata
-                            if lettura_reg.id is None:
-                                lettura_reg.save()
-                                print(f"Salvata nuova lettura per mese {mese}")
+                            # Se entrambi i valori per totale_pos sono presenti
+                            if (libro_corrente and libro_successivo and 
+                                libro_corrente.totale_pos is not None and 
+                                libro_successivo.totale_pos is not None):
+                                k_decimal = Decimal(contatore.k)
+                                autocons_valore = (libro_successivo.totale_pos - libro_corrente.totale_pos) * k_decimal
+                                lettura_reg.autocons_campo = autocons_valore
+                                print(f"Mese {mese}: Calcolato autocons_campo = {autocons_valore} dalla differenza: {libro_successivo.totale_pos} - {libro_corrente.totale_pos} * {k_decimal}")
+                            else:
+                                print(f"Mese {mese}: Dati insufficienti per calcolare autocons_campo")
+                        else:
+                            print(f"Mese {mese}: Nessun dato per mese successivo, autocons_campo non calcolato")
                     
-                    # Salva la lettura per questo mese
+                    # Per altre tipologie, eventuali altri calcoli possono essere aggiunti qui
+                    
+                    # Salva ed assegna il record della lettura per il mese
                     dati_per_mese[mese] = lettura_reg
+                    if lettura_reg.id is None:
+                        lettura_reg.save()
                 
-                # Salva i dati di questo contatore nel dizionario principale
+                # Memorizza i dati processati per il contatore corrente
                 dati_contatori[contatore_key] = {
                     'contatore': contatore,
                     'dati_per_mese': dati_per_mese
                 }
             
-            # Prepara il contesto
+            # Prepara il contesto per il template
             context = {
                 'impianto': impianto,
                 'contatori': contatori,
                 'dati_contatori': dati_contatori,
                 'num_rows': range(12),
-                'anno_corrente': anno_corrente
+                'anno_corrente': anno_corrente,
+                'mesi_totali': mesi_totali
             }
             
             return render(request, 'reg_segnanti.html', context)
@@ -162,7 +185,7 @@ def salva_contatore(request):
         impianto_id = request.POST.get('impianto_id')
         
         # Usa il modello corretto per Impianto
-        from AutomazioneDati.models import Impianto  
+  
         
         # Recupera l'impianto originale da MonitoraggioImpianti
         impianto_monitoraggio = get_object_or_404(Impianto, id=impianto_id)
@@ -200,7 +223,7 @@ def diari_letture(request, nickname):
         # Recupera le letture Energie per l'anno selezionato e Gennaio dell'anno successivo
         letture_libro_energie_qs = LetturaContatore.objects.filter(
             contatore=contatore,
-            tipo_tabella='libro_energie',
+            tipo_tabella='libro_energie',   
             anno__in=[anno_selezionato, anno_successivo] # Filtra per entrambi gli anni
         ).order_by('anno', 'mese')
 
@@ -240,8 +263,7 @@ def diari_letture(request, nickname):
                     'mese': mese_indice, # Mese logico (1-13) per l'attributo data-mese nel template
                     'anno': anno_corrente_loop, # Anno effettivo
                     'mese_effettivo': mese_corrente_loop, # Mese effettivo (1-12)
-                    'data_presa': lettura.data_presa, # Passa l'oggetto DateField
-                    'ora_lettura': lettura.ora_lettura, # <<< MODIFICA: Aggiungi ora_lettura
+                    'data_ora_lettura': lettura.data_ora_lettura, # <<< MODIFICA: Aggiungi ora_lettura
                     'a1_neg': lettura.a1_neg,
                     'a2_neg': lettura.a2_neg,
                     'a3_neg': lettura.a3_neg,
@@ -258,8 +280,7 @@ def diari_letture(request, nickname):
                     'mese': mese_indice,
                     'anno': anno_corrente_loop,
                     'mese_effettivo': mese_corrente_loop,
-                    'data_presa': None,
-                    'ora_lettura': None, # <<< MODIFICA: Aggiungi ora_lettura anche qui
+                    'data_ora_lettura': None,
                     'a1_neg': None, 'a2_neg': None, 'a3_neg': None, 'totale_neg': None,
                     'a1_pos': None, 'a2_pos': None, 'a3_pos': None, 'totale_pos': None,
                  })
@@ -319,122 +340,143 @@ def salva_reg_segnanti(request):
     # Debug
     print(f"Metodo richiesta: {request.method}")
     print(f"Content type: {request.content_type}")
-    
+
     if request.method == 'POST':
         try:
             # Stampa il corpo della richiesta per debug
             print(f"Body della richiesta: {request.body.decode('utf-8')[:200]}...")
-            
+
             # Decodifica i dati JSON dalla richiesta
             data = json.loads(request.body)
-            
+
             # Debug dei dati ricevuti
             print(f"Contatore ID: {data.get('contatore_id')}")
             print(f"Anno: {data.get('anno')}")
+            # Il tipo_tabella potrebbe non essere più strettamente necessario qui,
+            # ma lo lasciamo per coerenza se serve altrove.
             print(f"Tipo tabella: {data.get('tipo_tabella')}")
             print(f"Numero righe ricevute: {len(data.get('rows', []))}")
-            
+
             # Estrai le informazioni principali
             contatore_id = data.get('contatore_id')
             anno = data.get('anno')
-            tipo_tabella = data.get('tipo_tabella')
+            # tipo_tabella = data.get('tipo_tabella') # Non usato direttamente per salvare in regsegnanti
             rows = data.get('rows', [])
-            
+
             # Ottieni il contatore dal database
             contatore = get_object_or_404(Contatore, id=contatore_id)
-            
-            # Contatore per verificare quante righe sono state salvate
+
+            # Contatore per verificare quante righe sono state salvate/aggiornate
             righe_salvate = 0
-            
-            # Funzione per convertire la data dal formato italiano a ISO
-            def convert_date_format(date_str):
-                # Funzione semplificata che non modifica il formato della data
-                if not date_str or not date_str.strip():
-                    return None
-                
-                # Restituisci la data così com'è, senza conversioni
-                return date_str.strip()
-            
-            # Elabora ogni riga di dati
+            errori = [] # Lista per collezionare eventuali errori
+
+            # Elabora ogni riga di dati ricevuta dal frontend
             for row_data in rows:
                 mese = row_data.get('mese')
+                if not mese:
+                    print(f"Riga saltata: mese mancante. Dati: {row_data}")
+                    continue # Salta questa riga se manca il mese
+
                 print(f"Elaborazione mese: {mese}")
-                
-                # Cerca una lettura esistente o crea una nuova
-                lettura, created = LetturaContatore.objects.get_or_create(
-                    contatore=contatore,
-                    anno=anno,
-                    mese=mese,
-                    tipo_tabella=tipo_tabella,
-                    defaults={}
-                )
-                
-                # Aggiorna i campi della lettura con i dati ricevuti
-                modificato = False
-                
-                for field_name, field_value in row_data.items():
-                    # Ignora i campi che non sono nel modello o sono id/chiavi
-                    if field_name in ['contatore_id', 'anno', 'mese', 'tipo_tabella']:
-                        continue
-                    
-                    # Gestisci la conversione in base al tipo di campo
-                    if field_name == 'data_presa':
-                        if field_value and field_value.strip():
-                            # Converti la data dal formato italiano a ISO
-                            iso_date = convert_date_format(field_value)
-                            if iso_date:
-                                setattr(lettura, field_name, iso_date)
-                                modificato = True
-                                print(f"Data convertita: {field_value} -> {iso_date}")
-                    else:
-                        # Per i campi numerici, convertiamo in Decimal se non vuoto
-                        if field_name in ['a1_neg', 'a2_neg', 'a3_neg', 'a1_pos', 'a2_pos', 'a3_pos', 'totale_neg', 'totale_pos', 'kaifa_180n', 'kaifa_280n', 'totale_180n', 'totale_280n']:
-                            if field_value and field_value.strip():
+
+                try:
+                    # Cerca un record regsegnanti esistente o crea uno nuovo
+                    # Usa i nuovi campi: contatore (oggetto), anno, mese
+                    reg_segnante_obj, created = regsegnanti.objects.get_or_create(
+                        contatore=contatore,
+                        anno=anno,
+                        mese=mese,
+                        defaults={} # Inizializza con valori di default se viene creato
+                    )
+
+                    # Aggiorna i campi del record regsegnanti con i dati ricevuti
+                    modificato = False
+
+                    # Lista dei campi numerici attesi dal modello regsegnanti
+                    # Escludiamo prod_campo e autocons_campo perché sono calcolati altrove (nella vista reg_segnanti)
+                    # e non dovrebbero essere sovrascritti qui, a meno che non sia intenzionale.
+                    # Se invece vuoi che anche questi siano salvabili da qui, aggiungili alla lista.
+                    campi_numerici_regsegnanti = [
+                        'prod_ed', 'prod_gse',
+                        'prel_campo', 'prel_ed', 'prel_gse',
+                        'autocons_ed', 'autocons_gse', # Escluso autocons_campo
+                        'imm_campo', 'imm_ed', 'imm_gse'
+                    ]
+
+                    for field_name, field_value in row_data.items():
+                        # Ignora i campi che non sono nel modello regsegnanti o sono chiavi
+                        if field_name in ['contatore_id', 'anno', 'mese', 'tipo_tabella'] or not hasattr(reg_segnante_obj, field_name):
+                            continue
+
+                        # Gestisci solo i campi numerici definiti sopra
+                        if field_name in campi_numerici_regsegnanti:
+                            valore_attuale = getattr(reg_segnante_obj, field_name, None)
+                            nuovo_valore = None # Default a None se il valore non è valido o vuoto
+
+                            if field_value is not None and str(field_value).strip():
                                 try:
-                                    # Rimuovi tutti gli spazi
-                                    cleaned_value = field_value.strip().replace(' ', '')
-                                    # Sostituisci la virgola con il punto per la conversione
-                                    cleaned_value = cleaned_value.replace(',', '.')
-                                    
-                                    # Se ci sono più punti decimali, mantieni solo il primo
+                                    # Pulisci e converti in Decimal
+                                    cleaned_value = str(field_value).strip().replace(' ', '').replace(',', '.')
                                     if cleaned_value.count('.') > 1:
                                         parts = cleaned_value.split('.')
                                         cleaned_value = parts[0] + '.' + ''.join(parts[1:])
-                                    
-                                    # Verifica che sia un numero valido
+
                                     if cleaned_value and cleaned_value != '.':
-                                        # Converti in Decimal per precisione numerica
                                         decimal_value = Decimal(cleaned_value)
-                                        # Arrotonda a 3 decimali
-                                        decimal_value = decimal_value.quantize(Decimal('0.001'), rounding='ROUND_HALF_UP')
-                                        setattr(lettura, field_name, decimal_value)
-                                        modificato = True
+                                        # Arrotonda a 3 decimali (o quanti ne richiede il modello)
+                                        nuovo_valore = decimal_value.quantize(Decimal('0.001'), rounding=ROUND_HALF_UP)
                                     else:
-                                        setattr(lettura, field_name, None)
-                                        modificato = True
-                                except (InvalidOperation, ValueError) as e:
-                                    print(f"Errore nel convertire il valore '{field_value}' per {field_name}: {e}")
-                                    return JsonResponse({
-                                        'status': 'error',
-                                        'message': f"Valore non valido '{field_value}' nel campo {field_name}"
-                                    }, status=400)
-                            else:
-                                setattr(lettura, field_name, None)
+                                        # Valore pulito non valido (es. solo '.')
+                                        nuovo_valore = None
+
+                                except (InvalidOperation, ValueError, TypeError) as e:
+                                    print(f"Errore conversione valore '{field_value}' per {field_name} nel mese {mese}: {e}")
+                                    errori.append(f"Mese {mese}, Campo {field_name}: Valore '{field_value}' non valido.")
+                                    # Non impostare modificato = True, mantieni il valore vecchio
+                                    continue # Passa al campo successivo
+
+                            # Confronta il valore attuale (convertito a Decimal se non None) con il nuovo
+                            valore_attuale_dec = Decimal(str(valore_attuale)).quantize(Decimal('0.001')) if valore_attuale is not None else None
+
+                            if valore_attuale_dec != nuovo_valore:
+                                setattr(reg_segnante_obj, field_name, nuovo_valore)
                                 modificato = True
-                
-                # Salva solo se sono state effettuate modifiche
-                if modificato:
-                    lettura.save()
-                    righe_salvate += 1
-            
-            # Restituisci una risposta JSON di successo
-            return JsonResponse({
-                'status': 'success',
-                'message': f'Salvate {righe_salvate} righe di dati',
-                'tipo_tabella': tipo_tabella,
-                'anno': anno
-            })
-            
+                                print(f"--- Mese {mese}, Campo {field_name}: Modificato da {valore_attuale_dec} a {nuovo_valore}")
+
+                        # Qui potresti aggiungere la gestione di altri tipi di campo se ce ne fossero in regsegnanti
+                        # Ad esempio, se ci fosse un campo data o testo.
+
+                    # Salva solo se sono state effettuate modifiche valide
+                    if modificato:
+                        reg_segnante_obj.save()
+                        righe_salvate += 1
+                        print(f"--- Record regsegnanti per mese {mese} salvato/aggiornato.")
+
+                except Exception as e_riga:
+                    # Errore durante l'elaborazione di una specifica riga (es. get_or_create fallito)
+                    import traceback
+                    print(f"Errore elaborazione riga per mese {mese}: {e_riga}")
+                    print(traceback.format_exc())
+                    errori.append(f"Mese {mese}: Errore generale - {e_riga}")
+
+
+            # Restituisci una risposta JSON
+            if errori:
+                 # Se ci sono stati errori, restituisci un successo parziale
+                 return JsonResponse({
+                    'status': 'partial_success',
+                    'message': f'Salvate/Aggiornate {righe_salvate} righe, ma si sono verificati {len(errori)} errori.',
+                    'errors': errori,
+                    'anno': anno
+                 })
+            else:
+                 # Se tutto è andato bene
+                 return JsonResponse({
+                    'status': 'success',
+                    'message': f'Salvate/Aggiornate {righe_salvate} righe di dati per regsegnanti',
+                    'anno': anno
+                 })
+
         except json.JSONDecodeError as e:
             # Errore di decodifica JSON
             print(f"Errore JSON: {e}")
@@ -442,23 +484,28 @@ def salva_reg_segnanti(request):
                 'status': 'error',
                 'message': f'Errore nella decodifica JSON: {str(e)}'
             }, status=400)
+        except Contatore.DoesNotExist:
+             # Errore se il contatore_id non è valido
+             print(f"Errore: Contatore con ID {contatore_id} non trovato.")
+             return JsonResponse({
+                'status': 'error',
+                'message': f'Contatore con ID {contatore_id} non trovato.'
+             }, status=404) # Not Found
         except Exception as e:
-            # Altri errori
+            # Altri errori generici
             import traceback
-            print(f"Errore generico: {e}")
+            print(f"Errore generico in salva_reg_segnanti: {e}")
             print(traceback.format_exc())
             return JsonResponse({
                 'status': 'error',
-                'message': str(e)
-            }, status=400)
-    
+                'message': f'Errore interno del server: {str(e)}'
+            }, status=500) # Internal Server Error
+
     # Se la richiesta non è POST, restituisci un errore
     return JsonResponse({
         'status': 'error',
         'message': 'Metodo non consentito'
-    }, status=405)
-
-
+    }, status=405) # Method Not Allowed
 
 @csrf_exempt
 def salva_dati_letture(request):
@@ -669,6 +716,46 @@ def salva_dati_letture(request):
                             # Aggiungi None al dizionario di risposta
                             dati_riga_aggiornati[field_name] = None
 
+                    # --- Blocco specifico per data_ora_lettura ---
+                    elif field_name == 'data_ora_lettura':
+                        datetime_iso = None
+                        try:
+                            field_value_str = str(field_value).strip() if field_value is not None else ""
+                            if field_value_str:
+                                print(f"--- DEBUG [data_ora_lettura]: Mese {mese_logico}, Ricevuto: '{field_value_str}'")
+                                
+                                # Converti la stringa ISO in oggetto datetime
+                                datetime_iso = parse_datetime(field_value_str)
+                                
+                                if datetime_iso:
+                                    print(f"--- DEBUG [data_ora_lettura]: Mese {mese_logico}, DateTime convertito in: '{datetime_iso}'")
+                                    
+                                    # Confronta il valore attuale con quello nuovo
+                                    if valore_attuale != datetime_iso:
+                                        setattr(lettura, field_name, datetime_iso)
+                                        modificato = True
+                                        print(f"--- DEBUG [data_ora_lettura]: Mese {mese_logico}, Modificato: {valore_attuale} -> {datetime_iso}")
+                                    
+                                    # Aggiungi al dizionario di risposta
+                                    dati_riga_aggiornati[field_name] = datetime_iso.strftime('%Y-%m-%d %H:%M')
+                                else:
+                                    print(f"--- ERRORE [data_ora_lettura]: Mese {mese_logico}, Impossibile convertire '{field_value_str}'")
+                                    errore_in_riga = True
+                            else:
+                                # Se il valore ricevuto è vuoto, imposta a None
+                                if getattr(lettura, field_name) is not None:
+                                    setattr(lettura, field_name, None)
+                                    modificato = True
+                                    print(f"--- DEBUG [data_ora_lettura]: Mese {mese_logico}, Impostato a None (era vuoto)")
+                                
+                                dati_riga_aggiornati[field_name] = None
+                        
+                        except Exception as e:
+                            print(f"--- ERRORE [data_ora_lettura]: Mese {mese_logico}, Valore: '{field_value}', Errore: {e}")
+                            errore_in_riga = True
+                            righe_con_errore_data.append({'mese': mese_logico, 'valore': field_value, 'errore': str(e)})
+                            # Restituisci il valore vecchio in caso di errore
+                            dati_riga_aggiornati[field_name] = valore_attuale.strftime('%Y-%m-%d %H:%M') if isinstance(valore_attuale, datetime.datetime) else None
 
                 # Salva solo se sono state effettuate modifiche E non ci sono stati errori critici nella riga
                 if modificato and not errore_in_riga:
