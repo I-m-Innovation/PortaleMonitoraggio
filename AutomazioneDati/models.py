@@ -81,7 +81,7 @@ class LetturaContatore(models.Model):
 
 class regsegnanti(models.Model):
     # NUOVI CAMPI per collegare questa riga a un contatore, anno e mese specifici
-    contatore = models.ForeignKey(Contatore, on_delete=models.CASCADE, related_name='reg_segnanti')
+    contatore = models.ForeignKey(Contatore, on_delete=models.CASCADE, related_name='diarioenergie')
     anno = models.IntegerField()
     mese = models.IntegerField()
 

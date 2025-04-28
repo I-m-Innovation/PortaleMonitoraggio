@@ -21,8 +21,5 @@ def loadingPage(request):
 
 
 def loadingPageCorrispettivi(request):
-    """
-    Gestisce la redirezione alla pagina di caricamento dei corrispettivi.
-    Assicurati che il percorso del template (ad esempio 'loading/corrispettivi.html') sia corretto.
-    """
-    return render(request, 'loading/corrispettivi.html', {})
+	link_corrispettivi = linkportale.objects.filter(tag='portale-corrispettivi')[0].link
+	return render(request, 'loading_gif/loading_3.html', {'link_corrispettivi': link_corrispettivi})
