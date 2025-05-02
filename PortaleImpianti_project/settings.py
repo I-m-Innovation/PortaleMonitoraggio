@@ -48,7 +48,8 @@ INSTALLED_APPS = [
     # APPS
     "MonitoraggioImpianti.apps.MonitoraggioimpiantiConfig",
     "AnalisiDatiImpianti.apps.AnalisidatiimpiantiConfig",
-    "AutomazioneDati.apps.AutomazionedatiConfig"
+    "AutomazioneDati.apps.AutomazionedatiConfig",
+    "PortaleCorrispettivi.apps.PortalecorrispettiviConfig",
     
     
 ]

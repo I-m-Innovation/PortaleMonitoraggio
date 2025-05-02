@@ -1,0 +1,77 @@
+{% extends 'PortaleCorrispettivi/baselayoutcorispettivi.html' %}
+{% load static %}
+
+
+{% block content%}
+	<main class="home-container">
+		<div class="item-c py-3 ps-2 mx-1">
+			{% include 'PortaleCorrispettivi/partials/sidebar.html' %}
+		</div>
+		
+		<div class="item-b">
+			<div class="container-fluid pt-3">
+			<div class="row p-0 m-0">
+			<div class="col corrispettivi-card px-3 pt-3" style="min-width:80%">
+				<img class="sfondo-idroelettrico" src="{% static 'images/sfondo_san_teodoro.png' %}" alt="sfondo">
+			<div class="container" style="margin: auto">
+				<div class="report-link mt-3">
+					<a class="btn btn-dark" href="{% url 'report-impianto' nickname %}"> Report </a>
+				</div>
+				<h1 style="color: #4a3c54; font-weight: bold; display: inline">{{ impianto.nome_impianto }}</h1> 
+				<p>Misure di energia e situazione dei corrispettivi</p> <div id="spinner" class="loading" style="margin-bottom: 20px"></div>
+				<div class="container">
+					{% for anno, diario in diari_letture.items reversed %}
+						{% include 'PortaleCorrispettivi/partials/scheda_corrispettivi.html' %}
+						<!-- JAVASCRIPT TABELLA1 + GRAFICO -->
+						{% include 'PortaleCorrispettivi/js/dettaglio_corrispettivi_tabella1-grafico_js.html' %}
+						<!-- JAVASCRIPT TABELLA2 MISURE -->
+						{% include 'PortaleCorrispettivi/js/dettaglio_corrispettivi_tabella2-misure_js.html' %}
+						{% if nickname == 'ponte_giurino' %}
+							<!-- JAVASCRIPT TABELLA CORRISPETTIVI -->
+							{% include 'PortaleCorrispettivi/js/dettaglio_corrispettivi_tabella-consorzi_js.html' %}
+						{% endif %}
+					{% endfor %}
+				</div>
+			</div>
+				</div>
+				<div class="col">
+					<div class="addcommento-card position-fixed">
+					<div class="container">
+						<h3>Inserisci commento</h3>
+						<form action="{% url 'dettaglio-corrispettivi' nickname %}" method="post">
+							{% csrf_token %}
+								{% for field in form %}
+									{% if field.errors %}
+									<div class="alert alert-danger" style="padding: 5px"><small>{{ field.errors.as_text }}</small><br/></div>
+									{% endif %}
+								{% endfor %}
+							
+								<p> {{ form.testo.label_tag }} <br> {{ form.testo }} </p>
+								<small class="form-text text-muted">{{ form.delete.label }}: </small>{{ form.delete }}
+								<p> {{ form.date_input.label_tag }} <br> {{ form.date_input }}
+									<style>#id_date_input_day {display: none;visibility: hidden;}</style>
+	{#								<br> <small class="form-text text-muted">Entrata in esercizio: {{ form.initial.date_input }} </small>#}
+								<p>
+								<p> {{ form.stato.label_tag }} <br> {{ form.stato }} </p>
+								<p> {{ form.impianto.label_tag }}  {{ form.impianto.as_hidden }} {{ impianto.nome_impianto }} </p>
+								<input type="submit" value="Salva" class="btn btn-dark" />
+						</form>
+						{% for message in messages %}
+							<div class="container-fluid my-2">
+								<div class="alert alert-{{ message.tags }}" role="alert" style="padding: 5px">
+									{{ message }}
+								</div>
+							</div>
+						{% endfor %}
+					</div>
+				</div>
+				</div>
+			</div>
+		</div>
+		</div>
+	</main>
+{% endblock %}
+
+
+
+

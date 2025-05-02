@@ -1,0 +1,96 @@
+<script>
+		$(document).ready(function(){
+				var url_consorzi = '{% url 'api-table-consorzi' 'anno_nickname' %}'.replace('anno_nickname', {{ anno }} + '_' + '{{ nickname }}')
+				console.log(url_consorzi)
+				$.ajax({
+						'url': url_consorzi, 
+						'method': "GET", 
+						'cache': false, 
+						'contentType': 'application/json'
+				}).done( function(data) {
+						var T1 = data.table1
+						var T2 = data.table2
+						
+						{% if anno == curr_anno %}
+							var last_row1 = T1.filter(function (el) {
+									return el.mese === 'Totale Periodo'
+							})
+							
+							document.getElementById("imponibile1").innerHTML = toLocaleEUR(last_row1[0].canone,2);
+							document.getElementById("iva1").innerHTML = toLocaleEUR(last_row1[0].canone * 0.22,2);
+							document.getElementById("totale1").innerHTML =  toLocaleEUR(last_row1[0].canone + last_row1[0].canone * 0.22,2);
+							
+							var last_row2 = T2.filter(function (el) {
+									return el.mese === 'Totale Periodo'
+							})
+							
+							let now = new Date();
+							let ottobre = new Date(now.getFullYear(), 10, 1, 0, 0, 0, 0)
+							{% comment %} if (now >= ottobre) { {% endcomment %}
+									document.getElementById("imponibile2").innerHTML = toLocaleEUR(last_row2[0].canone,2);
+									document.getElementById("iva2").innerHTML = toLocaleEUR(last_row2[0].canone * 0.22,2);
+									document.getElementById("totale2").innerHTML =  toLocaleEUR(last_row2[0].canone + last_row2[0].canone * 0.22,2);
+							{% comment %} } {% endcomment %}
+						{% endif %}
+						
+						$('#table3_{{ anno }}').DataTable({
+								destroy: true, searching: false, paging: false, info : false,
+								data: T1, 
+								columns: [
+										{ data: "i" }, 
+										{ data: "mese" },
+										{ data: "incassi" }, 
+										{ data: "canone" },
+										{ data: "prodotta_def" },
+								], 
+								createdRow: function( row, data, dataIndex){
+										if( data['mese'] === 'Totale Periodo'){
+												$(row).addClass('boldRow');
+										}
+								}, 
+								columnDefs: [{defaultContent: "-", targets: "_all"},{ targets: [2,3,4], className: 'text-center' }, 
+										{target: 0, visible: false}, 
+										{target: [2,3], 
+												render: function ( data, type, row, meta ) {
+														return data === '' || data === 0 ? '-': DataTable.render.number(null, null, 2,'', ' €').display(data)
+												}
+										}, 
+										{targets: [4],
+												render: function ( data, type, row, meta ) {
+														return data === '' || data === 0 ? '-': DataTable.render.number(null, null, 2,'', ' kWh').display(data)
+												}
+										},
+								],
+						});
+						
+						$('#table4_{{ anno }}').DataTable({destroy: true, searching: false, paging: false, info : false, 
+								data: T2, 
+								columns: [
+										{ data: "i" }, 
+										{ data: "mese" },
+										{ data: "incassi" }, 
+										{ data: "canone" },
+										{ data: "prodotta_def" },
+								], 
+								createdRow: function( row, data, dataIndex){
+										if( data['mese'] === 'Totale Periodo') {$(row).addClass('boldRow');}
+								}, 
+								columnDefs: [
+										{defaultContent: "-", targets: "_all"}, 
+										{ targets: [2,3,4], className: 'text-center' }, 
+										{target: 0, visible: false}, 
+										{target: [2,3], 
+												render: function ( data, type, row, meta ) {
+														return data === '' || data === 0 ? '-': DataTable.render.number(null, null, 2,'', ' €').display(data)
+												}
+										}, 
+									{targets: [4], 
+											render: function ( data, type, row, meta ) {
+													return data === '' || data === 0 ? '-': DataTable.render.number(null, null, 2,'',' kWh').display(data)
+											}
+									}, 
+							],
+					});
+				});
+		})
+</script>

@@ -27,6 +27,7 @@ urlpatterns = [
     path("monitoraggio-impianti/", include('MonitoraggioImpianti.urls')),
     path("analisi-impianti/", include('AnalisiDatiImpianti.urls')),
     path("automazione-dati/", include('AutomazioneDati.urls')),
+    path("corrispettivi/", include('PortaleCorrispettivi.urls')),
     path('loading/1/', views.loadingPageMonitoraggio, name='next-monitoraggio'),
     path('loading/2/', views.loadingPageAnalisi, name='next-analisi'),
     path('loading/3/', views.loadingPageCorrispettivi, name='next-corrispettivi'),
