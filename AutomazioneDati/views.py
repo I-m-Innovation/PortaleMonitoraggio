@@ -47,7 +47,7 @@ def diarioenergie(request, nickname):
             dati_contatori = {}
             
             # Dizionario per memorizzare i totali mensili per i contatori Gesis (Produzione)
-            mesi_totali = {mese: Decimal('0.0') for mese in range(1, 12)}
+            mesi_totali = {mese: Decimal('0.0') for mese in range(1, 13)}
             
             # Loop per ogni contatore
             for contatore in contatori:
@@ -86,7 +86,7 @@ def diarioenergie(request, nickname):
                     
                     # Calcolo per contatori Gesis di tipo Produzione: utilizzare totale_neg
                     if contatore.marca == 'Gesis' and contatore.tipologia == 'Produzione':
-                        # Esiste il mese successivo? (calcolo eseguibile solo per mesi da 1 a 11)
+                        # Calcolo per mesi da 1 a 11 (differenza con mese successivo dello stesso anno)
                         if mese < 12:
                             libro_corrente = LetturaContatore.objects.filter(
                                 contatore=contatore,
@@ -109,14 +109,40 @@ def diarioenergie(request, nickname):
                                 prod_valore = (libro_successivo.totale_neg - libro_corrente.totale_neg) * k_decimal
                                 lettura_reg.prod_campo = prod_valore
                                 mesi_totali[mese] += prod_valore
-                                print(f"Mese {mese}: Calcolato prod_campo = {prod_valore} dalla differenza: {libro_successivo.totale_neg} - {libro_corrente.totale_neg} * {k_decimal}")
+                                print(f"Mese {mese} ({anno_corrente}): Calcolato prod_campo = {prod_valore} dalla differenza: {libro_successivo.totale_neg} - {libro_corrente.totale_neg} * {k_decimal}")
                             else:
-                                print(f"Mese {mese}: Dati insufficienti per calcolare prod_campo")
-                        else:
-                            print(f"Mese {mese}: Nessun dato per mese successivo, prod_campo non calcolato")
+                                print(f"Mese {mese} ({anno_corrente}): Dati insufficienti per calcolare prod_campo")
+                        # Calcolo per il mese 12 (differenza con Gennaio dell'anno successivo)
+                        elif mese == 12:
+                            anno_successivo = int(anno_corrente) + 1
+                            libro_corrente = LetturaContatore.objects.filter(
+                                contatore=contatore,
+                                anno=anno_corrente,
+                                mese=mese,
+                                tipo_tabella='libro_energie'
+                            ).first()
+                            libro_successivo = LetturaContatore.objects.filter(
+                                contatore=contatore,
+                                anno=str(anno_successivo), # Passa l'anno successivo come stringa
+                                mese=1,
+                                tipo_tabella='libro_energie'
+                            ).first()
+                            
+                            # Se entrambi i dati sono presenti e contengono un valore per totale_neg
+                            if (libro_corrente and libro_successivo and
+                                libro_corrente.totale_neg is not None and
+                                libro_successivo.totale_neg is not None):
+                                k_decimal = Decimal(contatore.k)
+                                prod_valore = (libro_successivo.totale_neg - libro_corrente.totale_neg) * k_decimal
+                                lettura_reg.prod_campo = prod_valore
+                                mesi_totali[mese] += prod_valore
+                                print(f"Mese {mese} ({anno_corrente}): Calcolato prod_campo = {prod_valore} dalla differenza con Gennaio {anno_successivo}: {libro_successivo.totale_neg} - {libro_corrente.totale_neg} * {k_decimal}")
+                            else:
+                                print(f"Mese {mese} ({anno_corrente}): Dati insufficienti per calcolare prod_campo (richiesto Gennaio {anno_successivo})")
                     
                     # Calcolo per contatori Kaifa di tipo Scambio: utilizzare totale_pos
                     elif contatore.marca == 'Kaifa' and contatore.tipologia == 'Scambio':
+                        # Calcolo per mesi da 1 a 11 (differenza con mese successivo dello stesso anno)
                         if mese < 12:
                             libro_corrente = LetturaContatore.objects.filter(
                                 contatore=contatore,
@@ -138,11 +164,35 @@ def diarioenergie(request, nickname):
                                 k_decimal = Decimal(contatore.k)
                                 autocons_valore = (libro_successivo.totale_pos - libro_corrente.totale_pos) * k_decimal
                                 lettura_reg.autocons_campo = autocons_valore
-                                print(f"Mese {mese}: Calcolato autocons_campo = {autocons_valore} dalla differenza: {libro_successivo.totale_pos} - {libro_corrente.totale_pos} * {k_decimal}")
+                                print(f"Mese {mese} ({anno_corrente}): Calcolato autocons_campo = {autocons_valore} dalla differenza: {libro_successivo.totale_pos} - {libro_corrente.totale_pos} * {k_decimal}")
                             else:
-                                print(f"Mese {mese}: Dati insufficienti per calcolare autocons_campo")
-                        else:
-                            print(f"Mese {mese}: Nessun dato per mese successivo, autocons_campo non calcolato")
+                                print(f"Mese {mese} ({anno_corrente}): Dati insufficienti per calcolare autocons_campo")
+                        # Calcolo per il mese 12 (differenza con Gennaio dell'anno successivo)
+                        elif mese == 12:
+                            anno_successivo = int(anno_corrente) + 1
+                            libro_corrente = LetturaContatore.objects.filter(
+                                contatore=contatore,
+                                anno=anno_corrente,
+                                mese=mese,
+                                tipo_tabella='libro_energie'
+                            ).first()
+                            libro_successivo = LetturaContatore.objects.filter(
+                                contatore=contatore,
+                                anno=str(anno_successivo), # Passa l'anno successivo come stringa
+                                mese=1,
+                                tipo_tabella='libro_energie'
+                            ).first()
+                            
+                            # Se entrambi i valori per totale_pos sono presenti
+                            if (libro_corrente and libro_successivo and
+                                libro_corrente.totale_pos is not None and
+                                libro_successivo.totale_pos is not None):
+                                k_decimal = Decimal(contatore.k)
+                                autocons_valore = (libro_successivo.totale_pos - libro_corrente.totale_pos) * k_decimal
+                                lettura_reg.autocons_campo = autocons_valore
+                                print(f"Mese {mese} ({anno_corrente}): Calcolato autocons_campo = {autocons_valore} dalla differenza con Gennaio {anno_successivo}: {libro_successivo.totale_pos} - {libro_corrente.totale_pos} * {k_decimal}")
+                            else:
+                                print(f"Mese {mese} ({anno_corrente}): Dati insufficienti per calcolare autocons_campo (richiesto Gennaio {anno_successivo})")
                     
                     # MODIFICA: Se esiste un record regsegnanti, prioritizza i suoi valori
                     if regsegnante:
