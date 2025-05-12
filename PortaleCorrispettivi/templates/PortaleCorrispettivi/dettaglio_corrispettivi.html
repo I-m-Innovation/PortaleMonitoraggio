@@ -1,7 +1,7 @@
 {% extends 'PortaleCorrispettivi/baselayoutcorispettivi.html' %}
 {% load static %}
 
-
+<script src="{% static 'js/tabellamisure.js' %}"></script>
 {% block content%}
 	<main class="home-container">
 		<div class="item-c py-3 ps-2 mx-1">
@@ -18,19 +18,22 @@
 					<a class="btn btn-dark" href="{% url 'report-impianto' nickname %}"> Report </a>
 				</div>
 				<h1 style="color: #4a3c54; font-weight: bold; display: inline">{{ impianto.nome_impianto }}</h1> 
-				<p>Misure di energia e situazione dei corrispettivi</p> <div id="spinner" class="loading" style="margin-bottom: 20px"></div>
+				<p>Misure di energia e situazione dei corrispettivi</p> 
 				<div class="container">
-					{% for anno, diario in diari_letture.items reversed %}
-						{% include 'PortaleCorrispettivi/partials/scheda_corrispettivi.html' %}
-						<!-- JAVASCRIPT TABELLA1 + GRAFICO -->
-						{% include 'PortaleCorrispettivi/js/dettaglio_corrispettivi_tabella1-grafico_js.html' %}
+					
+						<!-- Ciclo attraverso tutti gli anni disponibili e includiamo lo schema corrispettivi per ciascun anno -->
+						{% for anno in anni_disponibili %}
+							{% include 'PortaleCorrispettivi/partials/scheda_corrispettivi.html'  %}
+						{% endfor %}
+						 <!-- JAVASCRIPT TABELLA1 + GRAFICO -->
+						  
 						<!-- JAVASCRIPT TABELLA2 MISURE -->
-						{% include 'PortaleCorrispettivi/js/dettaglio_corrispettivi_tabella2-misure_js.html' %}
+					<!--	{% include 'PortaleCorrispettivi/js/dettaglio_corrispettivi_tabella2-misure_js.html' %} -->
 						{% if nickname == 'ponte_giurino' %}
 							<!-- JAVASCRIPT TABELLA CORRISPETTIVI -->
 							{% include 'PortaleCorrispettivi/js/dettaglio_corrispettivi_tabella-consorzi_js.html' %}
 						{% endif %}
-					{% endfor %}
+				
 				</div>
 			</div>
 				</div>
@@ -70,6 +73,10 @@
 		</div>
 		</div>
 	</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/tabellamisure.js' %}"></script>
 {% endblock %}
 
 

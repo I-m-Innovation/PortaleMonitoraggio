@@ -17,9 +17,10 @@ from PortaleCorrispettivi.utils import graphics as gf
 from .models import *
 
 # elaborazione dati api
-from PortaleCorrispettivi.API_views import energievolumi_dati as vlm
-from PortaleCorrispettivi.API_views import tabellacorrispettivi_data as tblc
-from PortaleCorrispettivi.API_views import tabellamisure_data as tblm
+# from PortaleCorrispettivi.API_views import energievolumi_dati as vlm
+# from PortaleCorrispettivi.API_views import tabellacorrispettivi_data as tblc
+# from PortaleCorrispettivi.API_views import tabellamisure_data as tblm
+from PortaleCorrispettivi.API_views import get_available_years
 
 impianti_m3s = ['ionico_foresta', 'ionico_SA3']
 # leds = {'O': 'led-green', 'A': 'led-red', 'W': 'led-yellow', 'OK': 'led-green'}
@@ -82,6 +83,9 @@ def home(request):
 
 @login_required(login_url='login')
 def impianto(request, nickname):
+	# Ottieni l'anno dalla query string, o usa l'anno corrente come default
+	anno = request.GET.get('anno', datetime.now().year)
+	
 	# LINK PORTALE MONITORAGGIO (NELLA NAV-BAR)
 	# link_monitoraggio = linkportale.objects.filter(tag='portale-monitoraggio')[0].link
 	# link_analisi = linkportale.objects.filter(tag='portale-analisi')[0].link
@@ -98,6 +102,9 @@ def impianto(request, nickname):
 	diari_letture = list(impianto.diarioletture_set.all())
 	dz_impianto['diari_letture'] = {str(diario.anno): diario.nome for diario in diari_letture}
 	anni = list(dz_impianto['diari_letture'].keys())
+	
+	# Ottieni gli anni disponibili per questo impianto
+	anni_disponibili = get_available_years(nickname)
 
 	# POST METHOD --> INSERIMENTO COMMENTO MISURA
 	if request.method == 'POST':
@@ -145,6 +152,7 @@ def impianto(request, nickname):
 	else:
 		form = AddCommentoForm(initial={'impianto': impianto})
 
+	# Passa l'anno al template
 	context = {
 		# PAGINA
 		# 'link_monitoraggio': link_monitoraggio,
@@ -157,7 +165,9 @@ def impianto(request, nickname):
 		'impianto': dz_impianto,
 		'diari_letture': dz_impianto['diari_letture'],
 		'form': form,
-		'curr_anno': str(datetime.now().year)
+		'anno': anno,
+		'curr_anno': str(datetime.now().year),
+		'anni_disponibili': anni_disponibili
 	}
 	return render(request, 'PortaleCorrispettivi/dettaglio_corrispettivi.html', context=context)
 

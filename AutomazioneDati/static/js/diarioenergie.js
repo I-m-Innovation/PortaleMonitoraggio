@@ -357,6 +357,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Potresti mostrare questi errori in modo più dettagliato all'utente se necessario
                 }
     
+                // Aggiorna la tabella dopo il salvataggio
+                updateTable(result.rows);
             } else {
                 // Se lo status nella risposta non è 'success' o 'partial_success'
                 alert('Errore nel salvataggio: ' + (result.message || 'Errore sconosciuto.'));
@@ -373,6 +375,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 saveButton.disabled = false;
                 saveButton.innerHTML = '<i class="bi bi-save"></i> Salva';
             }
+        });
+    }
+    
+    // Aggiungi questo nella funzione che aggiorna la tabella dopo il salvataggio
+    function updateTable(data) {
+        data.forEach(row => {
+            // Trova la riga corrispondente
+            const tableRow = document.querySelector(`tr[data-mese="${row.mese}"]`);
+            if (!tableRow) return;
+            
+            // Aggiorna i campi prod_campo e prel_campo se presenti
+            const prodCampoCell = tableRow.querySelector('td[data-field="prod_campo"]');
+            if (prodCampoCell && row.prod_campo !== null) {
+                prodCampoCell.textContent = formatNumericValue(row.prod_campo);
+                prodCampoCell.classList.add('updated-cell');
+                setTimeout(() => prodCampoCell.classList.remove('updated-cell'), 2000);
+            }
+            
+            const prelCampoCell = tableRow.querySelector('td[data-field="prel_campo"]');
+            if (prelCampoCell && row.prel_campo !== null) {
+                prelCampoCell.textContent = formatNumericValue(row.prel_campo);
+                prelCampoCell.classList.add('updated-cell');
+                setTimeout(() => prelCampoCell.classList.remove('updated-cell'), 2000);
+            }
+            
+            // Altre celle...
+        });
+    }
+    
+    // Funzione di formattazione numerica
+    function formatNumericValue(value) {
+        if (value === null || value === undefined) return '';
+        if (value === 0) return '0,000';
+        
+        return parseFloat(value).toLocaleString('it-IT', {
+            minimumFractionDigits: 3,
+            maximumFractionDigits: 3
         });
     }
 });

@@ -194,24 +194,86 @@ def diarioenergie(request, nickname):
                             else:
                                 print(f"Mese {mese} ({anno_corrente}): Dati insufficienti per calcolare autocons_campo (richiesto Gennaio {anno_successivo})")
                     
+                    # Per contatori Gesis, aggiungiamo una sezione per calcolare prel_campo
+                    if contatore.marca == 'Gesis':
+                        # Calcolo per il mese 1 (differenza con Dicembre dell'anno precedente)
+                        if mese == 1:
+                            anno_precedente = int(anno_corrente) - 1
+                            libro_corrente = LetturaContatore.objects.filter(
+                                contatore=contatore,
+                                anno=anno_corrente,
+                                mese=mese,
+                                tipo_tabella='libro_energie'
+                            ).first()
+                            libro_precedente = LetturaContatore.objects.filter(
+                                contatore=contatore,
+                                anno=str(anno_precedente),
+                                mese=12,
+                                tipo_tabella='libro_energie'
+                            ).first()
+                            
+                            # Se entrambi i dati sono presenti e contengono un valore per totale_pos
+                            if (libro_corrente and libro_precedente and
+                                libro_corrente.totale_pos is not None and
+                                libro_precedente.totale_pos is not None):
+                                k_decimal = Decimal(contatore.k)
+                                prel_valore = (libro_corrente.totale_pos - libro_precedente.totale_pos) * k_decimal
+                                # Assegna il valore calcolato
+                                lettura_reg.prel_campo = prel_valore
+                                print(f"Mese {mese} ({anno_corrente}): Calcolato prel_campo = {prel_valore} dalla differenza con Dicembre {anno_precedente}: {libro_corrente.totale_pos} - {libro_precedente.totale_pos} * {k_decimal}")
+                            else:
+                                # Se i dati sono insufficienti, imposta a None
+                                lettura_reg.prel_campo = None
+                                print(f"Mese {mese} ({anno_corrente}): Dati insufficienti per calcolare prel_campo (richiesto Dicembre {anno_precedente})")
+                        
+                        # Calcolo per mesi da 2 a 12 (differenza con mese precedente dello stesso anno)
+                        elif mese >= 2:
+                            libro_corrente = LetturaContatore.objects.filter(
+                                contatore=contatore,
+                                anno=anno_corrente,
+                                mese=mese,
+                                tipo_tabella='libro_energie'
+                            ).first()
+                            libro_precedente = LetturaContatore.objects.filter(
+                                contatore=contatore,
+                                anno=anno_corrente,
+                                mese=mese - 1,
+                                tipo_tabella='libro_energie'
+                            ).first()
+                            
+                            # Se entrambi i dati sono presenti e contengono un valore per totale_pos
+                            if (libro_corrente and libro_precedente and
+                                libro_corrente.totale_pos is not None and
+                                libro_precedente.totale_pos is not None):
+                                k_decimal = Decimal(contatore.k)
+                                prel_valore = (libro_corrente.totale_pos - libro_precedente.totale_pos) * k_decimal
+                                # Assegna il valore calcolato
+                                lettura_reg.prel_campo = prel_valore
+                                print(f"Mese {mese} ({anno_corrente}): Calcolato prel_campo = {prel_valore} dalla differenza: {libro_corrente.totale_pos} - {libro_precedente.totale_pos} * {k_decimal}")
+                            else:
+                                # Se i dati sono insufficienti, imposta a None
+                                lettura_reg.prel_campo = None
+                                print(f"Mese {mese} ({anno_corrente}): Dati insufficienti per calcolare prel_campo")
+                    
                     # MODIFICA: Se esiste un record regsegnanti, prioritizza i suoi valori
+                    # MA SOLO SE IL VALORE IN REGSEGNANTI NON È NONE
                     if regsegnante:
                         # Aggiorna i valori di prod_campo, prod_ed, prod_gse, ecc. con quelli da regsegnanti
                         # se esistono nel record regsegnante
-                        campi = ['prod_campo', 'prod_ed', 'prod_gse', 
+                        campi = ['prod_campo', 'prod_ed', 'prod_gse',
                                 'prel_campo', 'prel_ed', 'prel_gse',
                                 'autocons_campo', 'autocons_ed', 'autocons_gse',
                                 'imm_campo', 'imm_ed', 'imm_gse']
-                        
+
                         for campo in campi:
                             valore_regsegnante = getattr(regsegnante, campo, None)
+                            # Modifica la condizione: sovrascrivi SOLO se il valore in regsegnante NON è None
                             if valore_regsegnante is not None:
                                 setattr(lettura_reg, campo, valore_regsegnante)
                     
                     # Salva ed assegna il record della lettura per il mese
                     dati_per_mese[mese] = lettura_reg
-                    if lettura_reg.id is None:
-                        lettura_reg.save()
+                    lettura_reg.save()
                 
                 # Memorizza i dati processati per il contatore corrente
                 dati_contatori[contatore_key] = {

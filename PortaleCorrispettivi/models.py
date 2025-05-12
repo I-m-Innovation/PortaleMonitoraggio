@@ -4,6 +4,7 @@ from django.forms import ModelForm, ModelChoiceField, ChoiceField, Select
 from django import forms
 from django.forms import SelectDateWidget
 from django.contrib.admin.widgets import AdminDateWidget
+from AutomazioneDati.models import regsegnanti
 
 
 def check_posizione(self):
@@ -193,3 +194,65 @@ class linkportaleForm(ModelForm):
 	class Meta:
 		model = linkportale
 		fields = "__all__"
+
+
+class DatiMensiliTabella(models.Model):
+	impianto = models.ForeignKey(Impianto, on_delete=models.CASCADE, null=False, blank=False)
+	anno = models.IntegerField(null=False, blank=False, editable=False)  # Non più modificabile manualmente
+	mese = models.IntegerField(null=False, blank=False)  # 1-12 per i mesi
+	energia_kwh = models.FloatField(null=True, blank=True)
+	corrispettivo_incentivo = models.FloatField(null=True, blank=True)
+	corrispettivo_altro = models.FloatField(null=True, blank=True)
+	fatturazione_tfo = models.FloatField(null=True, blank=True)
+	fatturazione_altro = models.FloatField(null=True, blank=True)
+	incassi = models.FloatField(null=True, blank=True)
+	controllo_scarto = models.FloatField(null=True, blank=True, editable=False)
+	controllo_percentuale = models.FloatField(null=True, blank=True, editable=False)
+	
+	class Meta:
+		verbose_name = 'Dato Mensile Tabella'
+		verbose_name_plural = 'Dati Mensili Tabella'
+		unique_together = ('impianto', 'anno', 'mese')  # Garantisce unicità
+	
+	def save(self, *args, **kwargs):
+		# Se è un nuovo oggetto o l'anno non è ancora impostato
+		if not self.pk or not self.anno:
+			# Cerca l'anno corrispondente in regsegnanti basato sull'impianto e mese
+			# Assumiamo che ci sia un collegamento tramite il codice dell'impianto
+			reg_record = regsegnanti.objects.filter(
+				impianto=self.impianto.nickname,  # Assumi che esista una corrispondenza tra impianti
+				mese=self.mese
+			).order_by('-anno').first()  # Prendi il record più recente se ce ne sono diversi
+			
+			if reg_record:
+				self.anno = reg_record.anno
+			else:
+				# Fallback se non viene trovato un record corrispondente
+				from datetime import datetime
+				self.anno = datetime.now().year
+		
+		# Calcola lo scarto tra corrispettivi e fatturazione
+		corrispettivi_totali = (self.corrispettivo_incentivo or 0) + (self.corrispettivo_altro or 0)
+		fatturazione_totale = (self.fatturazione_tfo or 0) + (self.fatturazione_altro or 0)
+		
+		self.controllo_scarto = corrispettivi_totali - fatturazione_totale
+		
+		# Calcola la percentuale di scarto
+		if fatturazione_totale != 0:
+			self.controllo_percentuale = (self.controllo_scarto / fatturazione_totale) * 100
+		
+		super().save(*args, **kwargs)
+
+
+class ValoriPUN(models.Model):
+	anno = models.IntegerField(null=False, blank=False)
+	mese = models.IntegerField(null=False, blank=False)  # 1-12 per i mesi
+	valore_medio = models.FloatField(null=False, blank=False)
+	
+	class Meta:
+		verbose_name = 'Valore PUN'
+		verbose_name_plural = 'Valori PUN'
+		unique_together = ('anno', 'mese')  # Garantisce unicità
+		
+	def __str__(self):
+		return f"PUN {self.mese}/{self.anno}: {self.valore_medio}"

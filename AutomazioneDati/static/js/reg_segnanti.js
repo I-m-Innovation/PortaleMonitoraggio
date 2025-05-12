@@ -148,6 +148,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
+// Funzione per raccogliere i dati dalla tabella
+function raccogliDatiTabella(tipoTabella) {
+    console.log(`Raccolta dati dalla tabella ${tipoTabella}`);
+    const contatoreId = document.getElementById('save-button-diarioletture').dataset.contatoreId;
+    const anno = document.getElementById('year-select').value;
+    
+    if (tipoTabella === 'libro_energie') {
+        return raccogliDatiLibroEnergie(contatoreId, anno);
+    } else if (tipoTabella === 'libro_kaifa') {
+        // Forza l'aggiornamento dei totali Kaifa prima di raccogliere i dati
+        forceUpdateKaifaTotals();
+        return raccogliDatiLibroKaifa(contatoreId, anno);
+    }
+    return [];
+}
+
 // Funzione per raccogliere i dati dalla tabella Libro Energie
 function raccogliDatiLibroEnergie(contatoreId, anno) {
     const dati = [];
@@ -171,14 +187,8 @@ function raccogliDatiLibroEnergie(contatoreId, anno) {
                 // Potresti aggiungere un feedback all'utente qui se la conversione fallisce
                 if (dataPresaISO === null && testoCella !== "") {
                      console.warn(`Data inserita per mese ${mese} non valida: "${testoCella}"`);
-                     // Aggiungi una classe di errore alla cella?
-                     // dataPresaCell.classList.add('input-error');
-                } //else {
-                     // Rimuovi classe di errore se presente?
-                     // dataPresaCell.classList.remove('input-error');
-                //}
+                }
             }
-            // Se testoCella è vuoto, dataPresaISO rimane null
         }
 
         // --- Lettura degli altri campi (invariata) ---
@@ -224,29 +234,28 @@ function raccogliDatiLibroEnergie(contatoreId, anno) {
                 totalePos = parseNumericValue(totaleCellPos);
             }
         }
+        
         // Assicura che i valori null/NaN diventino null
         totaleNeg = (totaleNeg === null || isNaN(totaleNeg)) ? null : totaleNeg;
         totalePos = (totalePos === null || isNaN(totalePos)) ? null : totalePos;
 
-
-        // --- Aggiunta dati all'array ---
-        // Applica la logica 'valore !== 0 ? valore : null' anche ai totali letti
-        // Questo invia null se la cella è vuota (parseNumericValue restituisce 0) o se il totale calcolato è 0
+        // --- CORREZIONE: Assicura che i valori zero vengano inviati come 0 e non come null ---
+        // Per tutti i campi, anche quelli negativi e totali
         dati.push({
             contatore_id: contatoreId,
             anno: anno,
             mese: mese,
             tipo_tabella: 'libro_energie',
-            data_presa: dataPresaISO, // Invia il valore ISO convertito (o null)
+            data_presa: dataPresaISO,
             ora_lettura: oraLettura,
-            a1_neg: a1Neg !== 0 ? a1Neg : null,
-            a2_neg: a2Neg !== 0 ? a2Neg : null,
-            a3_neg: a3Neg !== 0 ? a3Neg : null,
-            totale_neg: totaleNeg !== 0 ? totaleNeg : null, // Applica la stessa logica ai totali
-            a1_pos: a1Pos !== 0 ? a1Pos : null,
-            a2_pos: a2Pos !== 0 ? a2Pos : null,
-            a3_pos: a3Pos !== 0 ? a3Pos : null,
-            totale_pos: totalePos !== 0 ? totalePos : null // Applica la stessa logica ai totali
+            a1_neg: a1Neg !== null ? a1Neg : 0,  // Invia 0 invece di null
+            a2_neg: a2Neg !== null ? a2Neg : 0,  // Invia 0 invece di null
+            a3_neg: a3Neg !== null ? a3Neg : 0,  // Invia 0 invece di null
+            totale_neg: totaleNeg !== null ? totaleNeg : 0, // Invia 0 invece di null
+            a1_pos: a1Pos !== null ? a1Pos : 0,  // Invia 0 invece di null
+            a2_pos: a2Pos !== null ? a2Pos : 0,  // Invia 0 invece di null
+            a3_pos: a3Pos !== null ? a3Pos : 0,  // Invia 0 invece di null
+            totale_pos: totalePos !== null ? totalePos : 0  // Invia 0 invece di null
         });
     });
 
@@ -285,56 +294,46 @@ function raccogliDatiLibroKaifa(contatoreId, anno) {
             }
         }
         
-        // Lettura valori numerici input (invariato)
+        // Lettura valori numerici input
         const kaifa180nCell = riga.querySelector('td[data-field="kaifa_180n"]');
         const kaifa280nCell = riga.querySelector('td[data-field="kaifa_280n"]');
         const kaifa180n = parseNumericValue(kaifa180nCell);
         const kaifa280n = parseNumericValue(kaifa280nCell);
         
-        // Lettura ancora più robusta dei totali
+        // Lettura dei totali
         const totale180nCell = riga.querySelector('td[data-field="totale_180n"]');
         const totale280nCell = riga.querySelector('td[data-field="totale_280n"]');
         
-        // Variabili per memorizzare i totali
         let totale180n = null;
         let totale280n = null;
         
-        // L'ultimo mese (13) non ha totali
         const isUltimoMese = parseInt(mese) === 13;
         
         if (!isUltimoMese) {
-            // Lettura del totale 1.8.0.n direttamente dal dataset
             if (totale180nCell && totale180nCell.dataset.value !== undefined) {
                 totale180n = parseFloat(totale180nCell.dataset.value);
-                console.log(`Mese ${mese}: totale_180n letto da dataset.value = ${totale180n}`);
             } else if (totale180nCell) {
-                // Fallback alla differenza tra i valori attuali e successivi
                 const rigaSuccessiva = tabella.querySelector(`tbody tr[data-mese="${parseInt(mese) + 1}"]`);
                 if (rigaSuccessiva) {
                     const kaifa180nCorrente = parseNumericValue(kaifa180nCell);
                     const kaifa180nSuccessiva = parseNumericValue(rigaSuccessiva.querySelector('td[data-field="kaifa_180n"]'));
                     totale180n = kaifa180nSuccessiva - kaifa180nCorrente;
-                    console.log(`Mese ${mese}: totale_180n calcolato al volo = ${totale180n}`);
                 }
             }
             
-            // Lettura del totale 2.8.0.n direttamente dal dataset
             if (totale280nCell && totale280nCell.dataset.value !== undefined) {
                 totale280n = parseFloat(totale280nCell.dataset.value);
-                console.log(`Mese ${mese}: totale_280n letto da dataset.value = ${totale280n}`);
             } else if (totale280nCell) {
-                // Fallback alla differenza tra i valori attuali e successivi
                 const rigaSuccessiva = tabella.querySelector(`tbody tr[data-mese="${parseInt(mese) + 1}"]`);
                 if (rigaSuccessiva) {
                     const kaifa280nCorrente = parseNumericValue(kaifa280nCell);
                     const kaifa280nSuccessiva = parseNumericValue(rigaSuccessiva.querySelector('td[data-field="kaifa_280n"]'));
                     totale280n = kaifa280nSuccessiva - kaifa280nCorrente;
-                    console.log(`Mese ${mese}: totale_280n calcolato al volo = ${totale280n}`);
                 }
             }
         }
         
-        // Aggiungi i dati all'array includendo l'ora
+        // --- CORREZIONE: Assicura che i valori zero vengano inviati come 0 e non come null ---
         dati.push({
             contatore_id: contatoreId,
             anno: anno,
@@ -342,21 +341,12 @@ function raccogliDatiLibroKaifa(contatoreId, anno) {
             tipo_tabella: 'libro_kaifa',
             data_presa: dataPresaISO,
             ora_lettura: oraLettura,
-            kaifa_180n: kaifa180n !== 0 ? kaifa180n : null,
-            kaifa_280n: kaifa280n !== 0 ? kaifa280n : null,
-            totale_180n: (isUltimoMese || isNaN(totale180n)) ? null : totale180n,
-            totale_280n: (isUltimoMese || isNaN(totale280n)) ? null : totale280n
+            kaifa_180n: kaifa180n !== null ? kaifa180n : 0, // Invia 0 invece di null
+            kaifa_280n: kaifa280n !== null ? kaifa280n : 0, // Invia 0 invece di null
+            totale_180n: (isUltimoMese || isNaN(totale180n)) ? 0 : (totale180n !== null ? totale180n : 0), // Invia 0 invece di null
+            totale_280n: (isUltimoMese || isNaN(totale280n)) ? 0 : (totale280n !== null ? totale280n : 0) // Invia 0 invece di null
         });
     });
-    
-    // Visualizza i totali prima dell'invio per debug
-    let totaliString = "Riepilogo totali da inviare:\n";
-    dati.forEach(row => {
-        if (row.mese !== '13') { // Escludi l'ultimo mese che non ha totali
-            totaliString += `Mese ${row.mese}: 1.8.0.n=${row.totale_180n}, 2.8.0.n=${row.totale_280n}\n`;
-        }
-    });
-    console.log(totaliString);
     
     console.log(`Totale ${dati.length} record Kaifa raccolti.`);
     return dati;
@@ -1277,56 +1267,4 @@ function convertDateTimeFormat(input) {
     }
 }
 
-// Funzione per raccogliere i dati per il salvataggio (modifica per utilizzare ora_lettura)
-function raccogliDatiTabella(tableId) {
-    const tabella = document.getElementById(tableId);
-    const contatoreId = tabella.dataset.contatoreId;
-    const anno = document.getElementById('year-select').value;
-    const righe = tabella.querySelectorAll('tbody tr');
-    const dati = [];
-    
-    righe.forEach(riga => {
-        const mese = riga.dataset.mese;
-        const datiRiga = {
-            contatore_id: contatoreId,
-            anno: anno,
-            mese: mese
-        };
-        
-        // Raccogli tutti i campi della riga
-        riga.querySelectorAll('td[data-field]').forEach(cella => {
-            const fieldName = cella.dataset.field;
-            let value = null;
-            
-            // Trattamento speciale per data_ora_lettura
-            if (fieldName === 'data_ora_lettura') {
-                if (cella.dataset.datetime) {
-                    value = cella.dataset.datetime;
-                } else if (cella.textContent.trim() !== '') {
-                    const converted = convertDateTimeFormat(cella.textContent.trim());
-                    value = converted ? converted.iso : null;
-                }
-                console.log(`DEBUG data_ora_lettura per mese ${mese}: valore raccolto = "${value}"`);
-            } else {
-                // Per altri campi, usa dataset.value se disponibile, altrimenti il contenuto
-                value = cella.dataset.value !== undefined ? cella.dataset.value : cella.textContent.trim();
-                
-                // Converti stringhe vuote in null
-                if (value === '') {
-                    value = null;
-                } 
-                // Converti in numeri dove appropriato
-                else if (!isNaN(value) && fieldName !== 'data_ora_lettura') {
-                    value = parseFloat(value);
-                }
-            }
-            
-            datiRiga[fieldName] = value;
-        });
-        
-        dati.push(datiRiga);
-    });
-    
-    return dati;
-}
 

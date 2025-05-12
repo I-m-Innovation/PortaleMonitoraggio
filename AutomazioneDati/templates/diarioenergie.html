@@ -117,7 +117,7 @@
                                                     {% with lettura=dati_contatori|get_item:cnt.id|get_item:"dati_per_mese"|get_item:mese %}
                                                         {% if cnt.marca == 'Gesis' and cnt.tipologia == 'Produzione' %}
                                                             <!-- Colonne per contatori Gesis (Produzione) -->
-                                                            <td data-field="prod_campo" data-contatore-id="{{ cnt.id }}">{{ lettura.prod_campo|default:"" }}</td>
+                                                            <td data-field="prod_campo" data-contatore-id="{{ cnt.id }}" class="readonly-cell">{{ lettura.prod_campo|default:"" }}</td>
                                                             <td data-field="prod_ed" data-contatore-id="{{ cnt.id }}">{{ lettura.prod_ed|default:"" }}</td>
                                                             <td data-field="prod_gse" data-contatore-id="{{ cnt.id }}">{{ lettura.prod_gse|default:"" }}</td>
                                                             <td data-field="prel_campo" data-contatore-id="{{ cnt.id }}">{{ lettura.prel_campo|default:"" }}</td>
@@ -125,7 +125,7 @@
                                                             <td data-field="prel_gse" data-contatore-id="{{ cnt.id }}">{{ lettura.prel_gse|default:"" }}</td>
                                                         {% elif cnt.marca == 'Kaifa' and cnt.tipologia == 'Scambio' %}
                                                             <!-- Colonne per contatori Kaifa (Scambio) -->
-                                                            <td data-field="autocons_campo" data-contatore-id="{{ cnt.id }}">{{ lettura.autocons_campo|default:"" }}</td>
+                                                            <td data-field="autocons_campo" data-contatore-id="{{ cnt.id }}" class="readonly-cell">{{ lettura.autocons_campo|default:"" }}</td>
                                                             <td data-field="autocons_ed" data-contatore-id="{{ cnt.id }}">{{ lettura.autocons_ed|default:"" }}</td>
                                                             <td data-field="autocons_gse" data-contatore-id="{{ cnt.id }}">{{ lettura.autocons_gse|default:"" }}</td>
                                                             <td data-field="imm_campo" data-contatore-id="{{ cnt.id }}">{{ lettura.imm_campo|default:"" }}</td>

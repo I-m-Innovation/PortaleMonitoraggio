@@ -158,11 +158,12 @@
 					/* URL DATI */
 					var endpoint = '{% url 'api-monitoraggio-impianto' nickname %}';
                     
-					/* CREO ARRAY DI TIMESTAMPO DA 00:00 A 23:59 OGNI 30 MINUTI */
+					/* CREO ARRAY DI TIMESTAMPO DA 00:00 A 23:59 OGNI 5 MINUTI */
 					var timeLabels = [];
 					for (var hour = 0; hour < 24; hour++) {
-							timeLabels.push(('0' + hour).slice(-2) + ':00');
-							timeLabels.push(('0' + hour).slice(-2) + ':30');
+							for (var minute = 0; minute < 60; minute += 5) {
+									timeLabels.push(('0' + hour).slice(-2) + ':' + ('0' + minute).slice(-2));
+							}
 					}
 					
 					/* COLORI PER I GRAFICI */	
@@ -175,14 +176,10 @@
 							color: colors,
 							visualMap: [
 									{
-											type: 'continuous',
-											min: 0,
-											max: {{ impianto.potenza_installata|stringformat:".2f" }},
+											type: 'continuous', min: 0, max: {{ impianto.potenza_installata|stringformat:".2f" }},
 											inRange: {
-													color: ['rgb(255,194,190)', 'rgb(209,65,36)', '#171717'],
-											},
-											show: false,
-											seriesIndex: 1
+													color: ['rgb(255,194,190)','rgb(209,65,36)','#171717'],
+											},show: false, seriesIndex: 1
 									}
 							],
 							tooltip: {trigger: 'axis'},
@@ -423,7 +420,7 @@
 									// Determina se è necessario un offset di fuso orario
 									// Puoi impostare questo valore in base alla tua situazione
 									const timeOffsetHours = 0; // Cambia a 1, 2, ecc. se necessario
-									const timeOffsetHalfHour = 1; // Aggiunge mezz'ora all'offset
+									const timeOffsetMinutes = 0; // Aggiunge minuti all'offset se necessario
 									
 									// Aggiungi controllo di esistenza dati prima di processarli
 									if (timestamps && timestamps.length > 0) {
@@ -438,9 +435,13 @@
 																	
 																	// Applica l'offset e gestisci il wraparound (ritorno a 0 dopo 23)
 																	hour = (hour + timeOffsetHours) % 24;
+																	minute = (minute + timeOffsetMinutes) % 60;
 																	
-																	// Calcoliamo l'indice corretto con l'offset di mezz'ora
-																	let index = (hour * 2 + (minute >= 30 ? 1 : 0) + timeOffsetHalfHour) % 48;
+																	// Arrotonda al più vicino intervallo di 5 minuti
+																	minute = Math.floor(minute / 5) * 5;
+																	
+																	// Calcoliamo l'indice corretto per l'intervallo di 5 minuti
+																	let index = (hour * 12) + (minute / 5);
 																	
 																	if (index >= 0 && index < timeLabels.length) {
 																			normalizedPotenza[index] = potenza[i] !== undefined ? potenza[i] : 0;
@@ -487,8 +488,8 @@
 				              }]
 									})
 							})
-							/* AGGIORNAMENTO OGNI 120 SECONDI */
-							setTimeout(worker, 120000)
+							/* AGGIORNAMENTO OGNI 300 SECONDI (5 MINUTI) */
+							setTimeout(worker, 300000)
 					})();
 			})
 	</script>
