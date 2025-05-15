@@ -7,13 +7,14 @@ from django.views.decorators.http import require_POST
 import json
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import datetime
-from .models import Impianto, Contatore, LetturaContatore, regsegnanti
+from AutomazioneDati.models import  Contatore, LetturaContatore, regsegnanti
 from MonitoraggioImpianti.models import Impianto as MonitoraggioImpianto
 from django.contrib import messages
 from django.urls.exceptions import NoReverseMatch
 import re
 from django.utils.dateparse import parse_datetime
 from django.db import models
+from django.utils import timezone
 
 
 
@@ -23,7 +24,6 @@ def home(request):
     # Filtriamo solo gli impianti con tipo "Idroelettrico"
     impianti = Impianto.objects.filter(tipo='Idroelettrico')
     return render(request, 'home.html', {'impianti': impianti})
-
 
 
 
@@ -84,6 +84,14 @@ def diarioenergie(request, nickname):
                     # MODIFICA: Recupera il record regsegnanti per questo mese
                     regsegnante = regsegnanti_per_mese.get(mese)
                     
+                    # Creiamo un dizionario per i valori calcolati che verranno mostrati all'utente
+                    valori_calcolati = {
+                        'prod_campo': None,
+                        'autocons_campo': None,
+                        'prel_campo': None,
+                        'imm_campo': None
+                    }
+                    
                     # Calcolo per contatori Gesis di tipo Produzione: utilizzare totale_neg
                     if contatore.marca == 'Gesis' and contatore.tipologia == 'Produzione':
                         # Calcolo per mesi da 1 a 11 (differenza con mese successivo dello stesso anno)
@@ -107,7 +115,8 @@ def diarioenergie(request, nickname):
                                 libro_successivo.totale_neg is not None):
                                 k_decimal = Decimal(contatore.k)
                                 prod_valore = (libro_successivo.totale_neg - libro_corrente.totale_neg) * k_decimal
-                                lettura_reg.prod_campo = prod_valore
+                                valori_calcolati['prod_campo'] = prod_valore  # Memorizza per visualizzazione
+                                lettura_reg.prod_campo = prod_valore  # Salva comunque nel database
                                 mesi_totali[mese] += prod_valore
                                 print(f"Mese {mese} ({anno_corrente}): Calcolato prod_campo = {prod_valore} dalla differenza: {libro_successivo.totale_neg} - {libro_corrente.totale_neg} * {k_decimal}")
                             else:
@@ -134,7 +143,8 @@ def diarioenergie(request, nickname):
                                 libro_successivo.totale_neg is not None):
                                 k_decimal = Decimal(contatore.k)
                                 prod_valore = (libro_successivo.totale_neg - libro_corrente.totale_neg) * k_decimal
-                                lettura_reg.prod_campo = prod_valore
+                                valori_calcolati['prod_campo'] = prod_valore  # Memorizza per visualizzazione
+                                lettura_reg.prod_campo = prod_valore  # Salva comunque nel database
                                 mesi_totali[mese] += prod_valore
                                 print(f"Mese {mese} ({anno_corrente}): Calcolato prod_campo = {prod_valore} dalla differenza con Gennaio {anno_successivo}: {libro_successivo.totale_neg} - {libro_corrente.totale_neg} * {k_decimal}")
                             else:
@@ -142,57 +152,84 @@ def diarioenergie(request, nickname):
                     
                     # Calcolo per contatori Kaifa di tipo Scambio: utilizzare totale_pos
                     elif contatore.marca == 'Kaifa' and contatore.tipologia == 'Scambio':
-                        # Calcolo per mesi da 1 a 11 (differenza con mese successivo dello stesso anno)
-                        if mese < 12:
-                            libro_corrente = LetturaContatore.objects.filter(
-                                contatore=contatore,
-                                anno=anno_corrente,
-                                mese=mese,
-                                tipo_tabella='libro_energie'
-                            ).first()
-                            libro_successivo = LetturaContatore.objects.filter(
-                                contatore=contatore,
-                                anno=anno_corrente,
-                                mese=mese + 1,
-                                tipo_tabella='libro_energie'
-                            ).first()
-                            
-                            # Se entrambi i valori per totale_pos sono presenti
-                            if (libro_corrente and libro_successivo and 
-                                libro_corrente.totale_pos is not None and 
-                                libro_successivo.totale_pos is not None):
-                                k_decimal = Decimal(contatore.k)
-                                autocons_valore = (libro_successivo.totale_pos - libro_corrente.totale_pos) * k_decimal
-                                lettura_reg.autocons_campo = autocons_valore
-                                print(f"Mese {mese} ({anno_corrente}): Calcolato autocons_campo = {autocons_valore} dalla differenza: {libro_successivo.totale_pos} - {libro_corrente.totale_pos} * {k_decimal}")
-                            else:
-                                print(f"Mese {mese} ({anno_corrente}): Dati insufficienti per calcolare autocons_campo")
-                        # Calcolo per il mese 12 (differenza con Gennaio dell'anno successivo)
-                        elif mese == 12:
-                            anno_successivo = int(anno_corrente) + 1
-                            libro_corrente = LetturaContatore.objects.filter(
-                                contatore=contatore,
-                                anno=anno_corrente,
-                                mese=mese,
-                                tipo_tabella='libro_energie'
-                            ).first()
-                            libro_successivo = LetturaContatore.objects.filter(
-                                contatore=contatore,
-                                anno=str(anno_successivo), # Passa l'anno successivo come stringa
-                                mese=1,
-                                tipo_tabella='libro_energie'
-                            ).first()
-                            
-                            # Se entrambi i valori per totale_pos sono presenti
-                            if (libro_corrente and libro_successivo and
-                                libro_corrente.totale_pos is not None and
-                                libro_successivo.totale_pos is not None):
-                                k_decimal = Decimal(contatore.k)
-                                autocons_valore = (libro_successivo.totale_pos - libro_corrente.totale_pos) * k_decimal
-                                lettura_reg.autocons_campo = autocons_valore
-                                print(f"Mese {mese} ({anno_corrente}): Calcolato autocons_campo = {autocons_valore} dalla differenza con Gennaio {anno_successivo}: {libro_successivo.totale_pos} - {libro_corrente.totale_pos} * {k_decimal}")
-                            else:
-                                print(f"Mese {mese} ({anno_corrente}): Dati insufficienti per calcolare autocons_campo (richiesto Gennaio {anno_successivo})")
+                        # Ottieni i dati da libro_kaifa per questo mese
+                        libro_kaifa = LetturaContatore.objects.filter(
+                            contatore=contatore,
+                            anno=anno_corrente,
+                            mese=mese,
+                            tipo_tabella='libro_kaifa'
+                        ).first()
+                        
+                        # Se esiste un record libro_kaifa con totale_180n, calcola autocons_campo
+                        if libro_kaifa and libro_kaifa.totale_180n is not None:
+                            k_decimal = Decimal(contatore.k)
+                            autocons_valore = libro_kaifa.totale_180n * k_decimal
+                            valori_calcolati['autocons_campo'] = autocons_valore  # Memorizza per visualizzazione
+                            lettura_reg.autocons_campo = autocons_valore  # Salva nel database
+                            print(f"Mese {mese} ({anno_corrente}): Calcolato autocons_campo = {autocons_valore} come totale_180n * k: {libro_kaifa.totale_180n} * {k_decimal}")
+                        
+                        # Aggiungi qui il nuovo calcolo per imm_campo basato su totale_280n
+                        if libro_kaifa and libro_kaifa.totale_280n is not None:
+                            k_decimal = Decimal(contatore.k)
+                            imm_valore = libro_kaifa.totale_280n * k_decimal
+                            valori_calcolati['imm_campo'] = imm_valore  # Memorizza per visualizzazione
+                            lettura_reg.imm_campo = imm_valore  # Salva nel database
+                            print(f"Mese {mese} ({anno_corrente}): Calcolato imm_campo = {imm_valore} come totale_280n * k: {libro_kaifa.totale_280n} * {k_decimal}")
+                        else:
+                            # Calcolo tradizionale se non c'è libro_kaifa con totale_180n
+                            # Calcolo per mesi da 1 a 11 (differenza con mese successivo dello stesso anno)
+                            if mese < 12:
+                                libro_corrente = LetturaContatore.objects.filter(
+                                    contatore=contatore,
+                                    anno=anno_corrente,
+                                    mese=mese,
+                                    tipo_tabella='libro_energie'
+                                ).first()
+                                libro_successivo = LetturaContatore.objects.filter(
+                                    contatore=contatore,
+                                    anno=anno_corrente,
+                                    mese=mese + 1,
+                                    tipo_tabella='libro_energie'
+                                ).first()
+                                
+                                # Se entrambi i valori per totale_pos sono presenti
+                                if (libro_corrente and libro_successivo and 
+                                    libro_corrente.totale_pos is not None and 
+                                    libro_successivo.totale_pos is not None):
+                                    k_decimal = Decimal(contatore.k)
+                                    autocons_valore = (libro_successivo.totale_pos - libro_corrente.totale_pos) * k_decimal
+                                    valori_calcolati['autocons_campo'] = autocons_valore  # Memorizza per visualizzazione
+                                    lettura_reg.autocons_campo = autocons_valore  # Salva comunque nel database
+                                    print(f"Mese {mese} ({anno_corrente}): Calcolato autocons_campo = {autocons_valore} dalla differenza: {libro_successivo.totale_pos} - {libro_corrente.totale_pos} * {k_decimal}")
+                                else:
+                                    print(f"Mese {mese} ({anno_corrente}): Dati insufficienti per calcolare autocons_campo")
+                            # Calcolo per il mese 12 (differenza con Gennaio dell'anno successivo)
+                            elif mese == 12:
+                                anno_successivo = int(anno_corrente) + 1
+                                libro_corrente = LetturaContatore.objects.filter(
+                                    contatore=contatore,
+                                    anno=anno_corrente,
+                                    mese=mese,
+                                    tipo_tabella='libro_energie'
+                                ).first()
+                                libro_successivo = LetturaContatore.objects.filter(
+                                    contatore=contatore,
+                                    anno=str(anno_successivo), # Passa l'anno successivo come stringa
+                                    mese=1,
+                                    tipo_tabella='libro_energie'
+                                ).first()
+                                
+                                # Se entrambi i valori per totale_pos sono presenti
+                                if (libro_corrente and libro_successivo and
+                                    libro_corrente.totale_pos is not None and
+                                    libro_successivo.totale_pos is not None):
+                                    k_decimal = Decimal(contatore.k)
+                                    autocons_valore = (libro_successivo.totale_pos - libro_corrente.totale_pos) * k_decimal
+                                    valori_calcolati['autocons_campo'] = autocons_valore  # Memorizza per visualizzazione
+                                    lettura_reg.autocons_campo = autocons_valore  # Salva comunque nel database
+                                    print(f"Mese {mese} ({anno_corrente}): Calcolato autocons_campo = {autocons_valore} dalla differenza con Gennaio {anno_successivo}: {libro_successivo.totale_pos} - {libro_corrente.totale_pos} * {k_decimal}")
+                                else:
+                                    print(f"Mese {mese} ({anno_corrente}): Dati insufficienti per calcolare autocons_campo (richiesto Gennaio {anno_successivo})")
                     
                     # Per contatori Gesis, aggiungiamo una sezione per calcolare prel_campo
                     if contatore.marca == 'Gesis':
@@ -219,10 +256,12 @@ def diarioenergie(request, nickname):
                                 k_decimal = Decimal(contatore.k)
                                 prel_valore = (libro_corrente.totale_pos - libro_precedente.totale_pos) * k_decimal
                                 # Assegna il valore calcolato
-                                lettura_reg.prel_campo = prel_valore
+                                valori_calcolati['prel_campo'] = prel_valore  # Memorizza per visualizzazione
+                                lettura_reg.prel_campo = prel_valore  # Salva comunque nel database
                                 print(f"Mese {mese} ({anno_corrente}): Calcolato prel_campo = {prel_valore} dalla differenza con Dicembre {anno_precedente}: {libro_corrente.totale_pos} - {libro_precedente.totale_pos} * {k_decimal}")
                             else:
                                 # Se i dati sono insufficienti, imposta a None
+                                valori_calcolati['prel_campo'] = None
                                 lettura_reg.prel_campo = None
                                 print(f"Mese {mese} ({anno_corrente}): Dati insufficienti per calcolare prel_campo (richiesto Dicembre {anno_precedente})")
                         
@@ -248,18 +287,20 @@ def diarioenergie(request, nickname):
                                 k_decimal = Decimal(contatore.k)
                                 prel_valore = (libro_corrente.totale_pos - libro_precedente.totale_pos) * k_decimal
                                 # Assegna il valore calcolato
-                                lettura_reg.prel_campo = prel_valore
+                                valori_calcolati['prel_campo'] = prel_valore  # Memorizza per visualizzazione
+                                lettura_reg.prel_campo = prel_valore  # Salva comunque nel database
                                 print(f"Mese {mese} ({anno_corrente}): Calcolato prel_campo = {prel_valore} dalla differenza: {libro_corrente.totale_pos} - {libro_precedente.totale_pos} * {k_decimal}")
                             else:
                                 # Se i dati sono insufficienti, imposta a None
+                                valori_calcolati['prel_campo'] = None
                                 lettura_reg.prel_campo = None
                                 print(f"Mese {mese} ({anno_corrente}): Dati insufficienti per calcolare prel_campo")
                     
                     # MODIFICA: Se esiste un record regsegnanti, prioritizza i suoi valori
                     # MA SOLO SE IL VALORE IN REGSEGNANTI NON È NONE
+                    # Nota: Questo updatera SOLO il database, NON i valori calcolati per la visualizzazione
                     if regsegnante:
-                        # Aggiorna i valori di prod_campo, prod_ed, prod_gse, ecc. con quelli da regsegnanti
-                        # se esistono nel record regsegnante
+                        # Aggiorna i valori nel database con quelli da regsegnanti, se presenti
                         campi = ['prod_campo', 'prod_ed', 'prod_gse',
                                 'prel_campo', 'prel_ed', 'prel_gse',
                                 'autocons_campo', 'autocons_ed', 'autocons_gse',
@@ -267,13 +308,42 @@ def diarioenergie(request, nickname):
 
                         for campo in campi:
                             valore_regsegnante = getattr(regsegnante, campo, None)
-                            # Modifica la condizione: sovrascrivi SOLO se il valore in regsegnante NON è None
+                            # Salva nel database solo se il valore esiste
                             if valore_regsegnante is not None:
                                 setattr(lettura_reg, campo, valore_regsegnante)
+                                # NON aggiorniamo valori_calcolati qui, poiché vogliamo che la visualizzazione
+                                # utilizzi sempre i valori calcolati dinamicamente
                     
-                    # Salva ed assegna il record della lettura per il mese
-                    dati_per_mese[mese] = lettura_reg
+                    # Salva il record nel database per archiviazione
                     lettura_reg.save()
+                    
+                    # Crea una copia del record con i valori calcolati dinamicamente per la visualizzazione
+                    lettura_per_visualizzazione = LetturaContatore(
+                        contatore=contatore,
+                        anno=anno_corrente,
+                        mese=mese,
+                        tipo_tabella='diarioenergie'
+                    )
+                    
+                    # Copia tutti gli attributi dal record del database
+                    for attr in ['prod_ed', 'prod_gse', 'prel_ed', 'prel_gse',
+                                'autocons_ed', 'autocons_gse', 'imm_campo', 
+                                'imm_ed', 'imm_gse']:
+                        if hasattr(lettura_reg, attr):
+                            setattr(lettura_per_visualizzazione, attr, getattr(lettura_reg, attr))
+                    
+                    # Sostituisci i campi calcolati con quelli appena calcolati
+                    if valori_calcolati['prod_campo'] is not None:
+                        lettura_per_visualizzazione.prod_campo = valori_calcolati['prod_campo']
+                    if valori_calcolati['prel_campo'] is not None:
+                        lettura_per_visualizzazione.prel_campo = valori_calcolati['prel_campo']
+                    if valori_calcolati['autocons_campo'] is not None:
+                        lettura_per_visualizzazione.autocons_campo = valori_calcolati['autocons_campo']
+                    if valori_calcolati['imm_campo'] is not None:
+                        lettura_per_visualizzazione.imm_campo = valori_calcolati['imm_campo']
+                    
+                    # Memorizza l'oggetto modificato per la visualizzazione
+                    dati_per_mese[mese] = lettura_per_visualizzazione
                 
                 # Memorizza i dati processati per il contatore corrente
                 dati_contatori[contatore_key] = {
@@ -301,6 +371,7 @@ def diarioenergie(request, nickname):
             return redirect('nuovo-contatore', nickname=nickname)
     except Exception as e:
         return render(request, 'diarioenergie.html', {'impianto': impianto, 'errore': str(e)})
+
 
 def nuovo_contatore(request, nickname):
     # Recupera l'oggetto Impianto in base al nickname
@@ -861,44 +932,81 @@ def salva_dati_letture(request):
 
                     # --- Blocco specifico per data_ora_lettura ---
                     elif field_name == 'data_ora_lettura':
-                        datetime_iso = None
+                        datetime_obj = None # Usiamo un nome diverso per chiarezza
                         try:
                             field_value_str = str(field_value).strip() if field_value is not None else ""
+                            print(f"--- DEBUG [data_ora_lettura]: Mese {mese_logico}, Ricevuto: '{field_value_str}'")
+
                             if field_value_str:
-                                print(f"--- DEBUG [data_ora_lettura]: Mese {mese_logico}, Ricevuto: '{field_value_str}'")
-                                
-                                # Converti la stringa ISO in oggetto datetime
-                                datetime_iso = parse_datetime(field_value_str)
-                                
-                                if datetime_iso:
-                                    print(f"--- DEBUG [data_ora_lettura]: Mese {mese_logico}, DateTime convertito in: '{datetime_iso}'")
-                                    
+                                # Tentativo 1: Usare parse_datetime (preferito se funziona)
+                                datetime_obj = parse_datetime(field_value_str)
+
+                                if not datetime_obj:
+                                    # Tentativo 2: Se parse_datetime fallisce, prova con strptime e il formato atteso
+                                    print(f"--- DEBUG [data_ora_lettura]: parse_datetime fallito per '{field_value_str}'. Tentativo con strptime...")
+                                    try:
+                                        # Prima verifichiamo se è in formato italiano (DD/MM/YYYY HH:MM)
+                                        if '/' in field_value_str:
+                                            # Prova il formato italiano DD/MM/YYYY HH:MM
+                                            date_part, time_part = field_value_str.split(' ', 1) if ' ' in field_value_str else (field_value_str, "00:00")
+                                            day, month, year = map(int, date_part.split('/'))
+                                            hours, minutes = map(int, time_part.split(':')) if ':' in time_part else (0, 0)
+                                            
+                                            # Crea un datetime naive
+                                            naive_dt = datetime.datetime(year, month, day, hours, minutes)
+                                            
+                                            # Rendi il datetime aware usando il fuso orario predefinito di Django
+                                            datetime_obj = timezone.make_aware(naive_dt)
+                                            print(f"--- DEBUG [data_ora_lettura]: Convertito formato italiano in datetime aware")
+                                        else:
+                                            # Assicurati che il formato corrisponda esattamente a quello inviato dal JS
+                                            naive_dt = datetime.datetime.strptime(field_value_str, '%Y-%m-%d %H:%M')
+                                            # Rendi il datetime aware
+                                            datetime_obj = timezone.make_aware(naive_dt)
+                                            print(f"--- DEBUG [data_ora_lettura]: strptime riuscito e reso aware.")
+                                    except ValueError as e:
+                                        print(f"--- ERRORE [data_ora_lettura]: Conversione fallita per '{field_value_str}'. Errore: {e}")
+                                        datetime_obj = None # Assicura che sia None se la conversione fallisce
+
+                                # Importante: Assicurati che l'oggetto datetime sia aware
+                                if datetime_obj and timezone.is_naive(datetime_obj):
+                                    datetime_obj = timezone.make_aware(datetime_obj)
+                                    print(f"--- DEBUG [data_ora_lettura]: Datetime reso aware: {datetime_obj}")
+
+                                if datetime_obj:
+                                    print(f"--- DEBUG [data_ora_lettura]: Mese {mese_logico}, DateTime convertito in: '{datetime_obj}'")
+
                                     # Confronta il valore attuale con quello nuovo
-                                    if valore_attuale != datetime_iso:
-                                        setattr(lettura, field_name, datetime_iso)
+                                    # Confronta gli oggetti datetime direttamente
+                                    if valore_attuale != datetime_obj:
+                                        setattr(lettura, field_name, datetime_obj)
                                         modificato = True
-                                        print(f"--- DEBUG [data_ora_lettura]: Mese {mese_logico}, Modificato: {valore_attuale} -> {datetime_iso}")
-                                    
-                                    # Aggiungi al dizionario di risposta
-                                    dati_riga_aggiornati[field_name] = datetime_iso.strftime('%Y-%m-%d %H:%M')
+                                        print(f"--- DEBUG [data_ora_lettura]: Mese {mese_logico}, Modificato: {valore_attuale} -> {datetime_obj}")
+
+                                    # Aggiungi al dizionario di risposta (formato ISO per coerenza)
+                                    dati_riga_aggiornati[field_name] = datetime_obj.strftime('%Y-%m-%d %H:%M')
                                 else:
-                                    print(f"--- ERRORE [data_ora_lettura]: Mese {mese_logico}, Impossibile convertire '{field_value_str}'")
+                                    # Se né parse_datetime né strptime hanno funzionato
+                                    print(f"--- ERRORE [data_ora_lettura]: Mese {mese_logico}, Impossibile convertire '{field_value_str}' in datetime.")
                                     errore_in_riga = True
+                                    # Restituisci il valore vecchio in caso di errore di conversione
+                                    dati_riga_aggiornati[field_name] = valore_attuale.strftime('%Y-%m-%d %H:%M') if isinstance(valore_attuale, datetime.datetime) else None
+
                             else:
                                 # Se il valore ricevuto è vuoto, imposta a None
                                 if getattr(lettura, field_name) is not None:
                                     setattr(lettura, field_name, None)
                                     modificato = True
                                     print(f"--- DEBUG [data_ora_lettura]: Mese {mese_logico}, Impostato a None (era vuoto)")
-                                
+
                                 dati_riga_aggiornati[field_name] = None
-                        
-                        except Exception as e:
-                            print(f"--- ERRORE [data_ora_lettura]: Mese {mese_logico}, Valore: '{field_value}', Errore: {e}")
-                            errore_in_riga = True
-                            righe_con_errore_data.append({'mese': mese_logico, 'valore': field_value, 'errore': str(e)})
-                            # Restituisci il valore vecchio in caso di errore
-                            dati_riga_aggiornati[field_name] = valore_attuale.strftime('%Y-%m-%d %H:%M') if isinstance(valore_attuale, datetime.datetime) else None
+
+                        except Exception as e: # Cattura eccezioni generiche per sicurezza
+                             print(f"--- ERRORE [data_ora_lettura]: Mese {mese_logico}, Valore: '{field_value}', Errore: {e}")
+                             errore_in_riga = True
+                             righe_con_errore_data.append({'mese': mese_logico, 'valore': field_value, 'errore': str(e)})
+                             # Restituisci il valore vecchio in caso di errore
+                             dati_riga_aggiornati[field_name] = valore_attuale.strftime('%Y-%m-%d %H:%M') if isinstance(valore_attuale, datetime.datetime) else None
 
                 # Salva solo se sono state effettuate modifiche E non ci sono stati errori critici nella riga
                 if modificato and not errore_in_riga:
@@ -906,12 +1014,13 @@ def salva_dati_letture(request):
                         lettura.save()
                         righe_salvate += 1
                         print(f"--- DEBUG: Riga Mese {mese_logico} salvata.")
-                        dati_risposta_righe.append(dati_riga_aggiornati) # Aggiungi i dati salvati alla risposta
+                        # Aggiungi i dati salvati alla risposta (assicurati che i totali calcolati siano inclusi se necessario)
+                        # Potresti voler ricaricare l'oggetto lettura qui per avere i totali aggiornati dal DB
+                        # o ricalcolarli prima di aggiungerli a dati_risposta_righe
+                        dati_risposta_righe.append(dati_riga_aggiornati)
                     except Exception as e:
                          print(f"--- ERRORE SALVATAGGIO: Mese {mese_logico}, Errore: {e}")
                          # Gestisci errore di salvataggio (es. errore DB)
-                         # Potresti voler restituire un errore 500 qui o gestire diversamente
-                         # Per ora, aggiungiamo un messaggio di errore alla risposta parziale
                          righe_con_errore_data.append({'mese': mese_logico, 'valore': 'SALVATAGGIO', 'errore': str(e)})
                          # Aggiungi comunque i dati (vecchi o parzialmente aggiornati) che si tentava di salvare
                          dati_risposta_righe.append(dati_riga_aggiornati)
@@ -923,7 +1032,7 @@ def salva_dati_letture(request):
                      print(f"--- DEBUG: Riga Mese {mese_logico} non modificata.")
                      # Aggiungi i dati non modificati alla risposta
                      dati_risposta_righe.append(dati_riga_aggiornati)
-                    
+
             # --- Gestione Risposta Finale ---
             # Se ci sono stati errori (es. data non valida), restituisci un successo parziale
             if righe_con_errore_data:

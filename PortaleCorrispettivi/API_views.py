@@ -11,11 +11,15 @@ from datetime import datetime,timedelta
 from django.db.models import Max, Min
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import DatiMensiliTabella, ValoriPUN
+from .models import DatiMensiliTabella
 import json
 from django.db import models
 from django.conf import settings
 from PortaleCorrispettivi.APIgme import scarica_dati_pun_mensili, GME_FTP_USERNAME, GME_FTP_PASSWORD
+import threading
+from django.utils import timezone
+import os
+from PortaleCorrispettivi.models import Cashflow
 
 import PortaleCorrispettivi.utils.functions as fn
 from .models import *
@@ -614,40 +618,225 @@ class AvailableYears(APIView):
 		return Response({'years': years})
 
 
-def ottieni_valore_pun(anno, mese):
+def carica_dati_da_excel(impianto_obj, anno, mese):
     """
-    Funzione di utilità per ottenere il valore PUN dal DB o scaricarlo se non presente
+    Carica i dati dai file Excel per un determinato impianto, anno e mese.
+    Restituisce un dizionario con i dati caricati.
     """
+    import pandas as pd
+    import os
+    from PortaleCorrispettivi.models import Cashflow
+    import traceback
+    
+    # Inizializza il dizionario dei risultati
+    risultati = {
+        'fatturazione_tfo': None,
+        'fatturazione_altro': None,
+        'incassi': None,
+        'debug_info': []  # Array per raccogliere info di debug
+    }
+    
     try:
-        # Prima verifica se esiste già nel db
-        pun_esistente = ValoriPUN.objects.filter(anno=int(anno), mese=int(mese)).first()
+        # Cerca i record di Cashflow per questo impianto
+        cashflow_records = Cashflow.objects.filter(impianto=impianto_obj)
+        debug_msg = f"Trovati {cashflow_records.count()} record Cashflow per l'impianto {impianto_obj.nome_impianto}"
+        print(debug_msg)
+        risultati['debug_info'].append(debug_msg)
         
-        if pun_esistente:
-            # Se esiste già nel db, usa quel valore
-            print(f"PUN per {mese}/{anno} caricato dal database: {pun_esistente.valore_medio}")
-            return pun_esistente.valore_medio
-        else:
-            # Altrimenti, scarica i dati e poi salva nel db
-            media_pun_mensile = scarica_dati_pun_mensili(
-                int(anno), 
-                int(mese), 
-                GME_FTP_USERNAME, 
-                GME_FTP_PASSWORD, 
-                stampare_media_dettaglio=False
-            )
+        if not cashflow_records.exists():
+            debug_msg = f"Nessun file Cashflow trovato per l'impianto {impianto_obj.nome_impianto}"
+            print(debug_msg)
+            risultati['debug_info'].append(debug_msg)
+            return risultati
             
-            # Se il download è andato a buon fine, salva nel db
-            if media_pun_mensile is not None:
-                ValoriPUN.objects.create(
-                    anno=int(anno),
-                    mese=int(mese),
-                    valore_medio=media_pun_mensile
-                )
-                print(f"PUN per {mese}/{anno} calcolato e salvato: {media_pun_mensile}")
-            return media_pun_mensile
+        for cashflow in cashflow_records:
+            # Costruisci il percorso completo del file
+            percorso_completo = os.path.join(cashflow.unit, cashflow.percorso)
+            debug_msg = f"Percorso file completo: {percorso_completo}"
+            print(debug_msg)
+            risultati['debug_info'].append(debug_msg)
+            
+            # Verifica se il file esiste
+            if not os.path.exists(percorso_completo):
+                debug_msg = f"File non trovato: {percorso_completo}"
+                print(debug_msg)
+                risultati['debug_info'].append(debug_msg)
+                continue
+                
+            try:
+                # Leggi il file Excel
+                debug_msg = f"Tentativo di lettura del file: {percorso_completo}"
+                print(debug_msg)
+                risultati['debug_info'].append(debug_msg)
+                
+                # Carica il file Excel con pandas
+                xls = pd.ExcelFile(percorso_completo)
+                
+                # Debug: mostra tutti i fogli disponibili
+                debug_msg = f"Fogli disponibili nel file: {', '.join(xls.sheet_names)}"
+                print(debug_msg)
+                risultati['debug_info'].append(debug_msg)
+                
+                # Identifica il formato del file e cerca i dati richiesti
+                # Prima verifica se è il formato con due livelli di intestazione
+                try:
+                    # Tenta di leggere con il formato Cashflow standard (header multilivello)
+                    debug_msg = "Tentativo lettura con formato cashflow standard (header multilivello)"
+                    print(debug_msg)
+                    risultati['debug_info'].append(debug_msg)
+                    
+                    # Leggi il foglio principale che potrebbe contenere tutti i dati
+                    sheet_name = 'Incassi GSE' if 'Incassi GSE' in xls.sheet_names else xls.sheet_names[0]
+                    df = pd.read_excel(xls, sheet_name, index_col=None, header=[2, 3], na_values=[pd.NA])
+                    df = df.dropna(axis=1, how='all')
+                    
+                    # Mostra le colonne trovate
+                    debug_msg = f"Colonne trovate nel foglio {sheet_name} (multilivello): {list(df.columns.values)}"
+                    print(debug_msg)
+                    risultati['debug_info'].append(debug_msg)
+                    
+                    # Cerca le colonne 'Fatturazione TFO', 'Fatturazione Energia non incentivata', 'Riepilogo pagamenti'
+                    headers = ['Fatturazione TFO', 'Fatturazione Energia non incentivata', 'Riepilogo pagamenti']
+                    
+                    # Lista di liste booleane che indicano la posizione delle colonne date in headers
+                    ll = [list(df.columns.get_level_values(0).str.contains(z)) for z in headers]
+                    
+                    # Lista booleana che indica la posizione di tutte le colonne date in headers
+                    ll = list(map(any, zip(*ll)))
+                    
+                    # Filtra le colonne pertinenti
+                    df_filtered = df.loc[:, ll]
+                    
+                    # Converti le date in formato datetime
+                    for s in headers:
+                        if (s, 'Periodo') in df_filtered.columns:
+                            df_filtered[(s, 'Periodo')] = pd.to_datetime(df_filtered[(s, 'Periodo')], errors='coerce')
+                    
+                    # Ora filtra per l'anno e il mese specifici
+                    # Assumiamo che la data sia nella colonna 'Periodo' di ogni header
+                    for s in headers:
+                        if (s, 'Periodo') in df_filtered.columns:
+                            mask = (df_filtered[(s, 'Periodo')].dt.year == anno) & (df_filtered[(s, 'Periodo')].dt.month == mese)
+                            df_periodo = df_filtered.loc[mask]
+                            
+                            debug_msg = f"Dati trovati per {s}, {anno}/{mese}: {len(df_periodo)} righe"
+                            print(debug_msg)
+                            risultati['debug_info'].append(debug_msg)
+                            
+                            # Estrai i dati specifici a seconda dell'intestazione
+                            if s == 'Fatturazione TFO' and (s, 'Energia di competenza') in df_periodo.columns:
+                                risultati['fatturazione_tfo'] = float(df_periodo[(s, 'Energia di competenza')].sum())
+                                debug_msg = f"Fatturazione TFO: {risultati['fatturazione_tfo']}"
+                                print(debug_msg)
+                                risultati['debug_info'].append(debug_msg)
+                                
+                            elif s == 'Fatturazione Energia non incentivata' and (s, 'Energia di competenza') in df_periodo.columns:
+                                risultati['fatturazione_altro'] = float(df_periodo[(s, 'Energia di competenza')].sum())
+                                debug_msg = f"Fatturazione altro: {risultati['fatturazione_altro']}"
+                                print(debug_msg)
+                                risultati['debug_info'].append(debug_msg)
+                                
+                            elif s == 'Riepilogo pagamenti' and (s, 'Incasso/pagamento') in df_periodo.columns:
+                                risultati['incassi'] = float(df_periodo[(s, 'Incasso/pagamento')].sum())
+                                debug_msg = f"Incassi: {risultati['incassi']}"
+                                print(debug_msg)
+                                risultati['debug_info'].append(debug_msg)
+                
+                except Exception as e:
+                    debug_msg = f"Errore nel formato multilivello: {str(e)}"
+                    print(debug_msg)
+                    risultati['debug_info'].append(debug_msg)
+                    traceback.print_exc()
+                    
+                    # Prova formato alternativo con fogli separati
+                    debug_msg = "Tentativo lettura con formato alternativo (fogli separati)"
+                    print(debug_msg)
+                    risultati['debug_info'].append(debug_msg)
+                    
+                    if 'Fatturazione' in xls.sheet_names:
+                        try:
+                            # Estrai i dati di fatturazione
+                            df_fatturazione = pd.read_excel(xls, 'Fatturazione')
+                            
+                            # Debug: mostra le colonne disponibili
+                            debug_msg = f"Colonne nel foglio Fatturazione: {list(df_fatturazione.columns)}"
+                            print(debug_msg)
+                            risultati['debug_info'].append(debug_msg)
+                            
+                            # Cerca dati per l'anno e mese specifici
+                            if 'Anno' in df_fatturazione.columns and 'Mese' in df_fatturazione.columns:
+                                maschera = (df_fatturazione['Anno'] == anno) & (df_fatturazione['Mese'] == mese)
+                                dati_periodo = df_fatturazione[maschera]
+                                
+                                debug_msg = f"Dati trovati in Fatturazione per {anno}/{mese}: {len(dati_periodo)} righe"
+                                print(debug_msg)
+                                risultati['debug_info'].append(debug_msg)
+                                
+                                if not dati_periodo.empty:
+                                    # Assumiamo che ci siano colonne per TFO e Non Incentivata
+                                    if 'Fatturazione TFO' in dati_periodo.columns:
+                                        risultati['fatturazione_tfo'] = float(dati_periodo['Fatturazione TFO'].sum())
+                                        debug_msg = f"Fatturazione TFO: {risultati['fatturazione_tfo']}"
+                                        print(debug_msg)
+                                        risultati['debug_info'].append(debug_msg)
+                                        
+                                    if 'Fatturazione Non Incentivata' in dati_periodo.columns:
+                                        risultati['fatturazione_altro'] = float(dati_periodo['Fatturazione Non Incentivata'].sum())
+                                        debug_msg = f"Fatturazione altro: {risultati['fatturazione_altro']}"
+                                        print(debug_msg)
+                                        risultati['debug_info'].append(debug_msg)
+                        except Exception as e_fatt:
+                            debug_msg = f"Errore nella lettura del foglio Fatturazione: {str(e_fatt)}"
+                            print(debug_msg)
+                            risultati['debug_info'].append(debug_msg)
+                            traceback.print_exc()
+                    
+                    if 'Incassi' in xls.sheet_names:
+                        try:
+                            # Estrai i dati degli incassi
+                            df_incassi = pd.read_excel(xls, 'Incassi')
+                            
+                            # Debug: mostra le colonne disponibili
+                            debug_msg = f"Colonne nel foglio Incassi: {list(df_incassi.columns)}"
+                            print(debug_msg)
+                            risultati['debug_info'].append(debug_msg)
+                            
+                            # Cerca dati per l'anno e mese specifici
+                            if 'Anno' in df_incassi.columns and 'Mese' in df_incassi.columns:
+                                maschera = (df_incassi['Anno'] == anno) & (df_incassi['Mese'] == mese)
+                                dati_incassi = df_incassi[maschera]
+                                
+                                debug_msg = f"Dati trovati in Incassi per {anno}/{mese}: {len(dati_incassi)} righe"
+                                print(debug_msg)
+                                risultati['debug_info'].append(debug_msg)
+                                
+                                if not dati_incassi.empty and 'Importo' in dati_incassi.columns:
+                                    risultati['incassi'] = float(dati_incassi['Importo'].sum())
+                                    debug_msg = f"Incassi: {risultati['incassi']}"
+                                    print(debug_msg)
+                                    risultati['debug_info'].append(debug_msg)
+                        except Exception as e_inc:
+                            debug_msg = f"Errore nella lettura del foglio Incassi: {str(e_inc)}"
+                            print(debug_msg)
+                            risultati['debug_info'].append(debug_msg)
+                            traceback.print_exc()
+                
+            except Exception as e:
+                debug_msg = f"Errore nella lettura del file Excel {percorso_completo}: {str(e)}"
+                print(debug_msg)
+                risultati['debug_info'].append(debug_msg)
+                traceback.print_exc()
+                continue
+                
+        return risultati
+        
     except Exception as e:
-        print(f"Errore nell'ottenimento del PUN per {mese}/{anno}: {e}")
-        return None
+        debug_msg = f"Errore generale nel caricamento dei dati Excel: {str(e)}"
+        print(debug_msg)
+        risultati['debug_info'].append(debug_msg)
+        traceback.print_exc()
+        return risultati
+
 
 @csrf_exempt
 def dati_mensili_tabella_api(request):
@@ -700,9 +889,14 @@ def dati_mensili_tabella_api(request):
                     print(f"Dati trovati (fallback regsegnanti): {dati_reg.count()} record")
                     
                     for dato in dati_reg:
-                        media_pun_mensile = ottieni_valore_pun(anno_richiesto, dato.mese)
-                        try:
-                            # Usa direttamente le credenziali dal modulo APIgme
+                        # Cerca i dati PUN nel database prima di tentare il download
+                        from PortaleCorrispettivi.models import PunMonthlyData
+                        pun_data = PunMonthlyData.objects.filter(anno=int(anno_richiesto), mese=dato.mese).first()
+                        
+                        if pun_data:
+                            media_pun_mensile = pun_data.valore_medio
+                        else:
+                            # Se non esiste nel database, scarica i dati
                             media_pun_mensile = scarica_dati_pun_mensili(
                                 int(anno_richiesto), 
                                 dato.mese, 
@@ -710,8 +904,6 @@ def dati_mensili_tabella_api(request):
                                 GME_FTP_PASSWORD, 
                                 stampare_media_dettaglio=False
                             )
-                        except Exception as e_pun:
-                            print(f"Errore scaricamento PUN per {dato.mese}/{anno_richiesto} (fallback): {e_pun}")
                         
                         # Verifica che prod_campo non sia None e lo converte a float
                         if dato.prod_campo is not None:
@@ -730,18 +922,23 @@ def dati_mensili_tabella_api(request):
                             energia_incentivata = 0
                             prod_campo_float = 0  # Assicurati che sia 0 anche qui
                         
+                        # Carica dati dai file Excel per questo mese
+                        dati_excel = carica_dati_da_excel(impianto_obj, int(anno_richiesto), dato.mese)
+                        
                         data_response.append({
                             'mese': dato.mese,
                             'energia_kwh': energia_incentivata,
                             'corrispettivo_incentivo': None,
                             'corrispettivo_altro': None,
-                            'fatturazione_tfo': None,
-                            'fatturazione_altro': None,
-                            'incassi': None,
+                            # Utilizza i dati caricati dai file Excel, se disponibili
+                            'fatturazione_tfo': dati_excel['fatturazione_tfo'],
+                            'fatturazione_altro': dati_excel['fatturazione_altro'],
+                            'incassi': dati_excel['incassi'],
                             'controllo_scarto': None,
                             'controllo_percentuale': None,
-                            'media_pun_mensile': media_pun_mensile, # Aggiunto valore media PUN
-                            'prod_campo_originale': prod_campo_float  # Aggiungiamo il valore originale di prod_campo
+                            'media_pun_mensile': media_pun_mensile,
+                            'prod_campo_originale': prod_campo_float,
+                            'debug_info': dati_excel.get('debug_info', [])  # Includi le informazioni di debug
                         })
                     
                     return JsonResponse({'success': True, 'data': data_response})
@@ -757,9 +954,14 @@ def dati_mensili_tabella_api(request):
             print(f"Dati trovati (regsegnanti con contatore): {dati_reg.count()} record")
             
             for dato in dati_reg:
-                media_pun_mensile = ottieni_valore_pun(anno_richiesto, dato.mese)
-                try:
-                    # Usa direttamente le credenziali dal modulo APIgme
+                # Cerca i dati PUN nel database prima di tentare il download
+                from PortaleCorrispettivi.models import PunMonthlyData
+                pun_data = PunMonthlyData.objects.filter(anno=int(anno_richiesto), mese=dato.mese).first()
+                
+                if pun_data:
+                    media_pun_mensile = pun_data.valore_medio
+                else:
+                    # Se non esiste nel database, scarica i dati
                     media_pun_mensile = scarica_dati_pun_mensili(
                         int(anno_richiesto), 
                         dato.mese, 
@@ -767,10 +969,10 @@ def dati_mensili_tabella_api(request):
                         GME_FTP_PASSWORD, 
                         stampare_media_dettaglio=False
                     )
-                except Exception as e_pun:
-                    print(f"Errore scaricamento PUN per {dato.mese}/{anno_richiesto}: {e_pun}")
-                    media_pun_mensile = None
 
+                # Carica dati dai file Excel per questo mese
+                dati_excel = carica_dati_da_excel(impianto_obj, int(anno_richiesto), dato.mese)
+                
                 # Verifica che prod_campo non sia None e lo converte a float
                 if dato.prod_campo is not None:
                     # Converti Decimal a float prima di moltiplicare
@@ -793,13 +995,15 @@ def dati_mensili_tabella_api(request):
                     'energia_kwh': energia_incentivata,
                     'corrispettivo_incentivo': None,
                     'corrispettivo_altro': None,
-                    'fatturazione_tfo': None,
-                    'fatturazione_altro': None,
-                    'incassi': None,
+                    # Utilizza i dati caricati dai file Excel, se disponibili
+                    'fatturazione_tfo': dati_excel['fatturazione_tfo'],
+                    'fatturazione_altro': dati_excel['fatturazione_altro'],
+                    'incassi': dati_excel['incassi'],
                     'controllo_scarto': None,
                     'controllo_percentuale': None,
-                    'media_pun_mensile': media_pun_mensile, # Aggiunto valore media PUN
-                    'prod_campo_originale': prod_campo_float  # Aggiungiamo il valore originale di prod_campo
+                    'media_pun_mensile': media_pun_mensile,
+                    'prod_campo_originale': prod_campo_float,
+                    'debug_info': dati_excel.get('debug_info', [])  # Includi le informazioni di debug
                 })
             
             return JsonResponse({'success': True, 'data': data_response})
@@ -885,5 +1089,36 @@ def dati_mensili_tabella_api(request):
             return JsonResponse({'success': False, 'error': str(e)})
     
     return JsonResponse({'success': False, 'error': 'Metodo non supportato'})
+
+def check_pun_data_updates(anno):
+    """Verifica e aggiorna i dati PUN più vecchi di una settimana"""
+    from PortaleCorrispettivi.models import PunMonthlyData
+    from django.utils import timezone
+    from datetime import timedelta
+    from PortaleCorrispettivi.APIgme import scarica_dati_pun_mensili, GME_FTP_USERNAME, GME_FTP_PASSWORD
+    
+    try:
+        oggi = datetime.now()
+        mesi_da_verificare = range(1, oggi.month + 1) if int(anno) == oggi.year else range(1, 13)
+        
+        for mese in mesi_da_verificare:
+            try:
+                pun_data = PunMonthlyData.objects.get(anno=int(anno), mese=mese)
+                # Aggiorna se i dati sono più vecchi di 7 giorni
+                if pun_data.ultima_modifica < timezone.now() - timedelta(days=7):
+                    scarica_dati_pun_mensili(
+                        int(anno), mese, GME_FTP_USERNAME, GME_FTP_PASSWORD, 
+                        stampare_media_dettaglio=False, force_download=True
+                    )
+                    print(f"Dati PUN aggiornati automaticamente per {mese}/{anno}")
+            except PunMonthlyData.DoesNotExist:
+                # Scarica i dati se non esistono
+                scarica_dati_pun_mensili(
+                    int(anno), mese, GME_FTP_USERNAME, GME_FTP_PASSWORD, 
+                    stampare_media_dettaglio=False
+                )
+                print(f"Dati PUN scaricati automaticamente per {mese}/{anno}")
+    except Exception as e:
+        print(f"Errore durante l'aggiornamento automatico dei dati PUN: {e}")
 
 

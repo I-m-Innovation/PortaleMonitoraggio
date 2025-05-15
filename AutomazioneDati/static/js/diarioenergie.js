@@ -292,7 +292,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 celleDati.forEach(cell => {
                     const fieldName = cell.dataset.field;
                     const fieldValue = cell.innerText.trim(); // Prendi il testo visibile
-                    rowData[fieldName] = fieldValue; // Aggiungi campo e valore all'oggetto della riga
+                    
+                    // MODIFICA: Gestione speciale per valori numerici
+                    if (fieldValue === '') {
+                        // Se è vuoto, lo lasciamo vuoto
+                        rowData[fieldName] = fieldValue;
+                    } else {
+                        // Converti in numero per verificare se è negativo
+                        const numValue = parseFloat(fieldValue.replace(',', '.'));
+                        
+                        // Verifica se il valore è un numero valido
+                        if (!isNaN(numValue)) {
+                            // Salva solo se maggiore o uguale a 0 (rifiuta negativi)
+                            if (numValue >= 0) {
+                                rowData[fieldName] = fieldValue;
+                            } 
+                        } else {
+                            // Non è un numero, salvalo così com'è
+                            rowData[fieldName] = fieldValue;
+                        }
+                    }
                 });
                 rowsData.push(rowData); // Aggiungi l'oggetto riga all'array
             }
@@ -357,8 +376,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Potresti mostrare questi errori in modo più dettagliato all'utente se necessario
                 }
     
-                // Aggiorna la tabella dopo il salvataggio
-                updateTable(result.rows);
+                // Aggiorna la tabella dopo il salvataggio SOLO se ci sono rows nella risposta
+                if (result.rows) {
+                    updateTable(result.rows);
+                }
             } else {
                 // Se lo status nella risposta non è 'success' o 'partial_success'
                 alert('Errore nel salvataggio: ' + (result.message || 'Errore sconosciuto.'));
@@ -380,6 +401,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Aggiungi questo nella funzione che aggiorna la tabella dopo il salvataggio
     function updateTable(data) {
+        // Verifica che data sia definito e sia un array prima di chiamare forEach
+        if (!data || !Array.isArray(data)) {
+            console.warn("Nessun dato valido ricevuto per l'aggiornamento della tabella");
+            return;
+        }
+        
         data.forEach(row => {
             // Trova la riga corrispondente
             const tableRow = document.querySelector(`tr[data-mese="${row.mese}"]`);

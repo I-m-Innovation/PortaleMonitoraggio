@@ -166,194 +166,134 @@ function raccogliDatiTabella(tipoTabella) {
 
 // Funzione per raccogliere i dati dalla tabella Libro Energie
 function raccogliDatiLibroEnergie(contatoreId, anno) {
+    console.log("Raccolta dati dalla tabella Libro Energie");
     const dati = [];
-    const tabella = document.getElementById('libro_energie');
-    const righe = tabella.querySelectorAll('tbody tr');
+    const righe = document.querySelectorAll('#libro_energie table tbody tr');
 
     righe.forEach(riga => {
-        const mese = riga.dataset.mese;
-        const dataPresaCell = riga.querySelector('td[data-field="data_presa"]');
-        let dataPresaISO = null; // Inizializza a null. Conterrà la data in formato YYYY-MM-DD
-        let oraLettura = null;
-
-        if (dataPresaCell) {
-            const testoCella = dataPresaCell.textContent.trim(); // Leggi sempre il testo visibile
-            if (testoCella) {
-                // Prova a convertire il testo visualizzato (che dovrebbe essere GG/MM/AAAA) in ISO
-                const dateTimeInfo = convertDateToISO(testoCella);
-                dataPresaISO = dateTimeInfo.date;
-                oraLettura = dateTimeInfo.time;
-                // Se la conversione fallisce, dataPresaISO rimarrà null (gestito da convertDateToISO)
-                // Potresti aggiungere un feedback all'utente qui se la conversione fallisce
-                if (dataPresaISO === null && testoCella !== "") {
-                     console.warn(`Data inserita per mese ${mese} non valida: "${testoCella}"`);
-                }
-            }
-        }
-
-        // --- Lettura degli altri campi (invariata) ---
-        const a1Neg = parseNumericValue(riga.querySelector('td[data-field="a1_neg"]'));
-        const a2Neg = parseNumericValue(riga.querySelector('td[data-field="a2_neg"]'));
-        const a3Neg = parseNumericValue(riga.querySelector('td[data-field="a3_neg"]'));
-        const a1Pos = parseNumericValue(riga.querySelector('td[data-field="a1_pos"]'));
-        const a2Pos = parseNumericValue(riga.querySelector('td[data-field="a2_pos"]'));
-        const a3Pos = parseNumericValue(riga.querySelector('td[data-field="a3_pos"]'));
-        
-        // --- Lettura migliorata dei totali ---
-        const totaleCellNeg = riga.querySelector('td[data-field="totale_neg"]');
-        const totaleCellPos = riga.querySelector('td[data-field="totale_pos"]');
-
-        let totaleNeg = null;
-        if (totaleCellNeg) {
-            // Prova a leggere prima dal dataset.value (memorizzato da updateCalculatedCell)
-            const rawValue = totaleCellNeg.dataset.value;
-            if (rawValue !== undefined && rawValue !== null && rawValue !== '') {
-                const parsed = parseFloat(rawValue);
-                if (!isNaN(parsed)) {
-                    totaleNeg = parsed;
-                }
-            }
-            // Fallback: se dataset.value non è valido/presente, leggi dal textContent
-            if (totaleNeg === null) {
-                totaleNeg = parseNumericValue(totaleCellNeg);
-            }
-        }
-
-        let totalePos = null;
-        if (totaleCellPos) {
-            // Prova a leggere prima dal dataset.value
-            const rawValue = totaleCellPos.dataset.value;
-            if (rawValue !== undefined && rawValue !== null && rawValue !== '') {
-                const parsed = parseFloat(rawValue);
-                if (!isNaN(parsed)) {
-                    totalePos = parsed;
-                }
-            }
-            // Fallback: leggi dal textContent
-            if (totalePos === null) {
-                totalePos = parseNumericValue(totaleCellPos);
-            }
-        }
-        
-        // Assicura che i valori null/NaN diventino null
-        totaleNeg = (totaleNeg === null || isNaN(totaleNeg)) ? null : totaleNeg;
-        totalePos = (totalePos === null || isNaN(totalePos)) ? null : totalePos;
-
-        // --- CORREZIONE: Assicura che i valori zero vengano inviati come 0 e non come null ---
-        // Per tutti i campi, anche quelli negativi e totali
-        dati.push({
+        const mese = parseInt(riga.dataset.mese);
+        const datiRiga = {
             contatore_id: contatoreId,
             anno: anno,
             mese: mese,
-            tipo_tabella: 'libro_energie',
-            data_presa: dataPresaISO,
-            ora_lettura: oraLettura,
-            a1_neg: a1Neg !== null ? a1Neg : 0,  // Invia 0 invece di null
-            a2_neg: a2Neg !== null ? a2Neg : 0,  // Invia 0 invece di null
-            a3_neg: a3Neg !== null ? a3Neg : 0,  // Invia 0 invece di null
-            totale_neg: totaleNeg !== null ? totaleNeg : 0, // Invia 0 invece di null
-            a1_pos: a1Pos !== null ? a1Pos : 0,  // Invia 0 invece di null
-            a2_pos: a2Pos !== null ? a2Pos : 0,  // Invia 0 invece di null
-            a3_pos: a3Pos !== null ? a3Pos : 0,  // Invia 0 invece di null
-            totale_pos: totalePos !== null ? totalePos : 0  // Invia 0 invece di null
+            tipo_tabella: 'libro_energie'
+        };
+
+        // Raccogli i dati dalle celle editabili e calcolate
+        riga.querySelectorAll('td[data-field]').forEach(cella => {
+            const fieldName = cella.dataset.field;
+            let fieldValue;
+
+            if (fieldName === 'data_ora_lettura') {
+                // *** VERIFICA QUI COSA VIENE RACCOLTO ***
+                fieldValue = cella.dataset.datetime || null; // Preferisci l'attributo data-datetime (ISO)
+                console.log(`DEBUG JS: Raccolto per ${fieldName} (Mese ${mese}): '${fieldValue}' (da data-datetime)`);
+                if (!fieldValue) {
+                     // Se data-datetime è vuoto, prova a leggere il textContent e logga un avviso
+                     const textContent = cella.textContent.trim();
+                     if (textContent) {
+                         console.warn(`ATTENZIONE JS: data-datetime vuoto per Mese ${mese}, ma textContent non vuoto: '${textContent}'. Verrà inviato null.`);
+                     }
+                }
+
+            } else if (cella.classList.contains('editable-cell')) {
+                // Per le celle numeriche editabili, usa il textContent
+                fieldValue = cella.textContent.trim();
+                // Converti virgola in punto per i decimali prima di inviare
+                if (fieldValue) {
+                    fieldValue = fieldValue.replace(',', '.');
+                }
+                // Se è vuoto, invia null
+                fieldValue = fieldValue === '' ? null : fieldValue;
+                // console.log(`DEBUG JS: Raccolto per ${fieldName} (Mese ${mese}): '${fieldValue}'`); // Logga solo se necessario
+            } else {
+                 // Per i campi calcolati, usa il textContent
+                 fieldValue = cella.textContent.trim();
+                 // Converti virgola in punto per i decimali prima di inviare
+                 if (fieldValue) {
+                     fieldValue = fieldValue.replace(',', '.');
+                 }
+                 // Se è vuoto, invia null
+                 fieldValue = fieldValue === '' ? null : fieldValue;
+                 // console.log(`DEBUG JS: Raccolto per ${fieldName} (Mese ${mese}): '${fieldValue}'`); // Logga solo se necessario
+            }
+
+            datiRiga[fieldName] = fieldValue;
         });
+
+        dati.push(datiRiga);
     });
 
+    console.log("Dati Libro Energie raccolti:", dati);
     return dati;
 }
 
 // Funzione per raccogliere i dati dalla tabella Libro Kaifa
 function raccogliDatiLibroKaifa(contatoreId, anno) {
-    const tabella = document.querySelector('#libro_kaifa table');
-    if (!tabella) {
-        console.error('Tabella Libro Kaifa non trovata');
-        return [];
-    }
-    
-    const righe = tabella.querySelectorAll('tbody tr');
+    console.log("Raccolta dati dalla tabella Libro Kaifa");
     const dati = [];
-    
-    righe.forEach((riga, index) => {
-        const mese = riga.dataset.mese;
-        if (!mese) {
-            console.warn(`Riga ${index}: attributo data-mese mancante, saltata`);
-            return; // Salta questa iterazione
-        }
-        
-        // Gestione data_presa con ora
-        const dataPresaCell = riga.querySelector('td[data-field="data_presa"]');
-        let dataPresaISO = null;
-        let oraLettura = null;
-        
-        if (dataPresaCell) {
-            const testoCella = dataPresaCell.textContent.trim();
-            if (testoCella) {
-                const dateTimeInfo = convertDateToISO(testoCella);
-                dataPresaISO = dateTimeInfo.date;
-                oraLettura = dateTimeInfo.time;
-            }
-        }
-        
-        // Lettura valori numerici input
-        const kaifa180nCell = riga.querySelector('td[data-field="kaifa_180n"]');
-        const kaifa280nCell = riga.querySelector('td[data-field="kaifa_280n"]');
-        const kaifa180n = parseNumericValue(kaifa180nCell);
-        const kaifa280n = parseNumericValue(kaifa280nCell);
-        
-        // Lettura dei totali
-        const totale180nCell = riga.querySelector('td[data-field="totale_180n"]');
-        const totale280nCell = riga.querySelector('td[data-field="totale_280n"]');
-        
-        let totale180n = null;
-        let totale280n = null;
-        
-        const isUltimoMese = parseInt(mese) === 13;
-        
-        if (!isUltimoMese) {
-            if (totale180nCell && totale180nCell.dataset.value !== undefined) {
-                totale180n = parseFloat(totale180nCell.dataset.value);
-            } else if (totale180nCell) {
-                const rigaSuccessiva = tabella.querySelector(`tbody tr[data-mese="${parseInt(mese) + 1}"]`);
-                if (rigaSuccessiva) {
-                    const kaifa180nCorrente = parseNumericValue(kaifa180nCell);
-                    const kaifa180nSuccessiva = parseNumericValue(rigaSuccessiva.querySelector('td[data-field="kaifa_180n"]'));
-                    totale180n = kaifa180nSuccessiva - kaifa180nCorrente;
-                }
-            }
-            
-            if (totale280nCell && totale280nCell.dataset.value !== undefined) {
-                totale280n = parseFloat(totale280nCell.dataset.value);
-            } else if (totale280nCell) {
-                const rigaSuccessiva = tabella.querySelector(`tbody tr[data-mese="${parseInt(mese) + 1}"]`);
-                if (rigaSuccessiva) {
-                    const kaifa280nCorrente = parseNumericValue(kaifa280nCell);
-                    const kaifa280nSuccessiva = parseNumericValue(rigaSuccessiva.querySelector('td[data-field="kaifa_280n"]'));
-                    totale280n = kaifa280nSuccessiva - kaifa280nCorrente;
-                }
-            }
-        }
-        
-        // --- CORREZIONE: Assicura che i valori zero vengano inviati come 0 e non come null ---
-        dati.push({
+    const righe = document.querySelectorAll('#libro_kaifa table tbody tr');
+
+    righe.forEach(riga => {
+        const mese = parseInt(riga.dataset.mese);
+        const datiRiga = {
             contatore_id: contatoreId,
             anno: anno,
             mese: mese,
-            tipo_tabella: 'libro_kaifa',
-            data_presa: dataPresaISO,
-            ora_lettura: oraLettura,
-            kaifa_180n: kaifa180n !== null ? kaifa180n : 0, // Invia 0 invece di null
-            kaifa_280n: kaifa280n !== null ? kaifa280n : 0, // Invia 0 invece di null
-            totale_180n: (isUltimoMese || isNaN(totale180n)) ? 0 : (totale180n !== null ? totale180n : 0), // Invia 0 invece di null
-            totale_280n: (isUltimoMese || isNaN(totale280n)) ? 0 : (totale280n !== null ? totale280n : 0) // Invia 0 invece di null
+            tipo_tabella: 'libro_kaifa'
+        };
+
+        // Raccogli i dati dalle celle editabili e calcolate
+        riga.querySelectorAll('td[data-field]').forEach(cella => {
+            const fieldName = cella.dataset.field;
+            let fieldValue;
+
+            if (fieldName === 'ora_lettura') {
+                 // Per l'ora, usiamo l'attributo data-ora (HH:MM)
+                 fieldValue = cella.dataset.ora || null;
+                 console.log(`DEBUG JS: Raccolto per ${fieldName} (Mese ${mese}): '${fieldValue}' (da data-ora)`);
+                 if (!fieldValue) {
+                      const textContent = cella.textContent.trim();
+                      if (textContent) {
+                          console.warn(`ATTENZIONE JS: data-ora vuoto per Mese ${mese}, ma textContent non vuoto: '${textContent}'. Verrà inviato null.`);
+                      }
+                 }
+
+            } else if (cella.classList.contains('editable-cell')) {
+                // Per le celle numeriche editabili, usa il textContent
+                fieldValue = cella.textContent.trim();
+                // Converti virgola in punto per i decimali prima di inviare
+                if (fieldValue) {
+                    fieldValue = fieldValue.replace(',', '.');
+                }
+                // Se è vuoto, invia null
+                fieldValue = fieldValue === '' ? null : fieldValue;
+                // console.log(`DEBUG JS: Raccolto per ${fieldName} (Mese ${mese}): '${fieldValue}'`); // Logga solo se necessario
+            } else {
+                 // Per i campi calcolati, usa il textContent
+                 fieldValue = cella.textContent.trim();
+                 // Converti virgola in punto per i decimali prima di inviare
+                 if (fieldValue) {
+                     fieldValue = fieldValue.replace(',', '.');
+                 }
+                 // Se è vuoto, invia null
+                 fieldValue = fieldValue === '' ? null : fieldValue;
+                 // console.log(`DEBUG JS: Raccolto per ${fieldName} (Mese ${mese}): '${fieldValue}'`); // Logga solo se necessario
+            }
+
+            datiRiga[fieldName] = fieldValue;
         });
+
+        dati.push(datiRiga);
     });
-    
-    console.log(`Totale ${dati.length} record Kaifa raccolti.`);
+
+    console.log("Dati Libro Kaifa raccolti:", dati);
     return dati;
 }
 
 // Funzione per aggiornare la tabella con i dati ricevuti dal server
 function aggiornaTabellaDatiEnergie(datiAggiornati) {
+    console.log("Aggiornamento tabella Energie con dati ricevuti:", datiAggiornati);
     if (!datiAggiornati || !Array.isArray(datiAggiornati)) {
         console.warn('Nessun dato aggiornato ricevuto per la tabella Energie');
         return;
@@ -417,6 +357,8 @@ function aggiornaTabellaDatiEnergie(datiAggiornati) {
             // dato.data_ora_lettura arriva dal backend come stringa YYYY-MM-DD HH:MM o null
             const datetimeISO = dato.data_ora_lettura || '';
 
+            console.log(`DEBUG JS Aggiorna: Mese ${dato.mese}, ricevuto data_ora_lettura: '${datetimeISO}'`); // Logga il valore ricevuto
+
             if (datetimeISO) {
                 cellaDateTime.dataset.datetime = datetimeISO;
                 
@@ -452,6 +394,7 @@ function aggiornaTabellaDatiEnergie(datiAggiornati) {
 
 // Funzione per aggiornare la tabella Kaifa con i dati ricevuti dal server
 function aggiornaTabellaDatiKaifa(datiAggiornati) {
+    console.log("Aggiornamento tabella Kaifa con dati ricevuti:", datiAggiornati);
     if (!datiAggiornati || !Array.isArray(datiAggiornati)) {
         console.warn('Nessun dato aggiornato ricevuto per la tabella Kaifa');
         return;
@@ -495,6 +438,25 @@ function aggiornaTabellaDatiKaifa(datiAggiornati) {
         updateCellIfPresent(riga, 'totale_180n', dato.totale_180n, true); // Aggiorna anche la cella del totale (non editabile)
         updateCellIfPresent(riga, 'kaifa_280n', dato.kaifa_280n);
         updateCellIfPresent(riga, 'totale_280n', dato.totale_280n, true); // Aggiorna anche la cella del totale (non editabile)
+
+        // Aggiorna l'ora di lettura
+        const cellaOra = riga.querySelector('td[data-field="ora_lettura"]');
+        if (cellaOra) {
+            // dato.ora_lettura arriva dal backend come stringa HH:MM o null
+            const oraHHMM = dato.ora_lettura || '';
+
+            console.log(`DEBUG JS Aggiorna: Mese ${dato.mese}, ricevuto ora_lettura: '${oraHHMM}'`); // Logga il valore ricevuto
+
+            if (oraHHMM) {
+                cellaOra.dataset.ora = oraHHMM;
+                cellaOra.textContent = oraHHMM; // L'ora viene visualizzata come HH:MM
+                cellaOra.classList.add('updated-cell');
+                setTimeout(() => cellaOra.classList.remove('updated-cell'), 2000);
+            } else {
+                delete cellaOra.dataset.ora;
+                cellaOra.textContent = '';
+            }
+        }
     });
 
      // Ricalcola i totali Kaifa dopo l'aggiornamento
@@ -1252,10 +1214,22 @@ function convertDateTimeFormat(input) {
         // Formatta data e ora per ISO e display
         const isoDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
         const isoTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        const isoDateTime = `${isoDate} ${isoTime}`;
+        
+        // Aggiungi il fuso orario al formato ISO
+        // Otteniamo l'offset del fuso orario locale
+        const now = new Date();
+        const tzOffset = -now.getTimezoneOffset();
+        const tzHours = Math.floor(Math.abs(tzOffset) / 60).toString().padStart(2, '0');
+        const tzMinutes = (Math.abs(tzOffset) % 60).toString().padStart(2, '0');
+        const tzSign = tzOffset >= 0 ? '+' : '-';
+        const tzString = `${tzSign}${tzHours}:${tzMinutes}`;
+        
+        const isoDateTime = `${isoDate} ${isoTime}${tzString}`;
         
         const displayDate = `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
         const displayDateTime = `${displayDate} ${isoTime}`;
+        
+        console.log(`Data convertita: display=${displayDateTime}, iso=${isoDateTime}`);
         
         return {
             iso: isoDateTime,

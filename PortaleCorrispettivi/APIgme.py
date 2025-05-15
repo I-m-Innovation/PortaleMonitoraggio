@@ -9,10 +9,9 @@ import os
 GME_FTP_USERNAME = "DAMIANOZILIO"  # Rimossi gli spazi superflui
 GME_FTP_PASSWORD = "O12L10Z1"
 
-def scarica_dati_pun_mensili(anno, mese, username=None, password=None, cartella_salvataggio=None, stampare_media_dettaglio=True):
+def scarica_dati_pun_mensili(anno, mese, username=None, password=None, cartella_salvataggio=None, stampare_media_dettaglio=True, force_download=False):
     """
-    Scarica i dati PUN per un mese specifico dal server FTP del Mercato Elettrico
-    e calcola la media mensile.
+    Scarica o recupera dal database i dati PUN per un mese specifico.
     
     Args:
         anno (int): Anno di riferimento (es. 2024)
@@ -21,11 +20,30 @@ def scarica_dati_pun_mensili(anno, mese, username=None, password=None, cartella_
         password (str, optional): Password per l'accesso FTP. Se None, usa credenziali predefinite.
         cartella_salvataggio (str, optional): Percorso dove salvare i file XML scaricati
         stampare_media_dettaglio (bool, optional): Se True, stampa la media mensile.
-                                                 Default a True.
+        force_download (bool, optional): Se True, forza il download anche se i dati sono già nel DB.
     
     Returns:
         float or None: Media mensile dei valori PUN, o None se non trovati.
     """
+    # Prima controlla se i dati sono già presenti nel database
+    from PortaleCorrispettivi.models import PunMonthlyData
+    from django.utils import timezone
+    
+    if not force_download:
+        try:
+            # Cerca i dati nel database
+            pun_data = PunMonthlyData.objects.get(anno=anno, mese=mese)
+            
+            # Controlla se i dati sono ancora validi (non più vecchi di 30 giorni)
+            if pun_data.ultima_modifica > timezone.now() - timedelta(days=30):
+                if stampare_media_dettaglio:
+                    print(f"Dati recuperati dal database per {calendar.month_name[mese]} {anno}: {pun_data.valore_medio:.6f}")
+                return pun_data.valore_medio
+                
+        except PunMonthlyData.DoesNotExist:
+            # Se i dati non sono presenti nel database, procedi con il download
+            pass
+    
     # Se username o password sono None, usa le credenziali predefinite
     if username is None:
         username = GME_FTP_USERNAME
@@ -94,6 +112,15 @@ def scarica_dati_pun_mensili(anno, mese, username=None, password=None, cartella_
         media_mensile = sum(valori_pun) / len(valori_pun)
         if stampare_media_dettaglio:
             print(f"\nMedia mensile PUN per {calendar.month_name[mese]} {anno}: {media_mensile:.6f}")
+        
+        # Salva o aggiorna i dati nel database
+        from PortaleCorrispettivi.models import PunMonthlyData
+        PunMonthlyData.objects.update_or_create(
+            anno=anno,
+            mese=mese,
+            defaults={'valore_medio': media_mensile}
+        )
+        
         return media_mensile
     else:
         if stampare_media_dettaglio:

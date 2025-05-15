@@ -244,15 +244,15 @@ class DatiMensiliTabella(models.Model):
 		super().save(*args, **kwargs)
 
 
-class ValoriPUN(models.Model):
-	anno = models.IntegerField(null=False, blank=False)
-	mese = models.IntegerField(null=False, blank=False)  # 1-12 per i mesi
-	valore_medio = models.FloatField(null=False, blank=False)
+# Aggiungi questo nuovo modello per salvare i dati PUN mensili
+class PunMonthlyData(models.Model):
+	anno = models.IntegerField()
+	mese = models.IntegerField()
+	valore_medio = models.FloatField()
+	ultima_modifica = models.DateTimeField(auto_now=True)
 	
 	class Meta:
-		verbose_name = 'Valore PUN'
-		verbose_name_plural = 'Valori PUN'
-		unique_together = ('anno', 'mese')  # Garantisce unicità
+		unique_together = ('anno', 'mese')
 		
 	def __str__(self):
 		return f"PUN {self.mese}/{self.anno}: {self.valore_medio}"

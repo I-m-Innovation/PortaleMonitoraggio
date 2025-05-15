@@ -16,4 +16,5 @@ urlpatterns = [
     path('seleziona-contatore-sostituzione/', views.seleziona_contatore_sostituzione, name='seleziona_contatore_sostituzione'),
     path('salva-contatore-sostituzione/', views.salva_contatore_sostituzione, name='salva_contatore_sostituzione'),
     path('elimina-contatore/<int:contatore_id>/', views.elimina_contatore, name='elimina_contatore'),
+    
 ]

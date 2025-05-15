@@ -134,9 +134,9 @@
                             {% for i in num_rows %}
                             {% with lettura_kaifa=libro_kaifa_dati|get_item:i %}
                             <tr data-mese="{{ i|add:1 }}">
-                                <td data-field="ora_lettura" contenteditable="true" class="editable-cell"
-                                    {% if lettura_kaifa and lettura_kaifa.ora_lettura %}data-ora="{{ lettura_kaifa.ora_lettura|time:'H:i' }}"{% endif %}>
-                                    {% if lettura_kaifa and lettura_kaifa.ora_lettura %}{{ lettura_kaifa.ora_lettura|time:"H:i" }}{% endif %}
+                                <td data-field="data_ora_lettura" contenteditable="true" class="editable-cell"
+                                    {% if lettura_kaifa and lettura_kaifa.data_ora_lettura %}data-datetime="{{ lettura_kaifa.data_ora_lettura|date:'Y-m-d H:i' }}"{% endif %}>
+                                    {% if lettura_kaifa and lettura_kaifa.data_ora_lettura %}{{ lettura_kaifa.data_ora_lettura|date:"d/m/Y H:i" }}{% endif %}
                                 </td>
                                 <td data-field="kaifa_180n" contenteditable="true" class="editable-cell">
                                     {% if lettura_kaifa and lettura_kaifa.kaifa_180n is not None %}

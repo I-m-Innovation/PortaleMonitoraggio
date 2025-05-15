@@ -1,6 +1,10 @@
 from django.contrib import admin
 from .models import *
 
+from AutomazioneDati.models import Contatore, LetturaContatore
+
+admin.site.register(Contatore)
+admin.site.register(LetturaContatore)
 
 @admin.action(description="Cambia periferica --> Y:/")
 def cambia_periferica_Y(modeladmin, request, queryset):

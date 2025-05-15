@@ -1,9 +1,6 @@
 from django.db import models
-
 from django.conf import settings
 from decimal import Decimal # Assicurati che Decimal sia importato
-# Importiamo il modello che contiene i nomi degli impianti da MonitoraggioImpianti
-from MonitoraggioImpianti.models import Impianto  # Suppongo che il modello si chiami così
 
 # Create your models here.
 
@@ -21,7 +18,7 @@ class Contatore(models.Model):
         ('Gesis', 'Gesis'),
     ]
     
-    impianto = models.ForeignKey(Impianto, on_delete=models.SET_NULL, related_name='contatori', null=True, blank=True)
+    impianto = models.ForeignKey('PortaleCorrispettivi.Impianto', on_delete=models.SET_NULL, related_name='contatori', null=True, blank=True)
     impianto_nickname = models.CharField(max_length=50, null=True, blank=True)
     nome = models.CharField(max_length=100)
     pod = models.CharField(max_length=50)
