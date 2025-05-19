@@ -722,21 +722,15 @@ def dati_mensili_tabella_api(request):
                     print(f"Dati trovati (fallback regsegnanti): {dati_reg.count()} record")
                     
                     for dato in dati_reg:
-                        # Cerca i dati PUN nel database prima di tentare il download
-                        from PortaleCorrispettivi.models import PunMonthlyData
-                        pun_data = PunMonthlyData.objects.filter(anno=int(anno_richiesto), mese=dato.mese).first()
-                        
-                        if pun_data:
-                            media_pun_mensile = pun_data.valore_medio
-                        else:
-                            # Se non esiste nel database, scarica i dati
-                            media_pun_mensile = scarica_dati_pun_mensili(
-                                int(anno_richiesto), 
-                                dato.mese, 
-                                GME_FTP_USERNAME, 
-                                GME_FTP_PASSWORD, 
-                                stampare_media_dettaglio=False
-                            )
+                        # Scarica direttamente i dati PUN dal server FTP
+                        media_pun_mensile = scarica_dati_pun_mensili(
+                            int(anno_richiesto), 
+                            dato.mese, 
+                            GME_FTP_USERNAME, 
+                            GME_FTP_PASSWORD, 
+                            stampare_media_dettaglio=False
+                        )
+                        print(f"DEBUG: Media PUN mensile (scaricata da FTP) per {anno_richiesto}/{dato.mese}: {media_pun_mensile}")
                         
                         # Verifica che prod_campo non sia None e lo converte a float
                         if dato.prod_campo is not None:
@@ -787,21 +781,15 @@ def dati_mensili_tabella_api(request):
             print(f"Dati trovati (regsegnanti con contatore): {dati_reg.count()} record")
             
             for dato in dati_reg:
-                # Cerca i dati PUN nel database prima di tentare il download
-                from PortaleCorrispettivi.models import PunMonthlyData
-                pun_data = PunMonthlyData.objects.filter(anno=int(anno_richiesto), mese=dato.mese).first()
-                
-                if pun_data:
-                    media_pun_mensile = pun_data.valore_medio
-                else:
-                    # Se non esiste nel database, scarica i dati
-                    media_pun_mensile = scarica_dati_pun_mensili(
-                        int(anno_richiesto), 
-                        dato.mese, 
-                        GME_FTP_USERNAME, 
-                        GME_FTP_PASSWORD, 
-                        stampare_media_dettaglio=False
-                    )
+                # Scarica direttamente i dati PUN dal server FTP
+                media_pun_mensile = scarica_dati_pun_mensili(
+                    int(anno_richiesto), 
+                    dato.mese, 
+                    GME_FTP_USERNAME, 
+                    GME_FTP_PASSWORD, 
+                    stampare_media_dettaglio=False
+                )
+                print(f"DEBUG: Media PUN mensile (scaricata da FTP) per {anno_richiesto}/{dato.mese}: {media_pun_mensile}")
 
                 # Carica dati dai file Excel per questo mese
                 dati_excel = carica_dati_da_excel(impianto_obj, int(anno_richiesto), dato.mese)
@@ -923,36 +911,7 @@ def dati_mensili_tabella_api(request):
     
     return JsonResponse({'success': False, 'error': 'Metodo non supportato'})
 
-def check_pun_data_updates(anno):
-    """Verifica e aggiorna i dati PUN più vecchi di una settimana"""
-    from PortaleCorrispettivi.models import PunMonthlyData
-    from django.utils import timezone
-    from datetime import timedelta
-    from PortaleCorrispettivi.APIgme import scarica_dati_pun_mensili, GME_FTP_USERNAME, GME_FTP_PASSWORD
-    
-    try:
-        oggi = datetime.now()
-        mesi_da_verificare = range(1, oggi.month + 1) if int(anno) == oggi.year else range(1, 13)
-        
-        for mese in mesi_da_verificare:
-            try:
-                pun_data = PunMonthlyData.objects.get(anno=int(anno), mese=mese)
-                # Aggiorna se i dati sono più vecchi di 7 giorni
-                if pun_data.ultima_modifica < timezone.now() - timedelta(days=7):
-                    scarica_dati_pun_mensili(
-                        int(anno), mese, GME_FTP_USERNAME, GME_FTP_PASSWORD, 
-                        stampare_media_dettaglio=False, force_download=True
-                    )
-                    print(f"Dati PUN aggiornati automaticamente per {mese}/{anno}")
-            except PunMonthlyData.DoesNotExist:
-                # Scarica i dati se non esistono
-                scarica_dati_pun_mensili(
-                    int(anno), mese, GME_FTP_USERNAME, GME_FTP_PASSWORD, 
-                    stampare_media_dettaglio=False
-                )
-                print(f"Dati PUN scaricati automaticamente per {mese}/{anno}")
-    except Exception as e:
-        print(f"Errore durante l'aggiornamento automatico dei dati PUN: {e}")
+
 
 # Funzione per recuperare i dati delle misure
 def tabellamisure_data(anno_nickname):

@@ -11,7 +11,7 @@ GME_FTP_PASSWORD = "O12L10Z1"
 
 def scarica_dati_pun_mensili(anno, mese, username=None, password=None, cartella_salvataggio=None, stampare_media_dettaglio=True, force_download=False):
     """
-    Scarica o recupera dal database i dati PUN per un mese specifico.
+    Scarica i dati PUN per un mese specifico direttamente dal server FTP.
     
     Args:
         anno (int): Anno di riferimento (es. 2024)
@@ -20,30 +20,11 @@ def scarica_dati_pun_mensili(anno, mese, username=None, password=None, cartella_
         password (str, optional): Password per l'accesso FTP. Se None, usa credenziali predefinite.
         cartella_salvataggio (str, optional): Percorso dove salvare i file XML scaricati
         stampare_media_dettaglio (bool, optional): Se True, stampa la media mensile.
-        force_download (bool, optional): Se True, forza il download anche se i dati sono già nel DB.
+        force_download (bool, optional): Parametro mantenuto per retrocompatibilità, ma non più utilizzato.
     
     Returns:
         float or None: Media mensile dei valori PUN, o None se non trovati.
     """
-    # Prima controlla se i dati sono già presenti nel database
-    from PortaleCorrispettivi.models import PunMonthlyData
-    from django.utils import timezone
-    
-    if not force_download:
-        try:
-            # Cerca i dati nel database
-            pun_data = PunMonthlyData.objects.get(anno=anno, mese=mese)
-            
-            # Controlla se i dati sono ancora validi (non più vecchi di 30 giorni)
-            if pun_data.ultima_modifica > timezone.now() - timedelta(days=30):
-                if stampare_media_dettaglio:
-                    print(f"Dati recuperati dal database per {calendar.month_name[mese]} {anno}: {pun_data.valore_medio:.6f}")
-                return pun_data.valore_medio
-                
-        except PunMonthlyData.DoesNotExist:
-            # Se i dati non sono presenti nel database, procedi con il download
-            pass
-    
     # Se username o password sono None, usa le credenziali predefinite
     if username is None:
         username = GME_FTP_USERNAME
@@ -64,7 +45,7 @@ def scarica_dati_pun_mensili(anno, mese, username=None, password=None, cartella_
     # Naviga alla cartella corretta
     ftp.cwd('MercatiElettrici/MGP_Prezzi')
     
-    valori_pun = []
+    valori_pun_giornalieri = []
     
     # Per ogni giorno del mese
     for giorno in range(1, num_giorni + 1):
@@ -91,15 +72,26 @@ def scarica_dati_pun_mensili(anno, mese, username=None, password=None, cartella_
             tree = ET.parse(xml_buffer)
             root = tree.getroot()
             
-            # Trova l'elemento PUN
-            pun_element = root.find('.//PUN')
-            if pun_element is not None and pun_element.text:
-                # Converti il valore da formato italiano (virgola) a float
-                valore_pun = float(pun_element.text.replace(',', '.'))
-                valori_pun.append(valore_pun)
-                print(f"Giorno {giorno}: PUN = {valore_pun}")
+            # Trova TUTTI gli elementi PUN (uno per ogni ora)
+            pun_elements = root.findall('.//PUN')
+            
+            if pun_elements and len(pun_elements) > 0:
+                # Converti tutti i valori PUN da formato italiano (virgola) a float
+                valori_pun_orari = []
+                for pun_element in pun_elements:
+                    if pun_element.text:
+                        valore_pun = float(pun_element.text.replace(',', '.'))
+                        valori_pun_orari.append(valore_pun)
+                
+                # Calcola la media giornaliera
+                if valori_pun_orari:
+                    media_giornaliera = sum(valori_pun_orari) / len(valori_pun_orari)
+                    valori_pun_giornalieri.append(media_giornaliera)
+                    print(f"Giorno {giorno}: PUN media giornaliera = {media_giornaliera:.6f} (da {len(valori_pun_orari)} valori orari)")
+                else:
+                    print(f"Nessun valore PUN valido trovato per il giorno {giorno}")
             else:
-                print(f"Nessun valore PUN trovato per il giorno {giorno}")
+                print(f"Nessun elemento PUN trovato per il giorno {giorno}")
                 
         except Exception as e:
             print(f"Errore nel scaricare/analizzare il file per il giorno {giorno}: {e}")
@@ -108,8 +100,8 @@ def scarica_dati_pun_mensili(anno, mese, username=None, password=None, cartella_
     ftp.quit()
     
     # Calcola la media se abbiamo dei valori
-    if valori_pun:
-        media_mensile = sum(valori_pun) / len(valori_pun)
+    if valori_pun_giornalieri:
+        media_mensile = sum(valori_pun_giornalieri) / len(valori_pun_giornalieri)
         if stampare_media_dettaglio:
             print(f"\nMedia mensile PUN per {calendar.month_name[mese]} {anno}: {media_mensile:.6f}")
         

@@ -67,10 +67,11 @@ $(document).ready(function() {
         const media_pun_mensile_attr = $(this).attr('data-media-pun'); // Leggi l'attributo data
         let valorePUN = 0;
         if (media_pun_mensile_attr !== undefined && media_pun_mensile_attr !== null && !isNaN(parseFloat(media_pun_mensile_attr))) {
-            const media_pun_mensile = parseFloat(media_pun_mensile_attr);
+            const media_pun_mensile = parseFloat(media_pun_mensile_attr) / 1000; // Converti da €/MWh a €/kWh
             if (!isNaN(media_pun_mensile)) {
-                // Usa prodCampoOriginale per calcolare il PUN
-                valorePUN = (prodCampoOriginale * 0.02) * media_pun_mensile;
+                // MODIFICA: Visualizza direttamente la media PUN mensile (€/kWh)
+                // Rimosso: (prodCampoOriginale * 0.02) * media_pun_mensile;
+                valorePUN = media_pun_mensile;
             }
         }
         $(`#table1_${anno} .pun-value[data-mese="${mese}"]`).text(valorePUN.toFixed(3)); // Formattato a 3 decimali
@@ -152,6 +153,9 @@ $(document).ready(function() {
     }
     
     function aggiornaTabellaConDati(dati, anno) {
+        // Log dei valori PUN mensili
+        console.log(`--- DATI PUN MENSILI per l'anno ${anno} ---`);
+        
         dati.forEach(function(dato) {
             if (dato.mese < 1 || dato.mese > 12) return;
             
@@ -164,6 +168,7 @@ $(document).ready(function() {
             // Salva il valore PUN se disponibile
             if (dato.media_pun_mensile !== undefined) {
                 energyInputElement.attr('data-media-pun', dato.media_pun_mensile);
+                console.log(`PUN mese ${dato.mese}/${anno}: ${dato.media_pun_mensile} €/MWh`);
             }
             
             // Calcola il valore TFO
@@ -171,8 +176,10 @@ $(document).ready(function() {
             const tfoValue = (parseFloat(dato.energia_kwh) || 0) * tfoRate;
             
             // Calcola il valore PUN
-            const media_pun_mensile = parseFloat(energyInputElement.attr('data-media-pun')) || 0;
-            let valorePUN = (parseFloat(dato.energia_kwh) || 0) * 0.02 * media_pun_mensile;
+            const media_pun_mensile_mwh = parseFloat(energyInputElement.attr('data-media-pun')) || 0; // Questo è in €/MWh
+            // MODIFICA: Visualizza la media PUN mensile convertita in €/kWh
+            // Rimosso: (parseFloat(dato.energia_kwh) || 0) * 0.02 * (media_pun_mensile_mwh / 1000);
+            let valorePUN = (media_pun_mensile_mwh / 1); // Converti in €/kWh
             
             // Popola i campi della tabella con i dati caricati
             energyInputElement.val(dato.energia_kwh || '');
@@ -288,14 +295,30 @@ $(document).ready(function() {
     }
     
     function calcolaControlli(anno) {
+        console.log(`--- CALCOLI PUN utilizzati per i controlli (anno ${anno}) ---`);
+        
         // Calcola gli scarti e le percentuali per ogni mese dell'anno specifico
         for (let mese = 1; mese <= 12; mese++) {
-            const corrispettivo_incentivo = parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="corrispettivo_incentivo"]`).val()) || 0;
-            const corrispettivo_altro = parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="corrispettivo_altro"]`).val()) || 0;
+            // Leggi il valore TFO dalla cella corrispondente (rimuovendo il simbolo €)
+            const tfoText = $(`#table1_${anno} .tfo-value[data-mese="${mese}"]`).text();
+            const tfoValue = parseFloat(tfoText.replace('€', '')) || 0;
+            
+            // Leggi direttamente la media mensile del PUN e l'energia immessa
+            const energyInput = $(`#table1_${anno} input[data-mese="${mese}"][data-campo="energia_kwh"]`);
+            const energia = parseFloat(energyInput.val()) || 0;
+            const media_pun_mensile = parseFloat(energyInput.attr('data-media-pun')) || 0;
+            
+            // Calcola il valore PUN (leggi direttamente dalla cella per essere coerenti)
+            const punValue = parseFloat($(`#table1_${anno} .pun-value[data-mese="${mese}"]`).text()) || 0;
+            
+            console.log(`Mese ${mese}/${anno} - Media PUN: ${media_pun_mensile} €/MWh, PUN: ${punValue} €, Energia: ${energia} kWh, TFO: ${tfoValue} €`);
+            
+            // Leggi i valori di fatturazione
             const fatturazione_tfo = parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="fatturazione_tfo"]`).val()) || 0;
             const fatturazione_altro = parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="fatturazione_altro"]`).val()) || 0;
             
-            const corrispettivi_totali = corrispettivo_incentivo + corrispettivo_altro;
+            // Calcola i corrispettivi totali (TFO + valore PUN)
+            const corrispettivi_totali = tfoValue + punValue;
             const fatturazione_totale = fatturazione_tfo + fatturazione_altro;
             
             const scarto = corrispettivi_totali - fatturazione_totale;
@@ -319,13 +342,9 @@ $(document).ready(function() {
             // Applica colori
             if (Math.abs(scarto) > 0.01) {
                 controlloScartoCell.addClass('text-danger');
-            } else {
-                controlloScartoCell.addClass('text-success');
-            }
-            
-            if (Math.abs(percentuale) > 0.1) {
                 controlloPercentualeCell.addClass('text-danger');
             } else {
+                controlloScartoCell.addClass('text-success');
                 controlloPercentualeCell.addClass('text-success');
             }
         }

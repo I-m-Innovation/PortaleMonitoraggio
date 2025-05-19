@@ -23,6 +23,7 @@
 	  text-align: center;
 	  font-weight: 500;
 	  border: 1px solid #e0e0e0;
+	  min-width: 80px; /* Larghezza minima per le intestazioni */
 	}
 	
 	#table2_{{ anno }} tbody tr:nth-child(even) {
@@ -38,11 +39,24 @@
 	  padding: 8px;
 	  border: 1px solid #e0e0e0;
 	  text-align: center;
+	  min-width: 80px; /* Larghezza minima standard per le celle */
+	  height: 40px; /* Altezza predefinita per le celle */
 	}
 	
 	#table2_{{ anno }} td:first-child {
 	  font-weight: 500;
 	  background-color: #f1f1f1;
+	  min-width: 100px; /* Larghezza specifica per la colonna del mese */
+	}
+	
+	/* Stile per le celle numeriche */
+	#table2_{{ anno }} td:not(:first-child):not(:nth-last-child(-n+2)) {
+	  width: 80px; /* Larghezza fissa per le celle con valori numerici */
+	}
+	
+	/* Stile per la colonna di controllo */
+	#table2_{{ anno }} td.controllo {
+	  width: 120px; /* Larghezza maggiore per la colonna di controllo */
 	}
 	
 	#table2_{{ anno }} tfoot {
@@ -73,6 +87,11 @@
 	}
   </style>
   
+<div class="js-tabella-data" 
+     data-anno="{{ anno }}" 
+     data-nickname="{{ nickname }}" 
+     style="display: none;"></div>
+
 <table id="table2_{{ anno }}" class="display compact" style="width:100%;">
   <thead>
     <tr data-dt-order="disable">
@@ -160,120 +179,6 @@
 </div>
 
 <!-- Script JavaScript per il caricamento dinamico dei dati -->
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Carica i dati al caricamento della pagina
-    caricaDatiTabella2('{{ anno }}', '{{ nickname }}');
-    
-    // Aggiungi event listener per il pulsante di aggiornamento
-    document.getElementById('refresh-table2-data-{{ anno }}').addEventListener('click', function() {
-      caricaDatiTabella2('{{ anno }}', '{{ nickname }}');
-    });
-  });
-
-  // Funzione per caricare i dati della tabella 2
-  function caricaDatiTabella2(anno, nickname) {
-    // Mostra l'alert di caricamento
-    document.getElementById('loading-alert-' + anno).style.display = 'block';
-    
-    // Nasconde gli alert precedenti
-    document.getElementById('success-table2-alert-' + anno).style.display = 'none';
-    document.getElementById('error-table2-alert-' + anno).style.display = 'none';
-    
-    // Effettua la richiesta AJAX per ottenere i dati
-    fetch(`/corrispettivi/api/misure/${anno}_${nickname}/`)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Errore nella risposta del server');
-        }
-        return response.json();
-      })
-      .then(data => {
-        // Popola la tabella con i dati ricevuti
-        popolaTabella2(data.TableMisure, anno);
-        
-        // Nascondi l'alert di caricamento e mostra quello di successo
-        document.getElementById('loading-alert-' + anno).style.display = 'none';
-        document.getElementById('success-table2-alert-' + anno).style.display = 'block';
-        
-        // Nascondi l'alert di successo dopo 3 secondi
-        setTimeout(() => {
-          document.getElementById('success-table2-alert-' + anno).style.display = 'none';
-        }, 3000);
-      })
-      .catch(error => {
-        console.error('Errore:', error);
-        
-        // Nascondi l'alert di caricamento e mostra quello di errore
-        document.getElementById('loading-alert-' + anno).style.display = 'none';
-        document.getElementById('error-table2-alert-' + anno).style.display = 'block';
-      });
-  }
-
-  // Funzione per popolare la tabella con i dati
-  function popolaTabella2(dati, anno) {
-    const mesiNomi = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
-                     'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
-    
-    // Totali per i calcoli finali
-    let totali = {
-      prod_campo: 0, imm_campo: 0, prel_campo: 0,
-      prod_ed: 0, imm_ed: 0, prel_ed: 0,
-      prod_gse: 0, imm_gse: 0
-    };
-    
-    // Popola le celle della tabella con i dati
-    for (let i = 0; i < dati.length; i++) {
-      const dato = dati[i];
-      const mese = dato.mese;
-      const meseIndex = mese - 1;
-      
-      // Imposta il nome del mese
-      document.querySelector(`#table2_${anno} .mese[data-mese="${mese}"]`).textContent = mesiNomi[meseIndex];
-      
-      // Imposta i valori per ogni cella
-      document.querySelector(`#table2_${anno} .prod-campo[data-mese="${mese}"]`).textContent = dato.prod_campo || '';
-      document.querySelector(`#table2_${anno} .imm-campo[data-mese="${mese}"]`).textContent = dato.imm_campo || '';
-      document.querySelector(`#table2_${anno} .prel-campo[data-mese="${mese}"]`).textContent = dato.prel_campo || '';
-      document.querySelector(`#table2_${anno} .prod-ed[data-mese="${mese}"]`).textContent = dato.prod_ed || '';
-      document.querySelector(`#table2_${anno} .imm-ed[data-mese="${mese}"]`).textContent = dato.imm_ed || '';
-      document.querySelector(`#table2_${anno} .prel-ed[data-mese="${mese}"]`).textContent = dato.prel_ed || '';
-      document.querySelector(`#table2_${anno} .prod-gse[data-mese="${mese}"]`).textContent = dato.prod_gse || '';
-      document.querySelector(`#table2_${anno} .imm-gse[data-mese="${mese}"]`).textContent = dato.imm_gse || '';
-      
-      // Controllo misure con indicatori di differenza percentuale
-      let controlloHTML = '';
-      if (dato.prod_campo && dato.prod_ed) {
-        const diffProd = ((parseFloat(dato.prod_campo) - parseFloat(dato.prod_ed)) / parseFloat(dato.prod_ed) * 100).toFixed(2);
-        controlloHTML += `<i class="fa fa-bolt" aria-hidden="true"></i> ${diffProd}%<br>`;
-      }
-      
-      if (dato.imm_campo && dato.imm_ed) {
-        const diffImm = ((parseFloat(dato.imm_campo) - parseFloat(dato.imm_ed)) / parseFloat(dato.imm_ed) * 100).toFixed(2);
-        controlloHTML += `<i class="fa fa-share" aria-hidden="true"></i> ${diffImm}%`;
-      }
-      
-      document.querySelector(`#table2_${anno} .controllo[data-mese="${mese}"]`).innerHTML = controlloHTML;
-      
-      // Aggiorna i totali
-      totali.prod_campo += parseFloat(dato.prod_campo || 0);
-      totali.imm_campo += parseFloat(dato.imm_campo || 0);
-      totali.prel_campo += parseFloat(dato.prel_campo || 0);
-      totali.prod_ed += parseFloat(dato.prod_ed || 0);
-      totali.imm_ed += parseFloat(dato.imm_ed || 0);
-      totali.prel_ed += parseFloat(dato.prel_ed || 0);
-      totali.prod_gse += parseFloat(dato.prod_gse || 0);
-      totali.imm_gse += parseFloat(dato.imm_gse || 0);
-    }
-    
-    // Aggiorna i totali nella tabella
-    document.querySelector(`#table2_${anno} .totale-prod-campo`).textContent = totali.prod_campo.toFixed(3);
-    document.querySelector(`#table2_${anno} .totale-imm-campo`).textContent = totali.imm_campo.toFixed(3);
-    document.querySelector(`#table2_${anno} .totale-prel-campo`).textContent = totali.prel_campo.toFixed(3);
-    document.querySelector(`#table2_${anno} .totale-prod-ed`).textContent = totali.prod_ed.toFixed(3);
-    document.querySelector(`#table2_${anno} .totale-imm-ed`).textContent = totali.imm_ed.toFixed(3);
-    document.querySelector(`#table2_${anno} .totale-prel-ed`).textContent = totali.prel_ed.toFixed(3);
-    document.querySelector(`#table2_${anno} .totale-prod-gse`).textContent = totali.prod_gse.toFixed(3);
-    document.querySelector(`#table2_${anno} .totale-imm-gse`).textContent = totali.imm_gse.toFixed(3);
-  }
-</script>
+{% block extra_js %}
+<script src="{% static 'js/tabellamisure.js' %}"></script>
+{% endblock %}

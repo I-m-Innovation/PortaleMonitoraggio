@@ -70,7 +70,6 @@
 		          var urls = [];
 							{% for nickname, impianto in impianti.items %}
 									if (!("{{ nickname }}"==='ionico_SA3' || "{{ nickname }}"==='petilia_bf_canaletta')) {
-											let url_corrispettivi_{{ nickname }} = '{% url 'api-table-corrispettivi' 'anno_nickname' %}'.replace('anno_nickname', anno + '_' + '{{ nickname }}');
 											urls.push(url_corrispettivi_{{ nickname }})
 				          }
 							{% endfor %}
