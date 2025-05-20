@@ -165,6 +165,9 @@ $(document).ready(function() {
             // Salva il valore originale dell'energia per calcoli futuri
             energyInputElement.attr('data-prod-campo', dato.energia_kwh);
             
+            // Memorizza il valore imm_campo come attributo data (AGGIUNTA)
+            energyInputElement.attr('data-imm-campo', dato.imm_campo || dato.energia_kwh);
+            
             // Salva il valore PUN se disponibile
             if (dato.media_pun_mensile !== undefined) {
                 energyInputElement.attr('data-media-pun', dato.media_pun_mensile);
@@ -295,42 +298,67 @@ $(document).ready(function() {
     }
     
     function calcolaControlli(anno) {
-        console.log(`--- CALCOLI PUN utilizzati per i controlli (anno ${anno}) ---`);
+        console.log(`--- CALCOLI DI CONTROLLO DETTAGLIATI (anno ${anno}) ---`);
         
         // Calcola gli scarti e le percentuali per ogni mese dell'anno specifico
         for (let mese = 1; mese <= 12; mese++) {
-            // Leggi il valore TFO dalla cella corrispondente (rimuovendo il simbolo €)
+            // Leggi i valori necessari
             const tfoText = $(`#table1_${anno} .tfo-value[data-mese="${mese}"]`).text();
             const tfoValue = parseFloat(tfoText.replace('€', '')) || 0;
-            
-            // Leggi direttamente la media mensile del PUN e l'energia immessa
+
             const energyInput = $(`#table1_${anno} input[data-mese="${mese}"][data-campo="energia_kwh"]`);
-            const energia = parseFloat(energyInput.val()) || 0;
-            const media_pun_mensile = parseFloat(energyInput.attr('data-media-pun')) || 0;
-            
-            // Calcola il valore PUN (leggi direttamente dalla cella per essere coerenti)
+            const lettura_imm_campo = parseFloat(energyInput.attr('data-imm-campo')) || 0;
+
             const punValue = parseFloat($(`#table1_${anno} .pun-value[data-mese="${mese}"]`).text()) || 0;
+
+            const tfoFatturazione = parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="fatturazione_tfo"]`).val()) || 0;
+            const energiaNonIncentivata = parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="fatturazione_altro"]`).val()) || 0;
+
+            console.log(`\n=== CONTROLLO MESE ${mese}/${anno} ===`);
+            console.log(`Valori di input:`);
+            console.log(`- Energia (kWh): ${lettura_imm_campo}`);
+            console.log(`- TFO Value: ${tfoValue}`);
+            console.log(`- PUN Value: ${punValue}`);
+            console.log(`- TFO Fatturazione: ${tfoFatturazione}`);
+            console.log(`- Energia Non Incentivata: ${energiaNonIncentivata}`);
+            console.log(`- TFO Rate: ${0.21}`);
+
+            // --- INIZIO MODIFICA: Applica la formula richiesta ---
+            // 1. Calcola la parte tra parentesi quadre
+            let parteInterna = 0;
+            let parteInternaPerPun = 0;
             
-            console.log(`Mese ${mese}/${anno} - Media PUN: ${media_pun_mensile} €/MWh, PUN: ${punValue} €, Energia: ${energia} kWh, TFO: ${tfoValue} €`);
+            if (0.21 !== 0) { // Evita divisione per zero
+                parteInterna = lettura_imm_campo - (tfoValue / 0.21);
+                parteInternaPerPun = parteInterna * (punValue / 1000);
+                
+                console.log(`\nCalcolo della quota:`);
+                console.log(`- Parte interna: ${lettura_imm_campo} - (${tfoValue} / 0.21) = ${parteInterna}`);
+                console.log(`- Parte interna × (PUN / 1000): ${parteInterna} × (${punValue} / 1000) = ${parteInternaPerPun}`);
+            }
             
-            // Leggi i valori di fatturazione
-            const fatturazione_tfo = parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="fatturazione_tfo"]`).val()) || 0;
-            const fatturazione_altro = parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="fatturazione_altro"]`).val()) || 0;
+            // 2. Somma TFO + parteInternaPerPun
+            const valore_formula = tfoValue + parteInternaPerPun;
+            console.log(`\nValore formula: TFO + parteInternaPerPun = ${tfoValue} + ${parteInternaPerPun} = ${valore_formula}`);
             
-            // Calcola i corrispettivi totali (TFO + valore PUN)
-            const corrispettivi_totali = tfoValue + punValue;
-            const fatturazione_totale = fatturazione_tfo + fatturazione_altro;
-            
-            const scarto = corrispettivi_totali - fatturazione_totale;
+            // 3. Sottrai TFO_fatturazione + energia non incentivata
+            const fatturazione_totale = tfoFatturazione + energiaNonIncentivata;
+            const scarto = valore_formula - fatturazione_totale;
+            console.log(`Scarto: ${valore_formula} - (${tfoFatturazione} + ${energiaNonIncentivata}) = ${scarto}`);
+            // --- FINE MODIFICA ---
+
+            // Calcola percentuale
             let percentuale = 0;
-            
             if (fatturazione_totale !== 0) {
                 percentuale = (scarto / fatturazione_totale) * 100;
             }
-            
+            console.log(`Percentuale: (${scarto} / ${fatturazione_totale}) * 100 = ${percentuale.toFixed(2)}%`);
+            console.log(`Risultato: ${Math.abs(scarto) <= 0.01 ? 'OK (verde)' : 'Errore (rosso)'}`);
+
+            // Aggiorna la cella del controllo scarto
             $(`#table1_${anno} .controllo-scarto[data-mese="${mese}"]`).text(scarto.toFixed(2));
             $(`#table1_${anno} .controllo-percentuale[data-mese="${mese}"]`).text(percentuale.toFixed(2) + '%');
-            
+
             // Aggiungi classe per colorare le celle in base ai valori
             const controlloScartoCell = $(`#table1_${anno} .controllo-scarto[data-mese="${mese}"]`);
             const controlloPercentualeCell = $(`#table1_${anno} .controllo-percentuale[data-mese="${mese}"]`);

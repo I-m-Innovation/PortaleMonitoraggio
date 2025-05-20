@@ -748,6 +748,7 @@ def dati_mensili_tabella_api(request):
                             # Se prod_campo è None, imposta energia_incentivata a 0 o None
                             energia_incentivata = 0
                             prod_campo_float = 0  # Assicurati che sia 0 anche qui
+                            imm_campo_float = 0   # Imposta anche imm_campo_float a 0
                         
                         # Carica dati dai file Excel per questo mese
                         dati_excel = carica_dati_da_excel(impianto_obj, int(anno_richiesto), dato.mese)
@@ -765,6 +766,7 @@ def dati_mensili_tabella_api(request):
                             'controllo_percentuale': None,
                             'media_pun_mensile': media_pun_mensile,
                             'prod_campo_originale': prod_campo_float,
+                            'imm_campo': imm_campo_float if 'imm_campo_float' in locals() else None,  # Aggiungi imm_campo alla risposta
                             'debug_info': dati_excel.get('debug_info', [])  # Includi le informazioni di debug
                         })
                     
@@ -810,6 +812,7 @@ def dati_mensili_tabella_api(request):
                     # Se prod_campo è None, imposta energia_incentivata a 0 o None
                     energia_incentivata = 0
                     prod_campo_float = 0  # Assicurati che sia 0 anche qui
+                    imm_campo_float = 0   # Imposta anche imm_campo_float a 0
                 
                 data_response.append({
                     'mese': dato.mese,
@@ -824,6 +827,7 @@ def dati_mensili_tabella_api(request):
                     'controllo_percentuale': None,
                     'media_pun_mensile': media_pun_mensile,
                     'prod_campo_originale': prod_campo_float,
+                    'imm_campo': imm_campo_float if 'imm_campo_float' in locals() else None,  # Aggiungi imm_campo alla risposta
                     'debug_info': dati_excel.get('debug_info', [])  # Includi le informazioni di debug
                 })
             
