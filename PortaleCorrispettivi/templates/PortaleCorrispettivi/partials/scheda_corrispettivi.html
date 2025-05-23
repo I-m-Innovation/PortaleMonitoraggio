@@ -1,3 +1,4 @@
+{% load static %}
 <div class="container">
 	<div class="row scheda-corrispettivi d-flex align-items-center mb-2" style="min-height: 7vh">
 			<!-- RIGA BLU CON ESPANDIBILE -->
@@ -95,146 +96,16 @@
 				<h5 style="margin-bottom: 0">Visualizzazione grafica</h5>
 				<div id="chart_{{ anno }}" style="height: 450px; width: 1200px"></div>
 				
-				<!-- Aggiungiamo una legenda personalizzata -->
-				<div class="d-flex justify-content-center mt-3">
-					<div class="mx-2"><span style="color: #FF0000;">●</span> Energia incentivata</div>
-					<div class="mx-2"><span style="background-color: #E5DCC3; padding: 0 10px;"></span> Corrispettivi</div>
-					<div class="mx-2"><span style="background-color: #FFC19E; padding: 0 10px;"></span> Fatturazione</div>
-					<div class="mx-2"><span style="background-color: #C4D7ED; padding: 0 10px;"></span> Incassi</div>
-				</div>
+			
+			
 				
 				<!-- Aggiungiamo i riferimenti alla libreria Highcharts -->
 				<script src="https://code.highcharts.com/highcharts.js"></script>
-				
-				<!-- Script per inizializzare il grafico -->
-				<script>
-					document.addEventListener('DOMContentLoaded', function() {
-						// Attendi che il div del grafico sia visibile
-						document.querySelector('a[href="#grafico_{{ anno }}"]').addEventListener('click', function() {
-							setTimeout(function() {
-								inizializzaGrafico_{{ anno }}();
-							}, 100);
-						});
-
-						function inizializzaGrafico_{{ anno }}() {
-							// Controllo se il grafico è già stato inizializzato
-							if (Highcharts.charts.find(chart => chart && chart.renderTo.id === 'chart_{{ anno }}')) {
-								return;
-							}
-							
-							// I dati mostrati qui sono solo di esempio, dovrebbero essere sostituiti con dati reali dal backend
-							const datiEnergia = [114536, 113831, 122120, 111099, 118307, 104097, 107862, 68463, 100437, 113695, 90378, 81643];
-							const datiCorrispettivi = [20000, 18000, 19000, 17000, 18500, 22111, 17500, 16000, 17500, 19000, 19143, 17345];
-							const datiFatturazione = [24261, 24096, 25943, 23569, 25080, 22183, 21345, 20123, 21500, 23145, 19143, 17345];
-							const datiIncassi = [0, 0, 0, 0, 0, 175149, 0, 0, 0, 0, 0, 0];
-							const mesi = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
-							
-							Highcharts.chart('chart_{{ anno }}', {
-								chart: {
-									zoomType: 'xy',
-									backgroundColor: 'rgba(255, 255, 255, 0.8)'
-								},
-								title: {
-									text: 'Visualizzazione grafica',
-									style: { fontSize: '18px' }
-								},
-								xAxis: {
-									categories: mesi,
-									crosshair: true
-								},
-								yAxis: [{
-									// Asse sinistro per l'energia
-									title: {
-										text: 'Energie (kWh)',
-										style: { color: '#333' }
-									},
-									labels: {
-										format: '{value:,.0f}',
-										style: { color: '#333' }
-									},
-									min: 0,
-									max: 140000
-								}, {
-									// Asse destro per i valori monetari
-									title: {
-										text: '€',
-										style: { color: '#333' }
-									},
-									labels: {
-										format: '{value:,.0f} €',
-										style: { color: '#333' }
-									},
-									min: 0,
-									max: 180000,
-									opposite: true
-								}],
-								tooltip: {
-									shared: true,
-									formatter: function() {
-										let s = '<b>' + this.x + '</b><br/>';
-										let hasData = false;
-										
-										this.points.forEach(function(point) {
-											if (point.series.name === 'Energia incentivata') {
-												s += '<span style="color:' + point.series.color + '">● ' + point.series.name + '</span>: <b>' + Highcharts.numberFormat(point.y, 0) + ' kWh</b><br/>';
-												hasData = true;
-											} else {
-												if (point.y > 0) {
-													s += '<span style="color:' + point.series.color + '">● ' + point.series.name + '</span>: <b>' + Highcharts.numberFormat(point.y, 0) + ' €</b><br/>';
-													hasData = true;
-												}
-											}
-										});
-										
-										return hasData ? s : false;
-									}
-								},
-								series: [{
-									name: 'Energia incentivata',
-									type: 'line',
-									yAxis: 0,
-									data: datiEnergia,
-									color: '#FF0000',
-									marker: {
-										enabled: true,
-										radius: 4
-									},
-									dataLabels: {
-										enabled: true,
-										formatter: function() {
-											return this.y.toLocaleString() + ' kWh';
-										},
-										style: {
-											fontSize: '10px'
-										}
-									},
-									zIndex: 4
-								}, {
-									name: 'Corrispettivi',
-									type: 'column',
-									yAxis: 1,
-									data: datiCorrispettivi,
-									color: '#E5DCC3',
-									zIndex: 3
-								}, {
-									name: 'Fatturazione',
-									type: 'column',
-									yAxis: 1,
-									data: datiFatturazione,
-									color: '#FFC19E',
-									zIndex: 2
-								}, {
-									name: 'Incassi',
-									type: 'column',
-									yAxis: 1,
-									data: datiIncassi,
-									color: '#C4D7ED',
-									zIndex: 1
-								}]
-							});
-						}
-					});
-				</script>
+				<script src="https://code.highcharts.com/modules/exporting.js"></script>
+				<script src="https://code.highcharts.com/modules/export-data.js"></script>
+				<script src="https://code.highcharts.com/modules/accessibility.js"></script>
+				<script src="{% static 'js/graficocorrispettivi.js' %}"></script>
+            
 			</div>
 		</div>
 	</div>

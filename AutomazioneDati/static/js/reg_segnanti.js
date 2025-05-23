@@ -1215,16 +1215,9 @@ function convertDateTimeFormat(input) {
         const isoDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
         const isoTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
         
-        // Aggiungi il fuso orario al formato ISO
-        // Otteniamo l'offset del fuso orario locale
-        const now = new Date();
-        const tzOffset = -now.getTimezoneOffset();
-        const tzHours = Math.floor(Math.abs(tzOffset) / 60).toString().padStart(2, '0');
-        const tzMinutes = (Math.abs(tzOffset) % 60).toString().padStart(2, '0');
-        const tzSign = tzOffset >= 0 ? '+' : '-';
-        const tzString = `${tzSign}${tzHours}:${tzMinutes}`;
-        
-        const isoDateTime = `${isoDate} ${isoTime}${tzString}`;
+        // Per evitare problemi di timezone, aggiungiamo T tra data e ora
+        // Questo garantisce che il formato sia esattamente interpretato sia da JS che da Python
+        const isoDateTime = `${isoDate}T${isoTime}`;
         
         const displayDate = `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
         const displayDateTime = `${displayDate} ${isoTime}`;

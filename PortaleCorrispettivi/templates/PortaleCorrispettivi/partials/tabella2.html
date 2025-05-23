@@ -116,19 +116,19 @@
   </thead>
   <tbody>
     <!-- I dati verranno popolati dinamicamente tramite JavaScript -->
-    {% for mese in "123456789101112"|make_list %}
+    {% for mese in '12345678910111213'|make_list|slice:':12' %}
     <tr>
      
-      <td class="mese" data-mese="{{ mese }}"></td>
-      <td class="prod-campo" data-mese="{{ mese }}"></td>
-      <td class="imm-campo" data-mese="{{ mese }}"></td>
-      <td class="prel-campo" data-mese="{{ mese }}"></td>
-      <td class="prod-ed" data-mese="{{ mese }}"></td>
-      <td class="imm-ed" data-mese="{{ mese }}"></td>
-      <td class="prel-ed" data-mese="{{ mese }}"></td>
-      <td class="prod-gse" data-mese="{{ mese }}"></td>
-      <td class="imm-gse" data-mese="{{ mese }}"></td>
-      <td class="controllo" data-mese="{{ mese }}"></td>
+      <td class="mese" data-mese="{{ forloop.counter }}"></td>
+      <td class="prod-campo" data-mese="{{ forloop.counter }}"></td>
+      <td class="imm-campo" data-mese="{{ forloop.counter }}"></td>
+      <td class="prel-campo" data-mese="{{ forloop.counter }}"></td>
+      <td class="prod-ed" data-mese="{{ forloop.counter }}"></td>
+      <td class="imm-ed" data-mese="{{ forloop.counter }}"></td>
+      <td class="prel-ed" data-mese="{{ forloop.counter }}"></td>
+      <td class="prod-gse" data-mese="{{ forloop.counter }}"></td>
+      <td class="imm-gse" data-mese="{{ forloop.counter }}"></td>
+      <td class="controllo" data-mese="{{ forloop.counter }}"></td>
       <td></td>
     </tr>
     {% endfor %}

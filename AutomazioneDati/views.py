@@ -1413,7 +1413,7 @@ def elimina_contatore(request, contatore_id):
 
         # 4. Mostra un messaggio di successo all'utente.
         #    Questi messaggi vengono solitamente mostrati nel template base.
-        messages.success(request, f"Il contatore '{nome_contatore}' e tutte le sue letture sono stati eliminati con successo.")
+       
 
         # 5. Reindirizza l'utente alla pagina da cui probabilmente proveniva,
         #    cioè la panoramica dei contatori per quell'impianto.

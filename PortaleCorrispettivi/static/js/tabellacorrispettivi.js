@@ -226,12 +226,12 @@ $(document).ready(function() {
                 controlloScartoCell.removeClass('text-danger text-success');
                 controlloPercentualeCell.removeClass('text-danger text-success');
                 
-                if (Math.abs(scarto) < 0.01) {
-                    controlloScartoCell.addClass('text-success');
-                    controlloPercentualeCell.addClass('text-success');
-                } else {
+                if (percentuale < -1) {
                     controlloScartoCell.addClass('text-danger');
                     controlloPercentualeCell.addClass('text-danger');
+                } else {
+                    controlloScartoCell.addClass('text-success');
+                    controlloPercentualeCell.addClass('text-success');
                 }
             }
         });
@@ -353,7 +353,7 @@ $(document).ready(function() {
                 percentuale = (scarto / fatturazione_totale) * 100;
             }
             console.log(`Percentuale: (${scarto} / ${fatturazione_totale}) * 100 = ${percentuale.toFixed(2)}%`);
-            console.log(`Risultato: ${Math.abs(scarto) <= 0.01 ? 'OK (verde)' : 'Errore (rosso)'}`);
+            console.log(`Risultato: ${percentuale < -1 ? 'Errore (rosso)' : 'OK (verde)'}`);
 
             // Aggiorna la cella del controllo scarto
             $(`#table1_${anno} .controllo-scarto[data-mese="${mese}"]`).text(scarto.toFixed(2));
@@ -368,7 +368,7 @@ $(document).ready(function() {
             controlloPercentualeCell.removeClass('text-danger text-success');
             
             // Applica colori
-            if (Math.abs(scarto) > 0.01) {
+            if (percentuale < -1) {
                 controlloScartoCell.addClass('text-danger');
                 controlloPercentualeCell.addClass('text-danger');
             } else {

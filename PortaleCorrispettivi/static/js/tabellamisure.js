@@ -1,26 +1,29 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Ottieni i valori dagli attributi data- dell'elemento con classe js-data
-    const dataElement = document.querySelector('.js-tabella-data');
-    if (!dataElement) {
-        console.error('Elemento con i dati necessari non trovato');
+    // Trova tutti gli elementi con classe js-data invece di solo il primo
+    const dataElements = document.querySelectorAll('.js-tabella-data');
+    if (!dataElements || dataElements.length === 0) {
+        console.error('Nessun elemento con i dati necessari trovato');
         return;
     }
     
-    const anno = dataElement.getAttribute('data-anno');
-    const nickname = dataElement.getAttribute('data-nickname');
-    
-    // Carica i dati al caricamento della pagina
-    caricaDatiTabella2(anno, nickname);
-    
-    // Aggiungi event listener per il pulsante di aggiornamento
-    const refreshButton = document.getElementById('refresh-table2-data-' + anno);
-    if (refreshButton) {
-        refreshButton.addEventListener('click', function() {
-            caricaDatiTabella2(anno, nickname);
-        });
-    } else {
-        console.warn(`Elemento con ID 'refresh-table2-data-${anno}' non trovato.`);
-    }
+    // Itera su tutti gli elementi trovati
+    dataElements.forEach(function(dataElement) {
+        const anno = dataElement.getAttribute('data-anno');
+        const nickname = dataElement.getAttribute('data-nickname');
+        
+        // Carica i dati per questo anno
+        caricaDatiTabella2(anno, nickname);
+        
+        // Aggiungi event listener per il pulsante di aggiornamento
+        const refreshButton = document.getElementById('refresh-table2-data-' + anno);
+        if (refreshButton) {
+            refreshButton.addEventListener('click', function() {
+                caricaDatiTabella2(anno, nickname);
+            });
+        } else {
+            console.warn(`Elemento con ID 'refresh-table2-data-${anno}' non trovato.`);
+        }
+    });
 });
 
 // Funzione per caricare i dati della tabella 2
