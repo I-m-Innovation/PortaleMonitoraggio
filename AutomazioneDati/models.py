@@ -17,12 +17,17 @@ class Contatore(models.Model):
         ('Kaifa', 'Kaifa'),
         ('Gesis', 'Gesis'),
     ]
-    
+    TIPOLOGIAFASCIO_CHOICES = [
+        ('Monofascio', 'Monofascio'),
+        ('Trifascio', 'Trifascio'),
+    ]
+    matricola = models.CharField(max_length=50, null=True, blank=True)
     impianto = models.ForeignKey('PortaleCorrispettivi.Impianto', on_delete=models.SET_NULL, related_name='contatori', null=True, blank=True)
     impianto_nickname = models.CharField(max_length=50, null=True, blank=True)
     nome = models.CharField(max_length=100)
     pod = models.CharField(max_length=50)
     tipologia = models.CharField(max_length=20, choices=TIPOLOGIA_CHOICES)
+    tipologiafascio = models.CharField(max_length=20, choices=TIPOLOGIAFASCIO_CHOICES, null=True, blank=True)
     k = models.IntegerField()
     marca = models.CharField(max_length=20, choices=MARCA_CHOICES)
     modello = models.CharField(max_length=50)
@@ -44,7 +49,25 @@ class LetturaContatore(models.Model):
     contatore = models.ForeignKey(Contatore, on_delete=models.CASCADE, related_name='letture')
     anno = models.IntegerField()
     mese = models.IntegerField()  # 1-12 per i mesi dell'anno 
-    tipo_tabella = models.CharField(max_length=20)  # , 'libro_energie', 'libro_kaifa'
+    
+    # NUOVO CAMPO: importa tipologia dal contatore
+    tipologia = models.CharField(
+        max_length=20,
+        choices=Contatore.TIPOLOGIA_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name="Tipologia"
+    )
+    
+    # NUOVO CAMPO: importa tipologiafascio dal contatore
+    tipologiafascio = models.CharField(
+        max_length=20, 
+        choices=Contatore.TIPOLOGIAFASCIO_CHOICES, 
+        null=True, 
+        blank=True,
+        verbose_name="Tipologia Fascio"
+    )
+    
     # Dati per registro segnanti
     data_ora_lettura = models.DateTimeField(null=True, blank=True)
     a1_neg = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
@@ -70,13 +93,31 @@ class LetturaContatore(models.Model):
     )
     
     class Meta:
-        # Assicurati che ci sia un vincolo di unicità per contatore, anno, mese, tipo_tabella
-        unique_together = ('contatore', 'anno', 'mese', 'tipo_tabella')
+        # Rimuoviamo 'tipo_tabella' dal unique_together perché il campo non esiste più
+        unique_together = ('contatore', 'anno', 'mese')
         verbose_name = "Lettura Contatore"
         verbose_name_plural = "Letture Contatori"
 
     def __str__(self):
-        return f"{self.contatore.nome} - {self.tipo_tabella} - {self.mese}/{self.anno}"
+        # Rimuoviamo anche il riferimento a tipo_tabella dal metodo __str__
+        return f"{self.contatore.nome} - {self.mese}/{self.anno}"
+
+    def save(self, *args, **kwargs):
+        # Controlla se esiste un contatore associato
+        if self.contatore:
+            # Copia il valore di tipologia dal contatore.
+            # Contatore.tipologia non dovrebbe essere None o blank per come è definito.
+            self.tipologia = self.contatore.tipologia
+            
+            # Copia il valore di tipologiafascio dal contatore.
+            # Contatore.tipologiafascio può essere None o una stringa vuota.
+            self.tipologiafascio = self.contatore.tipologiafascio
+            
+        # Procede poi con il normale salvataggio dell'istanza
+        super().save(*args, **kwargs)
+
+
+
 
 class regsegnanti(models.Model):
     # NUOVI CAMPI per collegare questa riga a un contatore, anno e mese specifici

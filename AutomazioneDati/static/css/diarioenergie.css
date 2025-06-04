@@ -105,11 +105,11 @@ thead tr:nth-child(3) th:nth-child(12){
 }
 
 thead tr:nth-child(2) th:nth-child(3) {
-    background-color:  #dff0d8;; /* Giallo chiaro */
+    background-color: #fcf8e3; /* Giallo chiaro */
 }
 
 thead tr:nth-child(2) th:nth-child(2){
-    background-color: #f2dede;
+    background-color: #fcf8e3;
 
 }
 

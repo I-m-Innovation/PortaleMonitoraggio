@@ -275,7 +275,7 @@ thead tr:nth-child(2) th:nth-child(9) {
 }
 
 /* Stile per l'header della tabella 2: i titoli (<th>) rimangono invariati */
-#libro_energie table thead th {
+#datitrifascia table thead th {
     background-color: #dff0d8; /* Colore base per gli header */
     color: #000;
     padding: 10px;
@@ -284,12 +284,12 @@ thead tr:nth-child(2) th:nth-child(9) {
 }
 
 /* Override: La prima colonna dell'header ("Mese") ha un colore diverso */
-#libro_energie table thead th:first-child {
+#datitrifascia table thead th:first-child {
     background-color: #d9edf7; /* Colore diverso per la colonna "Mese" */
 }
 
 /* Stile per le celle dei dati della tabella 2 */
-#libro_energie table tbody td {
+#datitrifascia table tbody td {
     background-color: #dff0d8;  /* Celle con sfondo bianco */
     padding: 8px;
     text-align: center;
@@ -298,13 +298,13 @@ thead tr:nth-child(2) th:nth-child(9) {
 
 /* Stile per le celle dei dati della colonna "Mese" */
 /* Applica lo stesso colore di sfondo del th corrispondente */
-#libro_energie table tbody td:first-child {
+#datitrifascia table tbody td:first-child {
     font-family: Arial, sans-serif; /* Font di default per la colonna "Mese" */
     background-color: #d9edf7; /* Stesso colore del th della colonna "Mese" */
 }
 
 /* Celle con font "scritto a matita" per le altre colonne */
-#libro_energie table tbody td:not(:first-child) {
+#datitrifascia table tbody td:not(:first-child) {
     font-family: 'Indie Flower', cursive;
     font-size: 1.2rem;
     font-weight: normal;
@@ -349,78 +349,78 @@ table td.modified {
 /* Custom styling per le colonne della tabella 2 */
 
 /* Intestazioni della tabella 2 */
-#libro_energie table thead th:nth-child(1) {
+#datitrifascia table thead th:nth-child(1) {
     background-color: #d9edf7; /* Colonna "Mese" */
 }
-#libro_energie table thead th:nth-child(2) {
+#datitrifascia table thead th:nth-child(2) {
     background-color: #f0e68c; /* Colonna "Data di presa" */
 }
-#libro_energie table thead th:nth-child(3),
-#libro_energie table thead th:nth-child(4),
-#libro_energie table thead th:nth-child(5)
+#datitrifascia table thead th:nth-child(3),
+#datitrifascia table thead th:nth-child(4),
+#datitrifascia table thead th:nth-child(5)
 {
     background-color: #fcf8e3; /* Colonne "A1-", "A2-", "A3-" */
 }
 
-#libro_energie table thead th:nth-child(6) 
+#datitrifascia table thead th:nth-child(6) 
 {
     background-color: #ffee97; /* Colonne "A1-", "A2-", "A3-" */
 }
 
-#libro_energie table thead th:nth-child(7),
-#libro_energie table thead th:nth-child(8), 
-#libro_energie table thead th:nth-child(9)
+#datitrifascia table thead th:nth-child(7),
+#datitrifascia table thead th:nth-child(8), 
+#datitrifascia table thead th:nth-child(9)
  {
     background-color: #d0f0c0; /* Colonne "A1+", "A2+", "A3+" */
 }
-#libro_energie table thead th:nth-child(10){
+#datitrifascia table thead th:nth-child(10){
     background-color: #9afd69; /* Colonne "A1+", "A2+", "A3+" */
 }
 
-#libro_energie table thead th:nth-child(10){
+#datitrifascia table thead th:nth-child(10){
     background-color: #9afd69; /* Colonne "A1+", "A2+", "A3+" */
 }
 
 /* Celle dei dati della tabella 2 */
-#libro_energie table tbody td:nth-child(1) {
+#datitrifascia table tbody td:nth-child(1) {
     background-color: #d9edf7; /* Colonna "Mese" */
 }
-#libro_energie table tbody td:nth-child(2) {
+#datitrifascia table tbody td:nth-child(2) {
     background-color: #f0e68c; /* Colonna "Data di presa" */
 }
-#libro_energie table tbody td:nth-child(3),
-#libro_energie table tbody td:nth-child(4),
-#libro_energie table tbody td:nth-child(5)
+#datitrifascia table tbody td:nth-child(3),
+#datitrifascia table tbody td:nth-child(4),
+#datitrifascia table tbody td:nth-child(5)
 
 {
     background-color: #fcf8e3; /* Colonne "A1-", "A2-", "A3-" */
 }
 
-#libro_energie table tbody td:nth-child(6)
+#datitrifascia table tbody td:nth-child(6)
 {
     background-color: #ffee97; /* Colonne "A1-", "A2-", "A3-" */
 }
 
-#libro_energie table tbody td:nth-child(7), 
-#libro_energie table tbody td:nth-child(8),
-#libro_energie table tbody td:nth-child(9)
+#datitrifascia table tbody td:nth-child(7), 
+#datitrifascia table tbody td:nth-child(8),
+#datitrifascia table tbody td:nth-child(9)
  {
     background-color: #d0f0c0; /* Colonne "A1+", "A2+", "A3+" */
 }
 
-#libro_energie table tbody td:nth-child(10)
+#datitrifascia table tbody td:nth-child(10)
 {
     background-color: #9afd69; /* Colonne "A1+", "A2+", "A3+" */
 }
 
 
-#libro_energie table tbody td:nth-child(11)
+#datitrifascia table tbody td:nth-child(11)
 {
     background-color: #9afd69; /* Colonne "A1+", "A2+", "A3+" */
 }
 
 
-#libro_energie table tbody td:nth-child(12)
+#datitrifascia table tbody td:nth-child(12)
 {
     background-color: #9afd69; /* Colonne "A1+", "A2+", "A3+" */
 }
@@ -600,7 +600,7 @@ td.calculated-field {
 }
 
 /* Stile per l'header della tabella Libro Kaifa */
-#libro_kaifa table thead th {
+#datimonofascia table thead th {
     background-color: #f5f5dc; /* Colore base per gli header */
     color: #000;
     padding: 10px;
@@ -609,61 +609,61 @@ td.calculated-field {
 }
 
 /* Override: La prima colonna dell'header ("Mese") ha un colore diverso */
-#libro_kaifa table thead th:first-child {
+#datimonofascia table thead th:first-child {
     background-color: #d9edf7; /* Blu chiaro per la colonna "Mese" */
 }
 
 /* Colori specifici per le intestazioni della tabella Kaifa */
-#libro_kaifa table thead th:nth-child(2) {
+#datimonofascia table thead th:nth-child(2) {
     background-color: #f0e68c; /* Colonna "Data di presa" */
 }
-#libro_kaifa table thead th:nth-child(3) {
+#datimonofascia table thead th:nth-child(3) {
     background-color: #ffe4b5; /* Colonna "1.8.0.n" */
 }
-#libro_kaifa table thead th:nth-child(4) {
+#datimonofascia table thead th:nth-child(4) {
     background-color: #ffe4e1; /* Colonna TOTALE "1.8.0.n" */
 }
 
-#libro_kaifa table thead th:nth-child(5) {
+#datimonofascia table thead th:nth-child(5) {
     background-color: #e2ffe1; /* Colonna "2.8.0.n" */
 }
 
-#libro_kaifa table thead th:nth-child(6) {
+#datimonofascia table thead th:nth-child(6) {
     background-color: #e1f0ff; /* Colonna TOTALE "2.8.0.n" */
 }
 
 /* Stile per le celle dei dati della tabella Kaifa */
-#libro_kaifa table tbody td {
+#datimonofascia table tbody td {
     padding: 8px;
     text-align: center;
     border: 1px solid #888;
 }
 
 /* Stile per le celle dei dati della colonna "Mese" */
-#libro_kaifa table tbody td:first-child {
+#datimonofascia table tbody td:first-child {
     font-family: Arial, sans-serif;
     background-color: #d9edf7; /* Stesso colore del th della colonna "Mese" */
 }
 
 /* Colori per le celle dati di Kaifa */
-#libro_kaifa table tbody td:nth-child(2) {
+#datimonofascia table tbody td:nth-child(2) {
     background-color: #f0e68c; /* Colonna "Data di presa" */
 }
-#libro_kaifa table tbody td:nth-child(3) {
+#datimonofascia table tbody td:nth-child(3) {
     background-color: #ffe4b5; /* Colonna "1.8.0.n" */
 }
-#libro_kaifa table tbody td:nth-child(4) {
+#datimonofascia table tbody td:nth-child(4) {
     background-color: #ffe4e1; /* Colonna "TOTALE 1.8.0.n" */
 }
 
-#libro_kaifa table tbody td:nth-child(5) {
+#datimonofascia table tbody td:nth-child(5) {
     background-color: #e2ffe1;/* Colonna "2.8.0.n" */
 }
-#libro_kaifa table tbody td:nth-child(6) {
+#datimonofascia table tbody td:nth-child(6) {
     background-color: #e1f0ff;/* Colonna "2.8.0.n" */
 }
 /* Celle con font "scritto a matita" per la tabella Kaifa */
-#libro_kaifa table tbody td:not(:first-child) {
+#datimonofascia table tbody td:not(:first-child) {
     font-family: 'Indie Flower', cursive;
     font-size: 1.2rem;
     font-weight: normal;

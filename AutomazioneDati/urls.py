@@ -1,20 +1,28 @@
 from django.urls import path
-from . import views  # Importa le tue viste
-from django.views.decorators.http import require_POST
+from . import views, defconatori, reg_segnantitrifascia, reg_segnantimonofasica
+from .reg_segnantitrifascia import salva_letture_trifasica, get_letture_trifasica_per_anno
+from .reg_segnantimonofasica import salva_letture_monofasica, get_letture_monofasica_per_anno, test_dati_database_monofasica
+
 
 urlpatterns = [
     path('', views.home, name='automazione-dati'),
-    path('panoramica/<str:nickname>/', views.diarioenergie, name='panoramica-contatore'),
-    path('diari-letture/<str:nickname>/', views.diari_letture, name='diari-letture'),
-    path('nuovo-contatore/<str:nickname>/', views.nuovo_contatore, name='nuovo-contatore'),
-    path('sostituzione-contatore/<str:nickname>/', views.sostituzione_contatore, name='sostituzione-contatore'),
-    path('salva-contatore/', views.salva_contatore, name='salva_contatore'),
-    path('salva-reg-segnanti/', views.salva_diarioenergie, name='salva-reg-segnanti'),
-    path('salva-dati-letture/', views.salva_dati_letture, name='salva-dati-letture'),
-    path('get-kaifa-data/', views.get_kaifa_data, name='get-kaifa-data'),
-    path('impianto/<str:nickname>/sostituzione-contatore/', views.sostituzione_contatore, name='sostituzione_contatore'),
-    path('seleziona-contatore-sostituzione/', views.seleziona_contatore_sostituzione, name='seleziona_contatore_sostituzione'),
-    path('salva-contatore-sostituzione/', views.salva_contatore_sostituzione, name='salva_contatore_sostituzione'),
-    path('elimina-contatore/<int:contatore_id>/', views.elimina_contatore, name='elimina_contatore'),
+    path('diario-energie/<str:nickname>/', views.diarioenergie, name='panoramica-contatore'),
+    path('elenco-contatori/<str:nickname>/', defconatori.elenco_contatori, name='elenco-contatori'),
+    path('nuovo-contatore/<str:nickname>/', defconatori.nuovo_contatore, name='nuovo-contatore'),
+    path('sostituzione-contatore/<str:nickname>/', defconatori.sostituzione_contatore, name='sostituzione-contatore'),
+    path('salva-contatore/', defconatori.salva_contatore, name='salva_contatore'),
+    path('impianto/<str:nickname>/reg_segnantitrifascia/<int:contatore_id>/', reg_segnantitrifascia.reg_segnantitrifascia, name='reg_segnantitrifascia'),
+    path('impianto/<str:nickname>/sostituzione-contatore/', defconatori.sostituzione_contatore, name='sostituzione_contatore'),
+    path('seleziona-contatore-sostituzione/', defconatori.seleziona_contatore_sostituzione, name='seleziona_contatore_sostituzione'),
+    path('salva-contatore-sostituzione/', defconatori.salva_contatore_sostituzione, name='salva_contatore_sostituzione'),
+    path('elimina-contatore/<int:contatore_id>/', defconatori.elimina_contatore, name='elimina_contatore'),
+    path('salva-letture-trifasica/<int:contatore_id>/', salva_letture_trifasica, name='salva-letture-trifasica'),
+    path('api/letture-trifasica/<int:contatore_id>/<int:anno>/',  get_letture_trifasica_per_anno,  name='api_get_letture_trifasica_anno'),
+    path('automazione/api/letture-trifasica/<int:contatore_id>/<int:anno>/', get_letture_trifasica_per_anno,   name='api_get_letture_trifasica_anno_alt'),
+    path('impianto/<str:nickname>/reg_segnantimonofasica/<int:contatore_id>/', reg_segnantimonofasica.reg_segnantimonofasica, name='reg_segnantimonofasica'),
+    path('salva-letture-monofasica/<int:contatore_id>/', salva_letture_monofasica, name='salva-letture-monofasica'),
+    path('api/letture-monofasica/<int:contatore_id>/<int:anno>/', get_letture_monofasica_per_anno, name='api_get_letture_monofasica_anno'),
+    path('automazione/api/letture-monofasica/<int:contatore_id>/<int:anno>/', get_letture_monofasica_per_anno, name='api_get_letture_monofasica_anno_alt'),
+   
     
 ]
