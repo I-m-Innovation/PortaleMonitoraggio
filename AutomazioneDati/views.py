@@ -38,41 +38,57 @@ def diarioenergie(request, nickname):
     data_inizio_anno = datetime.date(anno_corrente, 1, 1)
     data_fine_anno = datetime.date(anno_corrente, 12, 31)
 
-    # Filtra i contatori attivi per l'anno selezionato
-    contatori = Contatore.objects.filter(
+    # Filtra tutti i contatori (attivi e dismessi nell'anno corrente) per l'impianto selezionato
+    # e ordina per data di installazione per facilitare l'identificazione attivo/sostituito
+    contatori_all_types = Contatore.objects.filter(
         impianto_nickname=nickname,
         data_installazione__lte=data_fine_anno
     ).filter(
         models.Q(data_dismissione__isnull=True) | models.Q(data_dismissione__gte=data_inizio_anno)
-    )
+    ).order_by('data_installazione')
 
-    # Verifica se ci sono sostituzioni nell'anno corrente
-    # Un contatore è stato sostituito se è stato dismesso nell'anno corrente
-    contatori_dismessi_anno = contatori.filter(
-        data_dismissione__year=anno_corrente
-    )
-    
-    # Verifica se ci sono contatori installati nell'anno corrente (sostituzioni)
-    contatori_installati_anno = contatori.filter(
-        data_installazione__year=anno_corrente
-    )
+    print(f"DEBUG: Contatori totali trovati per {nickname} nell'anno {anno_corrente}:")
+    for c in contatori_all_types:
+        print(f"  - ID: {c.id}, Nome: {c.nome}, Tipologia: {c.tipologia}, Data installazione: {c.data_installazione}, Data dismissione: {c.data_dismissione}")
 
-    # Determina se c'è una sostituzione per tipologia
-    tipologie_sostituite = []
-    
-    for tipologia in ['Produzione', 'Scambio', 'Ausiliare']:
-        # Conta quanti contatori di questa tipologia sono attivi nell'anno
-        contatori_tipologia = contatori.filter(tipologia=tipologia)
-        dismessi_tipologia = contatori_dismessi_anno.filter(tipologia=tipologia)
-        installati_tipologia = contatori_installati_anno.filter(tipologia=tipologia)
-        
-        # Se abbiamo sia dismessi che installati della stessa tipologia, c'è una sostituzione
-        if dismessi_tipologia.exists() and installati_tipologia.exists():
-            tipologie_sostituite.append(tipologia)
+    # Identifica il contatore "attivo" (quello non dismesso) per ciascuna tipologia
+    contatore_produzione_attivo = contatori_all_types.filter(tipologia="Produzione", data_dismissione__isnull=True).first()
+    contatore_scambio_attivo = contatori_all_types.filter(tipologia="Scambio", data_dismissione__isnull=True).first()
+    contatore_ausiliare_attivo = contatori_all_types.filter(tipologia="Ausiliare", data_dismissione__isnull=True).first()
 
-    # Separa i contatori per tipologia (prendi il primo attivo)
-    contatore_produzione = contatori.filter(tipologia="Produzione").first()
-    contatore_scambio = contatori.filter(tipologia="Scambio").first()
+    # Identifica il contatore "sostituito" (quello dismesso nell'anno corrente) per ciascuna tipologia
+    contatore_produzione_sostituito = contatori_all_types.filter(tipologia="Produzione", data_dismissione__year=anno_corrente).first()
+    contatore_scambio_sostituito = contatori_all_types.filter(tipologia="Scambio", data_dismissione__year=anno_corrente).first()
+    contatore_ausiliare_sostituito = contatori_all_types.filter(tipologia="Ausiliare", data_dismissione__year=anno_corrente).first()
+
+    print(f"DEBUG: Contatore Produzione Attivo: {contatore_produzione_attivo.nome if contatore_produzione_attivo else 'Nessuno'}")
+    print(f"DEBUG: Contatore Produzione Sostituito: {contatore_produzione_sostituito.nome if contatore_produzione_sostituito else 'Nessuno'}")
+    print(f"DEBUG: Contatore Scambio Attivo: {contatore_scambio_attivo.nome if contatore_scambio_attivo else 'Nessuno'}")
+    print(f"DEBUG: Contatore Scambio Sostituito: {contatore_scambio_sostituito.nome if contatore_scambio_sostituito else 'Nessuno'}")
+    print(f"DEBUG: Contatore Ausiliare Attivo: {contatore_ausiliare_attivo.nome if contatore_ausiliare_attivo else 'Nessuno'}")
+    print(f"DEBUG: Contatore Ausiliare Sostituito: {contatore_ausiliare_sostituito.nome if contatore_ausiliare_sostituito else 'Nessuno'}")
+
+    # Determina le variabili booleane per il template
+    has_produzione = contatore_produzione_attivo is not None or contatore_produzione_sostituito is not None
+    has_scambio = contatore_scambio_attivo is not None or contatore_scambio_sostituito is not None
+    has_ausiliare = contatore_ausiliare_attivo is not None or contatore_ausiliare_sostituito is not None
+
+    # Determina se c'è stata una sostituzione effettiva per una data tipologia
+    has_sostituzione_produzione = contatore_produzione_attivo is not None and contatore_produzione_sostituito is not None
+    has_sostituzione_scambio = contatore_scambio_attivo is not None and contatore_scambio_sostituito is not None
+    has_sostituzione_ausiliare = contatore_ausiliare_attivo is not None and contatore_ausiliare_sostituito is not None
+
+    print(f"DEBUG: has_produzione: {has_produzione}")
+    print(f"DEBUG: has_scambio: {has_scambio}")
+    print(f"DEBUG: has_ausiliare: {has_ausiliare}")
+    print(f"DEBUG: has_sostituzione_produzione: {has_sostituzione_produzione}")
+    print(f"DEBUG: has_sostituzione_scambio: {has_sostituzione_scambio}")
+    print(f"DEBUG: has_sostituzione_ausiliare: {has_sostituzione_ausiliare}")
+
+    # Filtra i contatori da mostrare nella lista a lato (Elenco Contatori)
+    # Assicurati che 'contatori' contenga tutti i contatori attivi o dismessi nell'anno corrente
+    # che non siano stati già gestiti come sostituiti per la tabella principale.
+    contatori = contatori_all_types # Utilizza la lista completa per l'elenco a sinistra e dropdown
 
     # Ottieni l'ID del contatore specifico dalla query string
     contatore_id = request.GET.get('contatore_id')
@@ -97,36 +113,136 @@ def diarioenergie(request, nickname):
     # Determina quali tipi di contatori sono presenti nell'impianto
     tipologie_presenti = list(contatori.values_list('tipologia', flat=True).distinct())
     
-    # Crea le variabili booleane per il template
-    has_produzione = 'Produzione' in tipologie_presenti
-    has_scambio = 'Scambio' in tipologie_presenti
-    has_ausiliare = 'Ausiliare' in tipologie_presenti
-    
-    # NUOVE variabili per gestire le sostituzioni
-    has_sostituzione_produzione = 'Produzione' in tipologie_sostituite
-    has_sostituzione_scambio = 'Scambio' in tipologie_sostituite
-    has_sostituzione_ausiliare = 'Ausiliare' in tipologie_sostituite
-    
     # Conta quante colonne dovremo mostrare per regolare il layout
     numero_gruppi_colonne = 0
-    if has_produzione:
-        numero_gruppi_colonne += 2  # Prodotta + Prelevata
-        if has_sostituzione_produzione:
-            numero_gruppi_colonne += 2  # Prodotta + Prelevata del contatore sostituito
-    if has_scambio:
-        numero_gruppi_colonne += 2  # Autoconsumata + Immessa
-        if has_sostituzione_scambio:
-            numero_gruppi_colonne += 2  # Autoconsumata + Immessa del contatore sostituito
-    if has_ausiliare:
-        numero_gruppi_colonne += 1  # Solo Ausiliare
-        if has_sostituzione_ausiliare:
-            numero_gruppi_colonne += 1  # Ausiliare del contatore sostituito
+    if contatore_produzione_attivo:
+        numero_gruppi_colonne += 6  # Prodotta (3) + Prelevata (3)
+    if contatore_produzione_sostituito:
+        numero_gruppi_colonne += 6  # Prodotta (3) + Prelevata (3) del contatore sostituito
+    if contatore_scambio_attivo:
+        numero_gruppi_colonne += 6  # Autoconsumata (3) + Immessa (3)
+    if contatore_scambio_sostituito:
+        numero_gruppi_colonne += 6  # Autoconsumata (3) + Immessa (3) del contatore sostituito
+    if contatore_ausiliare_attivo:
+        numero_gruppi_colonne += 3  # Ausiliare (3)
+    if contatore_ausiliare_sostituito:
+        numero_gruppi_colonne += 3  # Ausiliare (3) del contatore sostituito
 
-    # Recupera il contatore selezionato per i calcoli
-    contatore = contatore_selezionato
+    # Recupera il contatore selezionato per i calcoli (se presente)
+    # Questa variabile contatore_selezionato è usata per il token CSRF e altri attributi.
+    # Assicurati che sia il contatore corretto se ve n'è uno selezionato.
+    # Se contatore_id è None, contatore_selezionato è None, il che è gestito.
 
     # Prepara la lista dei dati mensili per il template
     dati_mensili_template = []
+
+    # Helper function to calculate readings for a given counter
+    def calculate_counter_data(counter_obj, current_year, month):
+        data = {
+            "campo": "", "ed": "", "gse": "",
+            "campo_secondario": "", "ed_secondario": "", "gse_secondario": ""
+        }
+        if not counter_obj:
+            return data
+
+        install_date = counter_obj.data_installazione
+        dismission_date = counter_obj.data_dismissione
+
+        # Check if the month is within the counter's active period for the current year
+        month_start_date = datetime.date(current_year, month, 1)
+        month_end_date = datetime.date(current_year, month, calendar.monthrange(current_year, month)[1])
+
+        # A counter is active for the month if its installation date is before or within the month,
+        # AND its dismission date (if any) is after or within the month.
+        is_active_for_month = (install_date <= month_end_date) and (dismission_date is None or dismission_date >= month_start_date)
+
+        if not is_active_for_month:
+            return data # Return empty data if not active for this month
+
+        letture = LetturaContatore.objects.filter(
+            contatore=counter_obj,
+            anno__in=[current_year, current_year + 1] # Look for readings in current and next year for calculations
+        ).order_by('anno', 'mese')
+        letture_dict = {(l.anno, l.mese): l for l in letture}
+        
+        lettura_corrente = letture_dict.get((current_year, month))
+        if month < 12:
+            lettura_successiva = letture_dict.get((current_year, month + 1))
+        else: # For December, look for January of next year
+            lettura_successiva = letture_dict.get((current_year + 1, 1))
+
+        k_factor = counter_obj.k if counter_obj.k else 1
+        tipologia_fascio = counter_obj.tipologiafascio.lower() if counter_obj.tipologiafascio else None
+
+        valore_campo_principale = ""
+        valore_campo_secondario = ""
+
+        if lettura_corrente and lettura_successiva:
+            try:
+                if counter_obj.tipologia == "Produzione":
+                    # Prodotta (Campo kWh)
+                    if tipologia_fascio == "trifascio":
+                        val_corrente_prod = float(lettura_corrente.totale_neg or 0)
+                        val_successivo_prod = float(lettura_successiva.totale_neg or 0)
+                    elif tipologia_fascio == "monofascio":
+                        val_corrente_prod = float(lettura_corrente.totale_180n or 0)
+                        val_successivo_prod = float(lettura_successiva.totale_180n or 0)
+                    else: # Fallback
+                        val_corrente_prod = val_successivo_prod = 0
+                    valore_campo_principale = round((val_successivo_prod - val_corrente_prod) * k_factor, 3)
+
+                    # Prelevata (Campo kWh)
+                    val_corrente_prel = float(lettura_corrente.totale_pos or 0)
+                    val_successivo_prel = float(lettura_successiva.totale_pos or 0)
+                    valore_campo_secondario = round((val_successivo_prel - val_corrente_prel) * k_factor, 3)
+
+                elif counter_obj.tipologia == "Scambio":
+                    # Autoconsumata (Campo kWh - totale_180n)
+                    val_corrente_autocons = float(lettura_corrente.totale_180n or 0)
+                    val_successivo_autocons = float(lettura_successiva.totale_180n or 0)
+                    valore_campo_principale = round((val_successivo_autocons - val_corrente_autocons) * k_factor, 3)
+
+                    # Immessa (Campo kWh - totale_280n)
+                    val_corrente_imm = float(lettura_corrente.totale_280n or 0)
+                    val_successivo_imm = float(lettura_successiva.totale_280n or 0)
+                    valore_campo_secondario = round((val_successivo_imm - val_corrente_imm) * k_factor, 3)
+
+                elif counter_obj.tipologia == "Ausiliare":
+                    # Ausiliare (Campo kWh - totale_pos)
+                    val_corrente_aus = float(lettura_corrente.totale_pos or 0)
+                    val_successivo_aus = float(lettura_successiva.totale_pos or 0)
+                    valore_campo_principale = round((val_successivo_aus - val_corrente_aus) * k_factor, 3)
+
+            except Exception as e:
+                print(f"Errore nel calcolo dei dati del contatore {counter_obj.nome} (ID: {counter_obj.id}): {e}")
+                valore_campo_principale = ""
+                valore_campo_secondario = ""
+
+        reg_segnante = regsegnanti.objects.filter(
+            contatore=counter_obj,
+            anno=current_year,
+            mese=month
+        ).first()
+        
+        # Popola il dizionario dei dati con i valori calcolati e dai reg_segnanti
+        data["campo"] = valore_campo_principale if valore_campo_principale != "" else ""
+        if counter_obj.tipologia == "Produzione":
+            data["ed"] = reg_segnante.prod_ed if reg_segnante else ""
+            data["gse"] = reg_segnante.prod_gse if reg_segnante else ""
+            data["campo_secondario"] = valore_campo_secondario if valore_campo_secondario != "" else ""
+            data["ed_secondario"] = reg_segnante.prel_ed if reg_segnante else ""
+            data["gse_secondario"] = reg_segnante.prel_gse if reg_segnante else ""
+        elif counter_obj.tipologia == "Scambio":
+            data["ed"] = reg_segnante.autocons_ed if reg_segnante else ""
+            data["gse"] = reg_segnante.autocons_gse if reg_segnante else ""
+            data["campo_secondario"] = valore_campo_secondario if valore_campo_secondario != "" else ""
+            data["ed_secondario"] = reg_segnante.imm_ed if reg_segnante else ""
+            data["gse_secondario"] = reg_segnante.imm_gse if reg_segnante else ""
+        elif counter_obj.tipologia == "Ausiliare":
+            data["ed"] = reg_segnante.aus_ed if reg_segnante else ""
+            data["gse"] = reg_segnante.aus_gse if reg_segnante else ""
+
+        return data
 
     for mese in range(1, 13):
         nome_mese = calendar.month_name[mese].capitalize()
@@ -135,139 +251,78 @@ def diarioenergie(request, nickname):
             "mese_nome": nome_mese,
         }
 
-        # --- Dati Produzione ---
-        if contatore_produzione:
-            # Recupera le letture
-            letture_prod = LetturaContatore.objects.filter(
-                contatore=contatore_produzione,
-                anno__in=[anno_corrente, anno_corrente + 1]
-            ).order_by('anno', 'mese')
-            letture_dict_prod = {(l.anno, l.mese): l for l in letture_prod}
-            lettura_corrente_prod = letture_dict_prod.get((anno_corrente, mese))
-            if mese < 12:
-                lettura_successiva_prod = letture_dict_prod.get((anno_corrente, mese + 1))
-            else:
-                lettura_successiva_prod = letture_dict_prod.get((anno_corrente + 1, 1))
-            k_prod = contatore_produzione.k if contatore_produzione.k else 1
-            tipologiafascio_prod = contatore_produzione.tipologiafascio.lower() if contatore_produzione.tipologiafascio else None
-            valore_calcolato_prod = ""
-            valore_calcolato_prel = ""
-            if lettura_corrente_prod and lettura_successiva_prod:
-                try:
-                    if tipologiafascio_prod == "trifascio":
-                        val_corrente = float(lettura_corrente_prod.totale_neg or 0)
-                        val_successivo = float(lettura_successiva_prod.totale_neg or 0)
-                    elif tipologiafascio_prod == "monofascio":
-                        val_corrente = float(lettura_corrente_prod.totale_180n or 0)
-                        val_successivo = float(lettura_successiva_prod.totale_180n or 0)
-                    else:
-                        val_corrente = val_successivo = 0
-                    valore_calcolato_prod = round((val_successivo - val_corrente) * k_prod, 3)
+        # --- Dati Produzione (Contatore Attivo) ---
+        prod_data_attivo = calculate_counter_data(contatore_produzione_attivo, anno_corrente, mese)
+        riga["prod_campo"] = prod_data_attivo.get("campo")
+        riga["prod_ed"] = prod_data_attivo.get("ed")
+        riga["prod_gse"] = prod_data_attivo.get("gse")
+        riga["prel_campo"] = prod_data_attivo.get("campo_secondario")
+        riga["prel_ed"] = prod_data_attivo.get("ed_secondario")
+        riga["prel_gse"] = prod_data_attivo.get("gse_secondario")
 
-                    val_corrente_pos = float(lettura_corrente_prod.totale_pos or 0)
-                    val_successivo_pos = float(lettura_successiva_prod.totale_pos or 0)
-                    valore_calcolato_prel = round((val_successivo_pos - val_corrente_pos) * k_prod, 3)
-                except Exception:
-                    valore_calcolato_prod = ""
-                    valore_calcolato_prel = ""
-            reg_segnante_prod = regsegnanti.objects.filter(
-                contatore=contatore_produzione,
-                anno=anno_corrente,
-                mese=mese
-            ).first()
-            riga["prod_campo"] = valore_calcolato_prod if valore_calcolato_prod != "" else ""
-            riga["prod_ed"] = reg_segnante_prod.prod_ed if reg_segnante_prod and reg_segnante_prod.prod_ed else ""
-            riga["prod_gse"] = reg_segnante_prod.prod_gse if reg_segnante_prod and reg_segnante_prod.prod_gse else ""
-            riga["prel_campo"] = valore_calcolato_prel if valore_calcolato_prel != "" else ""
-            riga["prel_ed"] = reg_segnante_prod.prel_ed if reg_segnante_prod and reg_segnante_prod.prel_ed else ""
-            riga["prel_gse"] = reg_segnante_prod.prel_gse if reg_segnante_prod and reg_segnante_prod.prel_gse else ""
-            
-            # Se c'è una sostituzione, gestisci anche il contatore dismesso
-            if has_sostituzione_produzione:
-                # Trova il contatore di produzione dismesso nell'anno corrente
-                contatore_produzione_dismesso = contatori_dismessi_anno.filter(tipologia="Produzione").first()
-                if contatore_produzione_dismesso:
-                    # Calcola i dati per il contatore dismesso
-                    # (stessa logica del contatore principale, ma usando contatore_produzione_dismesso)
-                    # Salva i risultati in campi come prod_campo_sostituito, prod_ed_sostituito, ecc.
-                    pass
+        # --- Dati Produzione (Contatore Sostituito) ---
+        if has_sostituzione_produzione:
+            prod_data_sostituito = calculate_counter_data(contatore_produzione_sostituito, anno_corrente, mese)
+            riga["prod_campo_sostituito"] = prod_data_sostituito.get("campo")
+            riga["prod_ed_sostituito"] = prod_data_sostituito.get("ed")
+            riga["prod_gse_sostituito"] = prod_data_sostituito.get("gse")
+            riga["prel_campo_sostituito"] = prod_data_sostituito.get("campo_secondario")
+            riga["prel_ed_sostituito"] = prod_data_sostituito.get("ed_secondario")
+            riga["prel_gse_sostituito"] = prod_data_sostituito.get("gse_secondario")
         else:
-            riga["prod_campo"] = riga["prod_ed"] = riga["prod_gse"] = ""
-            riga["prel_campo"] = riga["prel_ed"] = riga["prel_gse"] = ""
+            # Assicurati che i campi siano vuoti se non c'è sostituzione
+            riga["prod_campo_sostituito"] = riga["prod_ed_sostituito"] = riga["prod_gse_sostituito"] = ""
+            riga["prel_campo_sostituito"] = riga["prel_ed_sostituito"] = riga["prel_gse_sostituito"] = ""
 
-        # --- Dati Scambio ---
-        if contatore_scambio:
-            letture_scambio = LetturaContatore.objects.filter(
-                contatore=contatore_scambio,
-                anno__in=[anno_corrente, anno_corrente + 1]
-            ).order_by('anno', 'mese')
-            letture_dict_scambio = {(l.anno, l.mese): l for l in letture_scambio}
-            lettura_corrente_scambio = letture_dict_scambio.get((anno_corrente, mese))
-            if mese < 12:
-                lettura_successiva_scambio = letture_dict_scambio.get((anno_corrente, mese + 1))
-            else:
-                lettura_successiva_scambio = letture_dict_scambio.get((anno_corrente + 1, 1))
-            k_scambio = contatore_scambio.k if contatore_scambio.k else 1
-            valore_calcolato_scambio = ""
-            valore_calcolato_imm = ""
-            if lettura_corrente_scambio and lettura_successiva_scambio:
-                try:
-                    val_corrente_autoconsumo = float(lettura_corrente_scambio.totale_neg or 0)
-                    val_successivo_autoconsumo = float(lettura_successiva_scambio.totale_neg or 0)
-                    # MODIFICA: Ora usiamo sempre totale_180n per il calcolo dell'autoconsumo "Campo kWh",
-                    # come richiesto, indipendentemente dalla tipologia fascio.
-                    val_corrente_autoconsumo = float(lettura_corrente_scambio.totale_180n or 0)
-                    val_successivo_autoconsumo = float(lettura_successiva_scambio.totale_180n or 0)
-                    
-                    valore_calcolato_scambio = round((val_successivo_autoconsumo - val_corrente_autoconsumo) * k_scambio, 3)
+        # --- Dati Scambio (Contatore Attivo) ---
+        scambio_data_attivo = calculate_counter_data(contatore_scambio_attivo, anno_corrente, mese)
+        riga["autocons_campo"] = scambio_data_attivo.get("campo")
+        riga["autocons_ed"] = scambio_data_attivo.get("ed")
+        riga["autocons_gse"] = scambio_data_attivo.get("gse")
+        riga["imm_campo"] = scambio_data_attivo.get("campo_secondario")
+        riga["imm_ed"] = scambio_data_attivo.get("ed_secondario")
+        riga["imm_gse"] = scambio_data_attivo.get("gse_secondario")
 
-                    # MODIFICA: Ora usiamo totale_280n per il calcolo dell'immessa "Campo kWh",
-                    val_corrente_pos = float(lettura_corrente_scambio.totale_pos or 0)
-                    val_successivo_pos = float(lettura_successiva_scambio.totale_pos or 0)
-                    valore_calcolato_imm = round((val_successivo_pos - val_corrente_pos) * k_scambio, 3)
-                    # come richiesto.
-                    val_corrente_pos = float(lettura_corrente_scambio.totale_280n or 0)
-                    val_successivo_pos = float(lettura_successiva_scambio.totale_280n or 0)
-                    valore_calcolato_imm = round((val_successivo_pos - val_corrente_pos) * k_scambio, 3)
-                    # come richiesto.
-                    val_corrente_imm = float(lettura_corrente_scambio.totale_280n or 0)
-                    val_successivo_imm = float(lettura_successiva_scambio.totale_280n or 0)
-                    valore_calcolato_imm = round((val_successivo_imm - val_corrente_imm) * k_scambio, 3)
-                except Exception:
-                    valore_calcolato_scambio = ""
-                    valore_calcolato_imm = ""
-            reg_segnante_scambio = regsegnanti.objects.filter(
-                contatore=contatore_scambio,
-                anno=anno_corrente,
-                mese=mese
-            ).first()
-            riga["autocons_campo"] = valore_calcolato_scambio if valore_calcolato_scambio != "" else ""
-            riga["autocons_ed"] = reg_segnante_scambio.autocons_ed if reg_segnante_scambio and reg_segnante_scambio.autocons_ed else ""
-            riga["autocons_gse"] = reg_segnante_scambio.autocons_gse if reg_segnante_scambio and reg_segnante_scambio.autocons_gse else ""
-            riga["imm_campo"] = valore_calcolato_imm if valore_calcolato_imm != "" else ""
-            riga["imm_ed"] = reg_segnante_scambio.imm_ed if reg_segnante_scambio and reg_segnante_scambio.imm_ed else ""
-            riga["imm_gse"] = reg_segnante_scambio.imm_gse if reg_segnante_scambio and reg_segnante_scambio.imm_gse else ""
-            
-            # Se c'è una sostituzione, gestisci anche il contatore dismesso
-            if has_sostituzione_scambio:
-                # Trova il contatore di scambio dismesso nell'anno corrente
-                contatore_scambio_dismesso = contatori_dismessi_anno.filter(tipologia="Scambio").first()
-                if contatore_scambio_dismesso:
-                    # Calcola i dati per il contatore dismesso
-                    # (stessa logica del contatore principale, ma usando contatore_scambio_dismesso)
-                    # Salva i risultati in campi come autocons_campo_sostituito, autocons_ed_sostituito, ecc.
-                    pass
+        # --- Dati Scambio (Contatore Sostituito) ---
+        if has_sostituzione_scambio:
+            scambio_data_sostituito = calculate_counter_data(contatore_scambio_sostituito, anno_corrente, mese)
+            riga["autocons_campo_sostituito"] = scambio_data_sostituito.get("campo")
+            riga["autocons_ed_sostituito"] = scambio_data_sostituito.get("ed")
+            riga["autocons_gse_sostituito"] = scambio_data_sostituito.get("gse")
+            riga["imm_campo_sostituito"] = scambio_data_sostituito.get("campo_secondario")
+            riga["imm_ed_sostituito"] = scambio_data_sostituito.get("ed_secondario")
+            riga["imm_gse_sostituito"] = scambio_data_sostituito.get("gse_secondario")
         else:
-            riga["autocons_campo"] = riga["autocons_ed"] = riga["autocons_gse"] = ""
-            riga["imm_campo"] = riga["imm_ed"] = riga["imm_gse"] = ""
+            # Assicurati che i campi siano vuoti se non c'è sostituzione
+            riga["autocons_campo_sostituito"] = riga["autocons_ed_sostituito"] = riga["autocons_gse_sostituito"] = ""
+            riga["imm_campo_sostituito"] = riga["imm_ed_sostituito"] = riga["imm_gse_sostituito"] = ""
+        
+        # --- Dati Ausiliare (Contatore Attivo) ---
+        ausiliare_data_attivo = calculate_counter_data(contatore_ausiliare_attivo, anno_corrente, mese)
+        riga["aus_campo"] = ausiliare_data_attivo.get("campo")
+        riga["aus_ed"] = ausiliare_data_attivo.get("ed")
+        riga["aus_gse"] = ausiliare_data_attivo.get("gse")
+
+        # --- Dati Ausiliare (Contatore Sostituito) ---
+        if has_sostituzione_ausiliare:
+            ausiliare_data_sostituito = calculate_counter_data(contatore_ausiliare_sostituito, anno_corrente, mese)
+            riga["aus_campo_sostituito"] = ausiliare_data_sostituito.get("campo")
+            riga["aus_ed_sostituito"] = ausiliare_data_sostituito.get("ed")
+            riga["aus_gse_sostituito"] = ausiliare_data_sostituito.get("gse")
+        else:
+            riga["aus_campo_sostituito"] = riga["aus_ed_sostituito"] = riga["aus_gse_sostituito"] = ""
 
         dati_mensili_template.append(riga)
+
+    # DEBUG: Stampa il contenuto finale di dati_mensili_template
+    print(f"DEBUG: Contenuto finale di dati_mensili_template (primi 5 elementi): {dati_mensili_template[:5]}")
+    print(f"DEBUG: Lunghezza di dati_mensili_template: {len(dati_mensili_template)}")
 
     # Passa i dati al template
     context = {
         'impianto': impianto, 
-        'contatori': contatori,
-        'contatore': contatore_selezionato,
+        'contatori': contatori, # Lista per la dropdown e l'elenco laterale
+        'contatore': contatore_selezionato, # Il contatore attualmente selezionato (per il JS)
         'anno_corrente': anno_corrente,
         'has_produzione': has_produzione,
         'has_scambio': has_scambio,
@@ -277,8 +332,149 @@ def diarioenergie(request, nickname):
         'has_sostituzione_ausiliare': has_sostituzione_ausiliare,
         'numero_gruppi_colonne': numero_gruppi_colonne,
         'dati_mensili_template': dati_mensili_template,
+        'contatore_produzione_attivo': contatore_produzione_attivo,
+        'contatore_produzione_sostituito': contatore_produzione_sostituito,
+        'contatore_scambio_attivo': contatore_scambio_attivo,
+        'contatore_scambio_sostituito': contatore_scambio_sostituito,
+        'contatore_ausiliare_attivo': contatore_ausiliare_attivo,
+        'contatore_ausiliare_sostituito': contatore_ausiliare_sostituito,
     }
     
     return render(request, 'diarioenergie.html', context)
    
+
+@csrf_exempt
+@require_POST
+def salva_diario_energie(request):
+    try:
+        data = json.loads(request.body)
+        contatore_id = data.get('contatore_id')
+        anno = int(data.get('anno'))
+        dati_mensili = data.get('dati_mensili')
+
+        if not all([contatore_id, anno, dati_mensili]):
+            return JsonResponse({'error': 'Dati mancanti.'}, status=400)
+
+        # Recupera il contatore principale per ottenere il nickname dell'impianto associato
+        # Questo contatore_id proviene dall'attributo data-contatore-id della tabella principale
+        main_contatore = get_object_or_404(Contatore, id=contatore_id)
+        impianto_nickname = main_contatore.impianto_nickname
+
+        # Calcola le date di inizio e fine anno
+        data_inizio_anno = datetime.date(anno, 1, 1)
+        data_fine_anno = datetime.date(anno, 12, 31)
+
+        # Recupera tutti i contatori pertinenti per questo impianto e anno
+        all_counters_for_impianto = Contatore.objects.filter(
+            impianto_nickname=impianto_nickname,
+            data_installazione__lte=data_fine_anno
+        ).filter(
+            models.Q(data_dismissione__isnull=True) | models.Q(data_dismissione__gte=data_inizio_anno)
+        ).order_by('data_installazione')
+
+        # Mappa per memorizzare i contatori attivi e sostituiti per tipologia
+        counters_by_type_status = {}
+        for c in all_counters_for_impianto:
+            if c.data_dismissione and c.data_dismissione.year == anno:
+                # Questo contatore è stato sostituito nell'anno corrente
+                counters_by_type_status[f"{c.tipologia}_sostituito"] = c
+            elif c.data_dismissione is None:
+                # Questo è il contatore attivo
+                counters_by_type_status[f"{c.tipologia}_attivo"] = c
+
+        # Definisci la mappatura dai nomi dei campi del frontend ai nomi dei campi del modello e all'oggetto contatore di destinazione
+        field_mapping = {
+            # Produzione Attivo
+            "prod_campo": ("prod_campo", counters_by_type_status.get("Produzione_attivo")),
+            "prod_ed": ("prod_ed", counters_by_type_status.get("Produzione_attivo")),
+            "prod_gse": ("prod_gse", counters_by_type_status.get("Produzione_attivo")),
+            "prel_campo": ("prel_campo", counters_by_type_status.get("Produzione_attivo")),
+            "prel_ed": ("prel_ed", counters_by_type_status.get("Produzione_attivo")),
+            "prel_gse": ("prel_gse", counters_by_type_status.get("Produzione_attivo")),
+
+            # Produzione Sostituito
+            "prod_campo_sostituito": ("prod_campo", counters_by_type_status.get("Produzione_sostituito")),
+            "prod_ed_sostituito": ("prod_ed", counters_by_type_status.get("Produzione_sostituito")),
+            "prod_gse_sostituito": ("prod_gse", counters_by_type_status.get("Produzione_sostituito")),
+            "prel_campo_sostituito": ("prel_campo", counters_by_type_status.get("Produzione_sostituito")),
+            "prel_ed_sostituito": ("prel_ed", counters_by_type_status.get("Produzione_sostituito")),
+            "prel_gse_sostituito": ("prel_gse", counters_by_type_status.get("Produzione_sostituito")),
+
+            # Scambio Attivo
+            "autocons_campo": ("autocons_campo", counters_by_type_status.get("Scambio_attivo")),
+            "autocons_ed": ("autocons_ed", counters_by_type_status.get("Scambio_attivo")),
+            "autocons_gse": ("autocons_gse", counters_by_type_status.get("Scambio_attivo")),
+            "imm_campo": ("imm_campo", counters_by_type_status.get("Scambio_attivo")),
+            "imm_ed": ("imm_ed", counters_by_type_status.get("Scambio_attivo")),
+            "imm_gse": ("imm_gse", counters_by_type_status.get("Scambio_attivo")),
+
+            # Scambio Sostituito
+            "autocons_campo_sostituito": ("autocons_campo", counters_by_type_status.get("Scambio_sostituito")),
+            "autocons_ed_sostituito": ("autocons_ed", counters_by_type_status.get("Scambio_sostituito")),
+            "autocons_gse_sostituito": ("autocons_gse", counters_by_type_status.get("Scambio_sostituito")),
+            "imm_campo_sostituito": ("imm_campo", counters_by_type_status.get("Scambio_sostituito")),
+            "imm_ed_sostituito": ("imm_ed", counters_by_type_status.get("Scambio_sostituito")),
+            "imm_gse_sostituito": ("imm_gse", counters_by_type_status.get("Scambio_sostituito")),
+
+            # Ausiliare Attivo
+            "aus_campo": ("aus_campo", counters_by_type_status.get("Ausiliare_attivo")),
+            "aus_ed": ("aus_ed", counters_by_type_status.get("Ausiliare_attivo")),
+            "aus_gse": ("aus_gse", counters_by_type_status.get("Ausiliare_attivo")),
+
+            # Ausiliare Sostituito
+            "aus_campo_sostituito": ("aus_campo", counters_by_type_status.get("Ausiliare_sostituito")),
+            "aus_ed_sostituito": ("aus_ed", counters_by_type_status.get("Ausiliare_sostituito")),
+            "aus_gse_sostituito": ("aus_gse", counters_by_type_status.get("Ausiliare_sostituito")),
+        }
+
+        for mese_data in dati_mensili:
+            mese_numero = int(mese_data.get('mese_numero'))
+            if not mese_numero:
+                continue
+
+            # Dizionario per raccogliere gli oggetti regsegnanti da salvare per il mese corrente, indicizzati per counter_id
+            regsegnanti_to_save_this_month = {}
+
+            for field_name, value in mese_data.items():
+                if field_name == 'mese_numero':
+                    continue
+
+                model_field_name, target_counter = field_mapping.get(field_name, (None, None))
+
+                if not target_counter:
+                    continue # Nessun contatore valido trovato per questo campo in base ai contatori attivi/sostituiti correnti
+
+                # Ottieni o crea l'oggetto regsegnanti per questo contatore specifico, anno, mese
+                # Se lo abbiamo già recuperato per questo mese, usa quello esistente
+                if target_counter.id not in regsegnanti_to_save_this_month:
+                    reg_segnante_obj, created = regsegnanti.objects.get_or_create(
+                        contatore=target_counter,
+                        anno=anno,
+                        mese=mese_numero
+                    )
+                    regsegnanti_to_save_this_month[target_counter.id] = reg_segnante_obj
+                else:
+                    reg_segnante_obj = regsegnanti_to_save_this_month[target_counter.id]
+
+                # Converti il valore in Decimal. Gestisci le stringhe vuote come None.
+                decimal_value = Decimal(str(value)) if value is not None and value != '' else None
+                
+                # Imposta l'attributo dinamicamente sull'oggetto reg_segnante_obj
+                setattr(reg_segnante_obj, model_field_name, decimal_value)
+
+            # Salva tutti gli oggetti regsegnanti raccolti per il mese corrente
+            for obj in regsegnanti_to_save_this_month.values():
+                obj.save()
+
+        return JsonResponse({'message': 'Dati salvati con successo!'}, status=200)
+
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Richiesta non valida, il formato JSON è malformato.'}, status=400)
+    except Contatore.DoesNotExist:
+        return JsonResponse({'error': 'Contatore non trovato.'}, status=404)
+    except InvalidOperation:
+        return JsonResponse({'error': 'Dati numerici non validi (assicurati che i campi siano numeri validi).'}, status=400)
+    except Exception as e:
+        print(f"Errore durante il salvataggio dei dati: {e}") # Registra l'errore per il debug
+        return JsonResponse({'error': f'Errore interno del server: {str(e)}'}, status=500)
 

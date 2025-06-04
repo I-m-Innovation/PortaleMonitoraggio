@@ -51,19 +51,72 @@ document.addEventListener('DOMContentLoaded', function() {
     // Aggiungi un event listener per il pulsante di salvataggio se esiste
     const saveButton = document.getElementById('diarioenergie_save');
     if (saveButton) {
-        saveButton.addEventListener('click', function() {
-            // Qui puoi aggiungere la logica per salvare i dati modificati
-            // Prima di cambiare anno, salva eventuali modifiche
-            console.log('Funzione di salvataggio dati non ancora implementata');
+        saveButton.addEventListener('click', async function() {
+            console.log('Tentativo di salvataggio dati...');
             
-            // Esempio di feedback visivo
-            saveButton.textContent = 'Salvato!';
-            saveButton.classList.add('btn-success');
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const table = document.getElementById('diarioenergie');
+            const contatoreId = table.dataset.contatoreId;
+            const annoCorrente = yearSelect.value; // Anno attualmente selezionato
+
+            const modifiedData = [];
+            const rows = table.querySelectorAll('tbody tr[data-mese]');
             
-            setTimeout(() => {
-                saveButton.textContent = 'Salva';
-                saveButton.classList.remove('btn-success');
-            }, 2000);
+            rows.forEach(row => {
+                const meseNumero = row.dataset.mese;
+                const rowData = { mese_numero: meseNumero };
+                
+                // Raccogli solo i dati delle celle editabili
+                row.querySelectorAll('td[contenteditable="true"]').forEach(cell => {
+                    const field = cell.dataset.field;
+                    let value = cell.textContent.trim();
+                    // Converti in numero se il tipo di dato è numerico e non è vuoto
+                    if (cell.dataset.type === 'number' && value !== '') {
+                        value = parseFloat(value.replace(',', '.')); // Sostituisci virgola con punto per i decimali
+                        if (isNaN(value)) {
+                            value = null; // Imposta a null se non è un numero valido
+                        }
+                    } else if (value === '') {
+                        value = null; // Imposta a null se la cella è vuota
+                    }
+                    rowData[field] = value;
+                });
+                modifiedData.push(rowData);
+            });
+            
+            console.log('Dati da salvare:', modifiedData);
+
+            try {
+                const response = await fetch('/automazione-dati/api/salva_diario_energie/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: JSON.stringify({
+                        contatore_id: contatoreId,
+                        anno: annoCorrente,
+                        dati_mensili: modifiedData
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showNotification(result.message || 'Dati salvati con successo!', 'success');
+                    // Aggiorna la pagina dopo il salvataggio per ricaricare i dati da DB
+                    window.location.reload(); 
+                } else {
+                    showNotification(result.error || 'Errore durante il salvataggio dei dati.', 'danger');
+                }
+            } catch (error) {
+                console.error('Errore nella richiesta di salvataggio:', error);
+                showNotification('Si è verificato un errore di rete o del server.', 'danger');
+            }
+            
+            // Rimuovi il feedback visivo temporaneo, sarà ricaricato con il reload
+            saveButton.textContent = 'Salva';
+            saveButton.classList.remove('btn-success');
         });
     }
 
