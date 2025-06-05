@@ -135,7 +135,7 @@ def impianto(request, nickname):
 		# NAV-BAR
 		'link_corrispettivi': link_corrispettivi,
 		# PAGINA
-		'page_title': f'Analisi {impianto['nome_impianto']}',
+		'page_title': f"Analisi {impianto['nome_impianto']}",
 		# DATI PAGINA
 		'nickname': nickname,
 		'impianto': impianto,

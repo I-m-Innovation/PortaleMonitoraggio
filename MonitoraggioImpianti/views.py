@@ -172,7 +172,7 @@ def impianto(request, nickname):
 		context = {
 			# PAGINA
 			'link_corrispettivi': link_corrispettivi,
-			'page_title': f'Monitoraggio {impianto['nome_impianto']}',
+			'page_title': f"Monitoraggio {impianto['nome_impianto']}",
 			'refresh': refresh_interval,
 			# DATI
 			'nickname': nickname,
@@ -194,7 +194,7 @@ def impianto(request, nickname):
 			impianto.update(StatALL)
 
 		except Exception as error:
-			print(f'Errore elaborazione pagina {impianto['nome_impianto']}',type(error).__name__, "–", error)
+			print(f'Errore elaborazione pagina {impianto["nome_impianto"]}',type(error).__name__, "–", error)
 			impianto = impianto.__dict__
 			DF_stat = pd.DataFrame()
 			impianto['StatALL'] = {}
@@ -205,7 +205,7 @@ def impianto(request, nickname):
 		context = {
 			# PAGINA
 			'link_corrispettivi': link_corrispettivi,
-			'page_title': f'Monitoraggio {impianto['nome_impianto']}',
+			'page_title': f"Monitoraggio {impianto['nome_impianto']}",
 			'refresh': refresh_interval,
 			# DATI
 			'nickname': nickname,

@@ -25,6 +25,7 @@ urlpatterns = [
     path('automazione/api/letture-monofasica/<int:contatore_id>/<int:anno>/', get_letture_monofasica_per_anno, name='api_get_letture_monofasica_anno_alt'),
     path('api/test-dati-monofasica/<int:contatore_id>/', test_dati_database_monofasica, name='api_test_dati_monofasica'),
     path('api/salva_diario_energie/', views.salva_diario_energie, name='salva_diario_energie'),
+    path('modifica-contatore/<int:contatore_id>/', defconatori.modifica_contatore, name='modifica_contatore'),
    
     
 ]

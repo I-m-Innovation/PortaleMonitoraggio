@@ -13,10 +13,6 @@ class Contatore(models.Model):
         ('Ausiliare', 'Ausiliare'),
     ]
     
-    MARCA_CHOICES = [
-        ('Kaifa', 'Kaifa'),
-        ('Gesis', 'Gesis'),
-    ]
     TIPOLOGIAFASCIO_CHOICES = [
         ('Monofascio', 'Monofascio'),
         ('Trifascio', 'Trifascio'),
@@ -29,12 +25,12 @@ class Contatore(models.Model):
     tipologia = models.CharField(max_length=20, choices=TIPOLOGIA_CHOICES)
     tipologiafascio = models.CharField(max_length=20, choices=TIPOLOGIAFASCIO_CHOICES, null=True, blank=True)
     k = models.IntegerField()
-    marca = models.CharField(max_length=20, choices=MARCA_CHOICES)
+    marca = models.CharField(max_length=20,  null=True, blank=True)
     modello = models.CharField(max_length=50)
     data_installazione = models.DateField()
 
     # Può essere vuoto (null=True) per i contatori attivi.
-    data_dismissione = models.DateField(null=True, blank=True) 
+    data_dismissione = models.DateField(null=True, blank=True)
     # --- FINE NUOVO CAMPO ---
     
     def __str__(self):

@@ -4,6 +4,7 @@ import io
 import calendar
 from datetime import datetime, timedelta
 import os
+import requests
 
 # Credenziali FTP del GME
 GME_FTP_USERNAME = "DAMIANOZILIO"  # Rimossi gli spazi superflui

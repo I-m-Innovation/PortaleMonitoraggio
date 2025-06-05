@@ -63,6 +63,9 @@ def salva_contatore(request):
         matricola = request.POST.get('matricola')
         k = request.POST.get('k')
         marca = request.POST.get('marca')
+        # Se la marca selezionata è 'Altro', usa il valore di 'marca_altro'
+        if marca == 'Altro':
+            marca = request.POST.get('marca_altro')
         modello = request.POST.get('modello')
         data_installazione = request.POST.get('data_installazione')
         impianto_id = request.POST.get('impianto_id')
@@ -177,6 +180,12 @@ def salva_contatore_sostituzione(request):
         # 3. Creiamo il nuovo contatore
         # Modifica: Recupera l'impianto dal modello corretto (MonitoraggioImpianto)
         impianto_monitoraggio = get_object_or_404(MonitoraggioImpianto, nickname=nickname)
+        
+        # Gestione della marca del nuovo contatore
+        nuova_marca = request.POST.get('marca')
+        if nuova_marca == 'Altro':
+            nuova_marca = request.POST.get('marca_altro')
+
         nuovo_contatore = Contatore(
             # Rimosso: impianto=impianto, (il modello Contatore non ha questo campo)
             impianto_nickname=impianto_monitoraggio.nickname, # Usa il nickname dall'impianto corretto
@@ -186,7 +195,7 @@ def salva_contatore_sostituzione(request):
             tipologiafascio=request.POST.get('tipologiafascio'),
             matricola=request.POST.get('matricola'),
             k=request.POST.get('k'),
-            marca=request.POST.get('marca'),
+            marca=nuova_marca,
             modello=request.POST.get('modello'),
             data_installazione=request.POST.get('data_installazione'),
         )
@@ -270,4 +279,31 @@ def elimina_contatore(request, contatore_id):
                  return redirect('automazione-dati')
         except NameError: # Se nickname_impianto non è stato definito a causa dell'errore
              return redirect('automazione-dati')
+
+def modifica_contatore(request, contatore_id):
+    contatore = get_object_or_404(Contatore, id=contatore_id)
+    if request.method == 'POST':
+        # Aggiorna i campi del contatore con i dati del POST
+        contatore.nome = request.POST.get('nome')
+        contatore.pod = request.POST.get('pod')
+        contatore.tipologia = request.POST.get('tipologia')
+        contatore.tipologiafascio = request.POST.get('tipologiafascio')
+        contatore.matricola = request.POST.get('matricola')
+        contatore.k = request.POST.get('k')
+        marca = request.POST.get('marca')
+        if marca == 'Altro':
+            marca = request.POST.get('marca_altro')
+        contatore.marca = marca
+        contatore.modello = request.POST.get('modello')
+        contatore.data_installazione = request.POST.get('data_installazione')
+        contatore.save()
+        messages.success(request, "Dati contatore aggiornati con successo!")
+        return redirect('panoramica-contatore', nickname=contatore.impianto_nickname)
+    
+    # Per richieste GET, mostra il form precompilato
+    context = {
+        'contatore': contatore,
+        'impianto': contatore.impianto, # Assicurati che l'impianto sia disponibile per il template
+    }
+    return render(request, 'modifica_contatore.html', context)
 

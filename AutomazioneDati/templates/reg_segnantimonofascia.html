@@ -24,6 +24,7 @@
             <li class="list-group-item">Matricola: {{ contatore_selezionato.matricola }}</li>
             <li class="list-group-item">Modello: {{ contatore_selezionato.modello }}</li>
             <li class="list-group-item">Data installazione: {{ contatore_selezionato.data_installazione }}</li>
+            <li class="list-group-item">Marca: {{ contatore_selezionato.marca }}</li>
         </ul>
     {% else %}
         <div class="alert alert-danger">
@@ -43,6 +44,7 @@
             {{ impianto.nome_impianto }} - {{ contatore_selezionato.nome }}
         </div>
         <div> <button type="button" class="btn btn-light" onclick="window.location.href='{% url 'panoramica-contatore' nickname=impianto.nickname %}'">Torna a diario letture </button> </div>
+        <div> <button type="button" class="btn btn-light" onclick="window.location.href='{% url 'modifica_contatore' contatore_selezionato.id %}'">Modifica dati contatore  </button> </div>
         <div class="dropdown-container">
             <select id="year-select" class="custom-select">
                 <option value="2020" {% if anno_corrente == '2020' %}selected{% endif %}>2020</option>

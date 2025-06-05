@@ -68,10 +68,13 @@
         </div>
         <div class="form-group">
             <label for="marca">Marca</label>
-            <select name="marca" id="marca" class="form-control">
+            <select name="marca" id="marca" class="form-control" onchange="checkMarcaSostituzione(this)">
+                <option value="">-- Seleziona una marca --</option>
                 <option value="Kaifa">Kaifa</option>
                 <option value="Gesis">Gesis</option>
+                <option value="Altro">Altro</option>
             </select>
+            <input type="text" id="marca_altro_sostituzione" name="marca_altro" class="form-control" placeholder="Specifica altra marca" style="display:none; margin-top: 10px;">
         </div>
         <div class="form-group">
             <label for="modello">Modello</label>
@@ -105,3 +108,19 @@
     {% endif %}
 </div>
 {% endblock content %}
+
+{% block extra_js %}
+<script>
+    function checkMarcaSostituzione(selectElement) {
+        var altroInput = document.getElementById('marca_altro_sostituzione');
+        if (selectElement.value === 'Altro') {
+            altroInput.style.display = 'block';
+            altroInput.setAttribute('required', 'required');
+        } else {
+            altroInput.style.display = 'none';
+            altroInput.removeAttribute('required');
+            altroInput.value = '';
+        }
+    }
+</script>
+{% endblock extra_js %}

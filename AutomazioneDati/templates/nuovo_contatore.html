@@ -40,10 +40,13 @@
          </div>
          <div class="form-group">
              <label for="marca">Marca</label>
-             <select name="marca" id="marca" class="form-control">
+             <select name="marca" id="marca" class="form-control" onchange="checkMarca(this)">
+                 <option value="">-- Seleziona una marca --</option>
                  <option value="Kaifa">Kaifa</option>
                  <option value="Gesis">Gesis</option>
+                 <option value="Altro">Altro</option>
              </select>
+             <input type="text" id="marca_altro" name="marca_altro" class="form-control" placeholder="Specifica altra marca" style="display:none; margin-top: 10px;">
          </div>
          <div class = "form-group">
             <label for = "tipologiafascio">Fascia</label>
@@ -78,3 +81,19 @@
 </div>
 
 {% endblock content %}
+
+{% block extra_js %}
+<script>
+    function checkMarca(selectElement) {
+        var altroInput = document.getElementById('marca_altro');
+        if (selectElement.value === 'Altro') {
+            altroInput.style.display = 'block';
+            altroInput.setAttribute('required', 'required'); // Fa sì che il campo sia obbligatorio solo quando visibile
+        } else {
+            altroInput.style.display = 'none';
+            altroInput.removeAttribute('required');
+            altroInput.value = ''; // Pulisci il campo quando nascosto
+        }
+    }
+</script>
+{% endblock extra_js %}
