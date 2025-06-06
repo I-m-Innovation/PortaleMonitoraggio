@@ -142,7 +142,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const contatore_id = document.getElementById('save-button-monofasica').getAttribute('data-contatore-id');
             console.log(`Anno cambiato a: ${nuovoAnno} per contatore ${contatore_id}`);
             
-            // Carica i dati per il nuovo anno
+            // Aggiorna prima le colonne del mese con il nuovo anno
+            aggiornaColonneMeseMonofasica(nuovoAnno);
+            // Poi carica i dati per il nuovo anno
             caricaDatiPerAnnoMonofasica(contatore_id, nuovoAnno);
         });
     }
@@ -303,8 +305,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         aggiornaTabellaDatiSalvatiMonofasica(data.letture_salvate);
                     }
                     
+                    // Costruisci il messaggio di successo
+                    let message = data.message || 'Dati salvati con successo!';
+                    
+                    // Aggiungi informazioni sul backup se disponibili
+                    if (data.backup) {
+                        if (data.backup.success) {
+                            message += '\n\nBackup automatico creato: ' + data.backup.message;
+                        } else {
+                            message += '\n\nAttenzione: Il backup automatico non è riuscito: ' + data.backup.message;
+                        }
+                    }
+                    
                     // Mostra messaggio di successo
-                    alert(data.message);
+                    alert(message);
                 } else {
                     // Mostra errori
                     let errorMessage = data.message;
@@ -335,6 +349,40 @@ document.addEventListener('DOMContentLoaded', function() {
         caricaDatiPerAnnoMonofasica(contatore_id, anno_corrente);
     }
 });
+
+// Funzione per aggiornare le colonne del mese con l'anno selezionato
+function aggiornaColonneMeseMonofasica(anno) {
+    console.log(`Aggiornamento colonne mese monofasica per anno: ${anno}`);
+    
+    // Nomi dei mesi in italiano
+    const nomiMesi = [
+        'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+        'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+    ];
+    
+    // Aggiorna i mesi da 1 a 12 (dell'anno selezionato)
+    for (let mese = 1; mese <= 12; mese++) {
+        const riga = document.querySelector(`tr[data-mese="${mese}"]`);
+        if (riga) {
+            const colonnaAnno = riga.querySelector('.mese-cell .anno-display');
+            if (colonnaAnno) {
+                colonnaAnno.textContent = anno;
+            }
+        }
+    }
+    
+    // Aggiorna gennaio dell'anno successivo (riga 13)
+    const rigaGennaioSuccessivo = document.querySelector('tr[data-mese="13"]');
+    if (rigaGennaioSuccessivo) {
+        const colonnaGennaioSuccessivo = rigaGennaioSuccessivo.querySelector('.mese-cell .anno-display');
+        if (colonnaGennaioSuccessivo) {
+            const annoSuccessivo = parseInt(anno) + 1;
+            colonnaGennaioSuccessivo.textContent = annoSuccessivo;
+        }
+    }
+    
+    console.log(`Colonne mese monofasica aggiornate per anno ${anno} e anno successivo ${parseInt(anno) + 1}`);
+}
 
 // Funzione per caricare i dati per un anno specifico
 function caricaDatiPerAnnoMonofasica(contatore_id, anno) {

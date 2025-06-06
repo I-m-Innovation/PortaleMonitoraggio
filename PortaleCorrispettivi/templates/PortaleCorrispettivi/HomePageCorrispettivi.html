@@ -24,6 +24,7 @@
 								<option value="2025">2025</option>
 							</select>
 						</div>
+						
 						<div class="row p-4">
 								<div class="col" style="min-height: 70vh; min-width: 60%">
 									<div id="chart" style="height: 100%; background-color: rgba(255,255,255,0.7)"></div>
@@ -57,182 +58,15 @@
 						</div>
 					</div>
 			</div>
-		</div>
+			
 	</main>
-	<script>
-			$( document ).ready(function () {
-					var grafico = echarts.init(document.getElementById('chart'));
-					window.addEventListener('resize', function() {grafico.resize();});
-                    
-					var anno = '{{ curr_anno }}'
-
-          function get_display_data() {
-		          var urls = [];
-							{% for nickname, impianto in impianti.items %}
-									if (!("{{ nickname }}"==='ionico_SA3' || "{{ nickname }}"==='petilia_bf_canaletta')) {
-											urls.push(url_corrispettivi_{{ nickname }})
-				          }
-							{% endfor %}
-							console.log(urls);
-							let mesi = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre']
-							let results= [];
-		                    
-							let energie = [];
-							let corrispettivi = [];
-							let fatturati = [];
-							let incassi = [];
-							
-							let color_palette = [
-									'rgb(255,88,88)', 
-									'rgb(225,219,195)', 
-									'rgb(195,207,225)', 
-									'rgb(252,174,125)'
-							];
-									
-							let alarm_color = [
-									'rgb(255,0,0)', 
-									'rgb(219,87,60)', 
-									'rgb(226,150,67)',
-							];
-					
-							$.when.apply($, urls.map(function(url) {
-									return $.ajax({
-				              'url': url,
-				              'method': "GET",
-				              'cache': false,
-				              'contentType': 'application/json'
-				          });
-							})).done(function() {
-									for (var i = 0; i < arguments.length; i++) {
-											results.push(arguments[i][0].TableCorrispettivi);
-									}
-									{#console.log(results);#}
-									// RESULTS è UN ARRAY DI 4 ELEMENTI (CIASCUNO PER OGNI CENTRALE), OGNUNO CONTIENE UNA LISTA DI OGGETTI (UNO PER OGNI MESE), 
-									// CHE CONTENGONO I DATI AGGREGATI MENSILI DI ENERGIA, CORRISPETTIVI ETC.
-									// SI CREA UN ARRAY UNICO "lista_mesi" CON TUTTI I DATI DI OGNI CENTRALE E MESE
-									var lista_mesi = $.map(results, function (v) {
-											return v;
-									});
-									{#console.log(lista_mesi);#}
-									// PER OGNI ELEMENTO DELL'ARRAY "lista_mesi" AGGREGO I DATI DI TUTTE LE CENTRALI RELATIVI A QUEL MESE
-									results = [];
-									mesi.forEach(mese => {
-											let filtered_mese = lista_mesi.filter(el => el.mese===mese);
-											let tot_E_incentivata = filtered_mese.reduce((total, obj) => obj.E_incentivata + total,0);
-											let tot_corrisp = filtered_mese.reduce((total, obj) => obj.aspettata_inc + obj.aspettata_non_inc + total,0);
-											let tot_fatturazione = filtered_mese.reduce((total, obj) => obj.fatturazione_tfo + obj.fatturazione_non_inc + total,0);
-											let tot_incassi = filtered_mese.reduce((total, obj) => obj.incassi + total,0);
-											results.push({'i': filtered_mese[0].i, 'mese': mese, 'E_incentivata': tot_E_incentivata, 'tot_corrisp': tot_corrisp, 'tot_fatturazione': tot_fatturazione, 'tot_incassi': tot_incassi})
-									})
-									{#console.log(results);#}
-				
-									energie = results.map((el, index)=> parseFloat(el.E_incentivata || ''));
-									corrispettivi = results.map((el, index)=> parseFloat(el.tot_corrisp || ''));
-									fatturati = results.map((el, index)=> parseFloat(el.tot_fatturazione || ''));
-									incassi = results.map((el, index)=> parseFloat(el.tot_incassi || ''));
-									
-									datatable.clear();
-									datatable.rows.add(results);
-									datatable.draw();
-		                            
-									grafico.setOption({
-											xAxis: [{type:'category', data: mesi, show: true, axisTick: {alignWithLabel: true}, 
-													axisLabel: {formatter: val => val.substring(0, 3)}
-											},],
-											grid: [{top:'10%', bottom: '10%', left: '10%', right: '10%'}],
-											series: [
-													{data: energie, type: 'line',xAxisIndex: 0, yAxisIndex: 0, name:'Energia incentivata', 
-															tooltip: {valueFormatter: value => toLocaleKWh(value,0)}, color: color_palette[0], symbolSize: 1, 
-															label: {show: true, position: 'top', backgroundColor: '#efefef', borderRadius: 2, 
-																	formatter: function (params) {
-																			return params.value === 0 ? '': toLocaleKWh(params.value,0)
-																	}
-															}
-													}, 
-													{data: corrispettivi, type: 'bar', xAxisIndex: 0, yAxisIndex: 1,name:'Corrispettivi', 
-															tooltip: {valueFormatter: value => toLocaleEUR(value,0)}, color: color_palette[1], 
-															label: {show: true, position: 'inside',backgroundColor: '#efefef', borderRadius: 2, 
-																	formatter: function (params) {
-																			return params.value === 0 ? '': toLocaleEUR(params.value,0)
-																	}
-															}
-													}, 
-													{data: incassi, type: 'bar', xAxisIndex: 0, yAxisIndex: 1,name:'Incassi', 
-															tooltip: {valueFormatter: value => toLocaleEUR(value,0)}, color: color_palette[2],
-													},
-											]
-									});
-							});
-					
-							grafico.setOption({
-									tooltip: {trigger: 'axis'},
-									xAxis: [{type:'category', data: mesi, show: true, axisTick: {alignWithLabel: true},
-											axisLabel: {formatter: val => val.substring(0, 3)}
-									},], 
-									yAxis: [
-											{
-													type: 'value', name: 'Energie (kWh)', axisLine: {show: true,}, 
-													axisLabel: {formatter: val => toLocale(val,0)}, min: 0,
-											}, 
-											{
-													type: 'value', axisLine: {show: true,}, 
-													axisLabel: {formatter: val => toLocaleEUR(val,0)}, min: 0,
-											},
-									], 
-									legend: {},
-							})
-									
-							// TABELLA 1 (CORRISPETTIVI)
-							var datatable = $('#tabella_corrispettivi').dataTable({
-									destroy: true, searching: false, paging: false, info : false,
-									// INPUT DATI TABELLA
-									data: results, 
-									columns: [
-											{ data: "i" }, 
-											{ data: "mese" }, 
-											{ data: "E_incentivata" }, 
-											{ data: "tot_corrisp" }, 
-											{ data: "tot_fatturazione" }, 
-											{ data: "tot_incassi" },
-									], 
-									// FORMATTAZIONE TABELLA
-									columnDefs: [
-											{targets: [2,3,4,5], className: 'text-center', defaultContent: "-"}, {target: 0, visible: false},
-											{target: [3,4,5], 
-													render: function ( data, type, row, meta ) {
-															return data === '' || data === 0 ? '-': DataTable.render.number(null, null, 2,'', ' €').display(data)
-													}
-											},
-											{target: 2, 
-													render: function ( data, type, row, meta ) {
-															return data === '' || data === 0 ? '-': DataTable.render.number(null, null, 0,).display(data)
-													}
-											},
-									], 
-									// SOMMA TOTALI E PUSH NEL FOOTER DELLA TABELLA 1
-									drawCallback: function () {
-											var api = this.api();
-											$(api.table().column(2).footer([0])).html(
-													'<b>' + toLocale(api.column( 2, {page:'current'} ).data().sum(),0) + '</b>'
-											);
-											for (let i = 3; i < 6; i++) {
-													$(api.table().column(i).footer([0])).html(
-															'<b>' + toLocaleEUR(api.column( i, {page:'current'} ).data().sum(),2) + '</b>'
-													);
-											}
-									},
-							}).api();
-          }
-          
-					var e = document.getElementById('selettore-anno')
-					function onChange() {
-							var value = e.value;
-							anno = value.toString();
-							console.log(value);
-							get_display_data()
-					}
-					e.onchange = onChange;
-					onChange();
-			})
-	</script>
+	
+	<!-- HIGHCHARTS per i grafici -->
+	<script src="https://code.highcharts.com/highcharts.js"></script>
+	<script src="https://code.highcharts.com/modules/exporting.js"></script>
+	
+	<script src="https://code.highcharts.com/modules/export-data.js"></script>
+	
+	<script src="{% static 'js/totalgrafico.js' %}"></script>
+	
 {% endblock %}

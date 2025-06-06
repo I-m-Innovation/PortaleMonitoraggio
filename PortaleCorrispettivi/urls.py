@@ -12,4 +12,5 @@ urlpatterns = [
 	# path('api/consorzi/<str:anno_nickname>/', API_views.TableConsorzi.as_view(), name='api-table-consorzi'),
 	path('report/<str:nickname>/reportpfd/', views.genera_reportPDF, name='genera-report-pdf'),
 	path('api/dati-mensili-tabella/', API_views.dati_mensili_tabella_api, name='dati_mensili_tabella_api'),
+	path('api/dati-aggregati/<int:anno>/', API_views.DatiAggregatiCentrali.as_view(), name='api-dati-aggregati-centrali'),
 ]

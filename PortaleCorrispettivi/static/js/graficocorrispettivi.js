@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Itera su ogni mese per recuperare i dati dalla tabella
         for (let mese = 1; mese <= 12; mese++) {
-            // Recupera energia dall'input della tabella
+            // Recupera energia dall\'input della tabella
             const energiaElement = $(`#table1_${anno} input[data-mese="${mese}"][data-campo="energia_kwh"]`);
             if (energiaElement.length === 0) {
                 console.warn(`Elemento energia per mese ${mese} anno ${anno} non trovato`);

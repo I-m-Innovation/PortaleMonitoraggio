@@ -41,33 +41,33 @@ from .models import *
 # 	return df
 
 
-# # FUNZIONE LETTURA DATI FILE CASHFLOW
-# def load_cashflow(diario_cashflow, sheet):
-# 	# CARICO FILE DI CASH-FLOW (contiene i dati di tutti gli anni)
-# 	df = pd.read_excel(diario_cashflow, sheet, index_col=None, header=[2, 3], na_values=[np.nan])
-# 	df = df.dropna(axis=1, how='all')
-# 	# NOME COLONNE NEL FILE EXCEL
-# 	x = ['Fatturazione TFO', 'Fatturazione Energia non incentivata', 'Riepilogo pagamenti']
+# FUNZIONE LETTURA DATI FILE CASHFLOW
+def load_cashflow(diario_cashflow, sheet):
+	# CARICO FILE DI CASH-FLOW (contiene i dati di tutti gli anni)
+	df = pd.read_excel(diario_cashflow, sheet, index_col=None, header=[2, 3], na_values=[np.nan])
+	df = df.dropna(axis=1, how='all')
+	# NOME COLONNE NEL FILE EXCEL
+	x = ['Fatturazione TFO', 'Fatturazione Energia non incentivata', 'Riepilogo pagamenti']
 
-# 	# SISTEMAZIONE DATAFRAME IN BASE ALLA FORMATTAZIONE DELLA TABELLA EXCEL
+	# SISTEMAZIONE DATAFRAME IN BASE ALLA FORMATTAZIONE DELLA TABELLA EXCEL
 
-# 	# il dataframe df2 contiene 2 righe di headers:
-# 	# _____________________________________________________________________________________________________________________________________________________________________
-# 	# |Fatturazione TFO | Fatturazione TFO       | Fatturazione Energia non incentivata | Fatturazione Energia non incentivata | Riepilogo pagamenti | Riepilogo pagamenti |
-# 	# |Periodo          | Energia di competenza  | Periodo                              | Energia di competenza                | Periodo             | Incasso/pagamento   |
-# 	# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	# il dataframe df2 contiene 2 righe di headers:
+	# _____________________________________________________________________________________________________________________________________________________________________
+	# |Fatturazione TFO | Fatturazione TFO       | Fatturazione Energia non incentivata | Fatturazione Energia non incentivata | Riepilogo pagamenti | Riepilogo pagamenti |
+	# |Periodo          | Energia di competenza  | Periodo                              | Energia di competenza                | Periodo             | Incasso/pagamento   |
+	# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-# 	# LISTA DI LISTE BOOLEANE CHE INDICANO IN df2 LA POSIZIONE DELLE COLONNE DATE IN x
-# 	ll = [list(df.columns.get_level_values(0).str.contains(z)) for z in x]
-# 	# LISTA BOOLEANA CHE INDICA LA POSIZIONE DI TUTTE LE COLONNE DATE IN x
-# 	ll = list(map(any, zip(*ll)))
+	# LISTA DI LISTE BOOLEANE CHE INDICANO IN df2 LA POSIZIONE DELLE COLONNE DATE IN x
+	ll = [list(df.columns.get_level_values(0).str.contains(z)) for z in x]
+	# LISTA BOOLEANA CHE INDICA LA POSIZIONE DI TUTTE LE COLONNE DATE IN x
+	ll = list(map(any, zip(*ll)))
 
-# 	# FORMATTAZIONE IN DATETIME DELLA SOTTOCOLONNA 'Periodo' RELATIVA ALLE COLONNE IN x
-# 	df = df.loc[:, ll]
-# 	for s in x:
-# 		df[(s, 'Periodo')] = pd.to_datetime(df[(s, 'Periodo')], errors='coerce')
-# 	df = df.dropna(subset=[('Fatturazione TFO', 'Periodo')])
-# 	return df
+	# FORMATTAZIONE IN DATETIME DELLA SOTTOCOLONNA 'Periodo' RELATIVA ALLE COLONNE IN x
+	df = df.loc[:, ll]
+	for s in x:
+		df[(s, 'Periodo')] = pd.to_datetime(df[(s, 'Periodo')], errors='coerce')
+	df = df.dropna(subset=[('Fatturazione TFO', 'Periodo')])
+	return df
 
 
 # def tabellaconsorzi_data(anno_nickname):
@@ -970,5 +970,103 @@ def tabellamisure_data(anno_nickname):
         import traceback
         traceback.print_exc()
         return {"error": str(e), "TableMisure": []}
+
+
+class DatiAggregatiCentrali(APIView):
+	"""API per ottenere i dati aggregati di tutte le centrali per il grafico principale"""
+	renderer_classes = [JSONRenderer]
+	permission_classes = (IsAuthenticated,)
+	
+	def get(self, request, anno, format=None):
+		try:
+			anno = int(anno)
+			
+			# Ottieni tutti gli impianti
+			impianti = Impianto.objects.all()
+			
+			# Dizionario per aggregare i dati per mese
+			dati_aggregati = {}
+			
+			for mese in range(1, 13):  # Da gennaio a dicembre
+				dati_aggregati[mese] = {
+					'mese': mese,
+					'energia_kwh': 0,
+					'corrispettivi_tfo': 0,
+					'fatturazione_tfo': 0,
+					'incassi': 0
+				}
+			
+			# Per ogni impianto, aggrega i dati
+			for impianto in impianti:
+				print(f"Elaborando impianto: {impianto.nome_impianto}")
+				
+				# Cerca il contatore associato all'impianto
+				contatore_obj = Contatore.objects.filter(
+					models.Q(impianto=impianto.id) | 
+					models.Q(impianto_nickname=impianto.nickname)
+				).first()
+				
+				if contatore_obj:
+					# Ottieni i dati dal modello regsegnanti
+					dati_reg = regsegnanti.objects.filter(contatore=contatore_obj, anno=anno)
+				else:
+					# Fallback: cerca direttamente per impianto_nickname se il campo esiste
+					dati_reg = regsegnanti.objects.filter(anno=anno)
+					if hasattr(regsegnanti, 'impianto_nickname'):
+						dati_reg = dati_reg.filter(impianto_nickname=impianto.nickname)
+					else:
+						continue  # Salta questo impianto se non trovato
+				
+				# Carica dati dai file Excel per questo impianto
+				for dato_reg in dati_reg:
+					mese = dato_reg.mese
+					
+					# Calcola energia incentivata
+					if dato_reg.prod_campo is not None:
+						prod_campo_float = float(dato_reg.prod_campo)
+						prod_campo_98 = prod_campo_float * 0.98
+						
+						if dato_reg.imm_campo is not None:
+							imm_campo_float = float(dato_reg.imm_campo)
+							energia_incentivata = min(prod_campo_98, imm_campo_float)
+						else:
+							energia_incentivata = prod_campo_98
+					else:
+						energia_incentivata = 0
+					
+					# Carica dati dai file Excel per questo mese e impianto
+					dati_excel = carica_dati_da_excel(impianto, anno, mese)
+					
+					# Aggrega i dati
+					dati_aggregati[mese]['energia_kwh'] += energia_incentivata
+					
+					# Calcola corrispettivi TFO (assumo 0.21 €/kWh come nell'altro codice)
+					corrispettivi_incentivati = energia_incentivata * 0.21
+					dati_aggregati[mese]['corrispettivi_tfo'] += corrispettivi_incentivati
+					
+					# Aggiungi fatturazione e incassi se disponibili
+					if dati_excel['fatturazione_tfo'] is not None:
+						dati_aggregati[mese]['fatturazione_tfo'] += dati_excel['fatturazione_tfo']
+					
+					if dati_excel['incassi'] is not None:
+						dati_aggregati[mese]['incassi'] += dati_excel['incassi']
+			
+			# Converti il dizionario in lista ordinata per mese
+			dati_lista = [dati_aggregati[mese] for mese in range(1, 13)]
+			
+			return Response({
+				'success': True,
+				'anno': anno,
+				'dati': dati_lista
+			})
+			
+		except Exception as e:
+			print(f"Errore nell'elaborazione dati aggregati: {str(e)}")
+			import traceback
+			traceback.print_exc()
+			return Response({
+				'success': False,
+				'error': str(e)
+			})
 
 

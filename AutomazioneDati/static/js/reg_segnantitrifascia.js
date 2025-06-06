@@ -279,8 +279,20 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Risposta dal server:', data);
             
             if (data.success) {
+                // Costruisci il messaggio di successo
+                let message = 'Dati salvati con successo!';
+                
+                // Aggiungi informazioni sul backup se disponibili
+                if (data.backup) {
+                    if (data.backup.success) {
+                        message += '\n\nBackup automatico creato: ' + data.backup.message;
+                    } else {
+                        message += '\n\nAttenzione: Il backup automatico non è riuscito: ' + data.backup.message;
+                    }
+                }
+                
                 // Mostra messaggio di successo
-                alert('Dati salvati con successo!');
+                alert(message);
                 
                 // Opzionalmente, aggiorna la tabella con i dati salvati
                 if (data.letture_salvate) {
@@ -315,6 +327,9 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log(`DEBUG JS: loadDataForSelectedYear chiamata con anno=${selectedYear}, contatore=${contatoreId}`);
             
             if (contatoreId && selectedYear) {
+                // Aggiorna prima le colonne del mese con il nuovo anno
+                aggiornaColonneMese(selectedYear);
+                // Poi carica i dati per l'anno selezionato
                 caricaDatiAnno(selectedYear);
             } else {
                 console.warn('Contatore ID o anno non disponibili per il caricamento dei dati.');
@@ -338,6 +353,40 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('- saveButton:', saveButton);
     }
 });
+
+// Funzione per aggiornare le colonne del mese con l'anno selezionato
+function aggiornaColonneMese(anno) {
+    console.log(`Aggiornamento colonne mese per anno: ${anno}`);
+    
+    // Nomi dei mesi in italiano
+    const nomiMesi = [
+        'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+        'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+    ];
+    
+    // Aggiorna i mesi da 1 a 12 (dell'anno selezionato)
+    for (let mese = 1; mese <= 12; mese++) {
+        const riga = document.querySelector(`tr[data-mese="${mese}"]`);
+        if (riga) {
+            const colonnaUese = riga.querySelector('.mese-cell .anno-display');
+            if (colonnaUese) {
+                colonnaUese.textContent = anno;
+            }
+        }
+    }
+    
+    // Aggiorna gennaio dell'anno successivo (riga 13)
+    const rigaGennaioSuccessivo = document.querySelector('tr[data-mese="13"]');
+    if (rigaGennaioSuccessivo) {
+        const colonnaGennaioSuccessivo = rigaGennaioSuccessivo.querySelector('.mese-cell .anno-display');
+        if (colonnaGennaioSuccessivo) {
+            const annoSuccessivo = parseInt(anno) + 1;
+            colonnaGennaioSuccessivo.textContent = annoSuccessivo;
+        }
+    }
+    
+    console.log(`Colonne mese aggiornate per anno ${anno} e anno successivo ${parseInt(anno) + 1}`);
+}
 
 // Funzione per convertire il formato italiano in formato ISO
 function convertToISODateTime(italianDateTime) {

@@ -65,12 +65,12 @@
             <table class="table table-bordered table-sm">
                 <thead>
                     <tr>
+                        <th>Mese</th>
                         <th>Data e ora presa</th>
                         <th>A1-</th>
                         <th>A2-</th>
                         <th>A3-</th>
                         <th>Totale -</th>
-                        <th>Totale calcolato -</th>
                         <th>A1+</th>
                         <th>A2+</th>
                         <th>A3+</th>
@@ -81,6 +81,7 @@
                 <tbody>
                     <!-- Gennaio -->
                     <tr data-mese="1">
+                        <td class="mese-cell" data-mese="1">Gennaio <span class="anno-display">{{ anno_corrente }}</span></td>
                         <td data-field="data_ora_lettura" contenteditable="true" class="editable-cell" data-mese="1" placeholder="gg/mm/aaaa hh:mm">
                             
                         </td>   
@@ -88,7 +89,6 @@
                         <td data-field="a2_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="totale_neg" class="calculated-field"></td>
-                        <td data-field="totale_calcolato_neg" class="calculated-field"></td>
                         <td data-field="a1_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a2_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_pos" contenteditable="true" class="editable-cell"></td>
@@ -97,6 +97,7 @@
                     
                     <!-- Febbraio -->
                     <tr data-mese="2">
+                        <td class="mese-cell" data-mese="2">Febbraio <span class="anno-display">{{ anno_corrente }}</span></td>
                         <td data-field="data_ora_lettura" contenteditable="true" class="editable-cell" data-mese="2" placeholder="gg/mm/aaaa hh:mm">
                             
                         </td>   
@@ -104,7 +105,6 @@
                         <td data-field="a2_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="totale_neg" class="calculated-field"></td>
-                        <td data-field="totale_calcolato_neg" class="calculated-field"></td>
                         <td data-field="a1_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a2_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_pos" contenteditable="true" class="editable-cell"></td>
@@ -113,14 +113,14 @@
                     
                     <!-- Marzo -->
                     <tr data-mese="3">
+                        <td class="mese-cell" data-mese="3">Marzo <span class="anno-display">{{ anno_corrente }}</span></td>
                         <td data-field="data_ora_lettura" contenteditable="true" class="editable-cell" data-mese="3" placeholder="gg/mm/aaaa hh:mm">
                             
                         </td>   
                         <td data-field="a1_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a2_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_neg" contenteditable="true" class="editable-cell"></td>
-                        <td data-field="totale_neg" class="calculated-field"></td>
-                        <td data-field="totale_calcolato_neg" class="calculated-field"></td>
+                        <td data-field="totale_neg" class="calculated-field"></td>      
                         <td data-field="a1_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a2_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_pos" contenteditable="true" class="editable-cell"></td>
@@ -129,6 +129,7 @@
                     
                     <!-- Aprile -->
                     <tr data-mese="4">
+                        <td class="mese-cell" data-mese="4">Aprile <span class="anno-display">{{ anno_corrente }}</span></td>
                         <td data-field="data_ora_lettura" contenteditable="true" class="editable-cell" data-mese="4" placeholder="gg/mm/aaaa hh:mm">
                             
                         </td>   
@@ -136,7 +137,6 @@
                         <td data-field="a2_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="totale_neg" class="calculated-field"></td>
-                        <td data-field="totale_calcolato_neg" class="calculated-field"></td>
                         <td data-field="a1_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a2_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_pos" contenteditable="true" class="editable-cell"></td>
@@ -145,6 +145,7 @@
                     
                     <!-- Maggio -->
                     <tr data-mese="5">
+                        <td class="mese-cell" data-mese="5">Maggio <span class="anno-display">{{ anno_corrente }}</span></td>
                         <td data-field="data_ora_lettura" contenteditable="true" class="editable-cell" data-mese="5" placeholder="gg/mm/aaaa hh:mm">
                             
                         </td>   
@@ -152,7 +153,6 @@
                         <td data-field="a2_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="totale_neg" class="calculated-field"></td>
-                        <td data-field="totale_calcolato_neg" class="calculated-field"></td>
                         <td data-field="a1_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a2_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_pos" contenteditable="true" class="editable-cell"></td>
@@ -161,6 +161,7 @@
                     
                     <!-- Giugno -->
                     <tr data-mese="6">
+                        <td class="mese-cell" data-mese="6">Giugno <span class="anno-display">{{ anno_corrente }}</span></td>
                         <td data-field="data_ora_lettura" contenteditable="true" class="editable-cell" data-mese="6" placeholder="gg/mm/aaaa hh:mm">
                             
                         </td>   
@@ -168,7 +169,6 @@
                         <td data-field="a2_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="totale_neg" class="calculated-field"></td>
-                        <td data-field="totale_calcolato_neg" class="calculated-field"></td>
                         <td data-field="a1_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a2_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_pos" contenteditable="true" class="editable-cell"></td>
@@ -177,6 +177,7 @@
                     
                     <!-- Luglio -->
                     <tr data-mese="7">
+                        <td class="mese-cell" data-mese="7">Luglio <span class="anno-display">{{ anno_corrente }}</span></td>
                         <td data-field="data_ora_lettura" contenteditable="true" class="editable-cell" data-mese="7" placeholder="gg/mm/aaaa hh:mm">
                             
                         </td>   
@@ -184,7 +185,6 @@
                         <td data-field="a2_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="totale_neg" class="calculated-field"></td>
-                        <td data-field="totale_calcolato_neg" class="calculated-field"></td>
                         <td data-field="a1_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a2_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_pos" contenteditable="true" class="editable-cell"></td>
@@ -193,6 +193,7 @@
                     
                     <!-- Agosto -->
                     <tr data-mese="8">
+                        <td class="mese-cell" data-mese="8">Agosto <span class="anno-display">{{ anno_corrente }}</span></td>
                         <td data-field="data_ora_lettura" contenteditable="true" class="editable-cell" data-mese="8" placeholder="gg/mm/aaaa hh:mm">
                             
                         </td>   
@@ -200,7 +201,6 @@
                         <td data-field="a2_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="totale_neg" class="calculated-field"></td>
-                        <td data-field="totale_calcolato_neg" class="calculated-field"></td>
                         <td data-field="a1_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a2_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_pos" contenteditable="true" class="editable-cell"></td>
@@ -209,6 +209,7 @@
                     
                     <!-- Settembre -->
                     <tr data-mese="9">
+                        <td class="mese-cell" data-mese="9">Settembre <span class="anno-display">{{ anno_corrente }}</span></td>
                         <td data-field="data_ora_lettura" contenteditable="true" class="editable-cell" data-mese="9" placeholder="gg/mm/aaaa hh:mm">
                             
                         </td>   
@@ -216,7 +217,6 @@
                         <td data-field="a2_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="totale_neg" class="calculated-field"></td>
-                        <td data-field="totale_calcolato_neg" class="calculated-field"></td>
                         <td data-field="a1_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a2_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_pos" contenteditable="true" class="editable-cell"></td>
@@ -225,14 +225,14 @@
                     
                     <!-- Ottobre -->
                     <tr data-mese="10">
+                        <td class="mese-cell" data-mese="10">Ottobre <span class="anno-display">{{ anno_corrente }}</span></td>
                         <td data-field="data_ora_lettura" contenteditable="true" class="editable-cell" data-mese="10" placeholder="gg/mm/aaaa hh:mm">
                             
                         </td>   
                         <td data-field="a1_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a2_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_neg" contenteditable="true" class="editable-cell"></td>
-                        <td data-field="totale_neg" class="calculated-field"></td>
-                        <td data-field="totale_calcolato_neg" class="calculated-field"></td>
+                        <td data-field="totale_neg" class="calculated-field"></td>  
                         <td data-field="a1_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a2_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_pos" contenteditable="true" class="editable-cell"></td>
@@ -241,6 +241,7 @@
                     
                     <!-- Novembre -->
                     <tr data-mese="11">
+                        <td class="mese-cell" data-mese="11">Novembre <span class="anno-display">{{ anno_corrente }}</span></td>
                         <td data-field="data_ora_lettura" contenteditable="true" class="editable-cell" data-mese="11" placeholder="gg/mm/aaaa hh:mm">
                             
                         </td>   
@@ -248,7 +249,6 @@
                         <td data-field="a2_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="totale_neg" class="calculated-field"></td>
-                        <td data-field="totale_calcolato_neg" class="calculated-field"></td>
                         <td data-field="a1_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a2_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_pos" contenteditable="true" class="editable-cell"></td>
@@ -257,6 +257,7 @@
                     
                     <!-- Dicembre -->
                     <tr data-mese="12">
+                        <td class="mese-cell" data-mese="12">Dicembre <span class="anno-display">{{ anno_corrente }}</span></td>
                         <td data-field="data_ora_lettura" contenteditable="true" class="editable-cell" data-mese="12" placeholder="gg/mm/aaaa hh:mm">
                             
                         </td>   
@@ -264,7 +265,6 @@
                         <td data-field="a2_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="totale_neg" class="calculated-field"></td>
-                        <td data-field="totale_calcolato_neg" class="calculated-field"></td>
                         <td data-field="a1_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a2_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_pos" contenteditable="true" class="editable-cell"></td>
@@ -273,6 +273,7 @@
                     
                     <!-- Gennaio dell'anno successivo (13a riga) -->
                     <tr data-mese="13" data-anno="{{ anno_corrente|add:1 }}">
+                        <td class="mese-cell" data-mese="13">Gennaio <span class="anno-display">{{ anno_corrente|add:1 }}</span></td>
                         <td data-field="data_ora_lettura" contenteditable="true" class="editable-cell" data-mese="13" placeholder="gg/mm/aaaa hh:mm">
                             
                         </td>   
@@ -280,7 +281,6 @@
                         <td data-field="a2_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_neg" contenteditable="true" class="editable-cell"></td>
                         <td data-field="totale_neg" class="calculated-field"></td>
-                        <td data-field="totale_calcolato_neg" class="calculated-field"></td>
                         <td data-field="a1_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a2_pos" contenteditable="true" class="editable-cell"></td>
                         <td data-field="a3_pos" contenteditable="true" class="editable-cell"></td>
@@ -298,9 +298,7 @@
                 data-save-url="{% url 'salva-letture-trifasica' contatore_id=contatore_selezionato.id %}">
             <i class="bi bi-save"></i> Salva
         </button>
-        
     </div>
-
 </div>
 {% endif %}
 {% endblock content %}

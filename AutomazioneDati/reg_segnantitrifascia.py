@@ -16,9 +16,56 @@ from django.utils.dateparse import parse_datetime
 from django.db import models
 from django.utils import timezone
 import logging
+import shutil
+import os
+from django.conf import settings
 
 # Configura il logging per debug
 logger = logging.getLogger(__name__)
+
+def crea_backup_database():
+    """
+    Crea una copia di backup del database SQLite nella cartella ownCloud
+    (sovrascrive sempre lo stesso file)
+    """
+    try:
+        # Percorso del database corrente
+        db_path = os.path.join(settings.BASE_DIR, 'db.sqlite3')
+        
+        # Percorso di destinazione per il backup
+        backup_dir = r"C:\Users\Giulio Lazzaro\ownCloud - giulio.lazzaro@zilioenvironment.com@cloud.ziliogroup.com\LettureImpianti"
+        
+        # Verifica che la cartella di destinazione esista
+        if not os.path.exists(backup_dir):
+            os.makedirs(backup_dir, exist_ok=True)
+        
+        # Nome fisso del file di backup (sempre lo stesso, verrà sovrascritto)
+        backup_filename = "db_backup.sqlite3"
+        backup_path = os.path.join(backup_dir, backup_filename)
+        
+        # Verifica se il file esiste già e loggalo
+        file_exists = os.path.exists(backup_path)
+        if file_exists:
+            logger.info(f"Sovrascrittura backup esistente: {backup_path}")
+        
+        # Copia il file (sovrascrive se esiste)
+        shutil.copy2(db_path, backup_path)
+        
+        # Genera timestamp per il messaggio informativo
+        timestamp = datetime.datetime.now().strftime("%d/%m/%Y alle %H:%M:%S")
+        
+        if file_exists:
+            message = f"Backup sovrascritto il {timestamp}"
+            logger.info(f"Backup database sovrascritto con successo: {backup_path}")
+        else:
+            message = f"Backup creato il {timestamp}"
+            logger.info(f"Backup database creato con successo: {backup_path}")
+        
+        return True, message
+        
+    except Exception as e:
+        logger.error(f"Errore durante la creazione del backup: {str(e)}")
+        return False, f"Errore backup: {str(e)}"
 
 def reg_segnantitrifascia(request, nickname, contatore_id=None):
     """
@@ -151,20 +198,35 @@ def salva_letture_trifasica(request, contatore_id):
             except Exception as e:
                 errori.append(f'Errore nel salvataggio della riga {idx + 1}: {str(e)}')
         
+        # Crea il backup del database dopo il salvataggio
+        backup_success = False
+        backup_message = ""
+        if letture_salvate:  # Solo se ci sono state effettivamente delle letture salvate
+            backup_success, backup_message = crea_backup_database()
+        
         # Prepara la risposta
         if errori:
-            return JsonResponse({
+            response_data = {
                 'success': False,
                 'message': 'Alcuni dati non sono stati salvati a causa di errori.',
                 'errori': errori,
                 'letture_salvate': letture_salvate
-            })
+            }
         else:
-            return JsonResponse({
+            response_data = {
                 'success': True,
                 'message': f'Salvate con successo {len(letture_salvate)} letture.',
                 'letture_salvate': letture_salvate
-            })
+            }
+        
+        # Aggiungi informazioni sul backup
+        if letture_salvate:
+            response_data['backup'] = {
+                'success': backup_success,
+                'message': backup_message
+            }
+        
+        return JsonResponse(response_data)
             
     except json.JSONDecodeError:
         return JsonResponse({
