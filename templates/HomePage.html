@@ -26,6 +26,7 @@
 	<div class="content" style="padding-top: 13%">
 		<div class="container">
 			<div class="row justify-content-center" >
+				{% if user.username != "Finance" %}
 				<div class="col">
 					<div class="card">
 						<div style="width:100%; text-align:center">
@@ -38,6 +39,7 @@
 						</div>
 					</div>
 				</div>
+				{% endif %}
 
 				<div class="col">
 					<div class="card">
@@ -52,6 +54,7 @@
 					</div>
 				</div>
 
+				{% if user.username != "Tecnico" %}
 				<div class="col">
 					<div class="card" id="ricky">
 						<div style="width:100%; text-align:center; margin-bottom: 17px; ">
@@ -64,8 +67,9 @@
 						</div>
 					</div>
 				</div>
+				{% endif %}
 
-
+				{% if user.username != "Tecnico" and user.username != "Finance" %}
 				<div class="col">
 					<div class="card" id="ricky">
 						<div style="width:100%; text-align:center; margin-bottom: 17px;">
@@ -78,6 +82,7 @@
 						</div>
 					</div>
 				</div>
+				{% endif %}
 
 
 			</div>

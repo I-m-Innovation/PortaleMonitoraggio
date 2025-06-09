@@ -3,7 +3,12 @@ from django.contrib.auth.decorators import login_required
 from MonitoraggioImpianti.models import *
 
 
+from django.contrib.auth.decorators import login_required # Importiamo il decoratore necessario
+
+@login_required(login_url='login') 
 def HomePage(request):
+	# Questa riga verrà eseguita solo se l'utente ha superato il controllo del `@login_required`,
+	# ovvero se è già loggato.
 	return render(request, 'HomePage.html')
 
 
