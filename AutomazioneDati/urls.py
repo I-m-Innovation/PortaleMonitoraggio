@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views, defconatori, reg_segnantitrifascia, reg_segnantimonofasica
-from .reg_segnantitrifascia import salva_letture_trifasica, get_letture_trifasica_per_anno
+from .reg_segnantitrifascia import salva_letture_trifasica, get_letture_trifasica_per_anno, test_connessione, test_dati_database
 from .reg_segnantimonofasica import salva_letture_monofasica, get_letture_monofasica_per_anno, test_dati_database_monofasica
 
 
@@ -26,6 +26,6 @@ urlpatterns = [
     path('api/test-dati-monofasica/<int:contatore_id>/', test_dati_database_monofasica, name='api_test_dati_monofasica'),
     path('api/salva_diario_energie/', views.salva_diario_energie, name='salva_diario_energie'),
     path('modifica-contatore/<int:contatore_id>/', defconatori.modifica_contatore, name='modifica_contatore'),
-   
-    
+    path('api/test-connessione/', test_connessione, name='api_test_connessione'),
+    path('api/test-dati-trifasica/<int:contatore_id>/', test_dati_database, name='api_test_dati_trifasica'),
 ]

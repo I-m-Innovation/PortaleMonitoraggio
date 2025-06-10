@@ -145,9 +145,7 @@ def salva_letture_trifasica(request, contatore_id):
                 mese = riga_dati.get('mese')
                 anno = riga_dati.get('anno')
                 
-                # Salta le righe senza dati significativi
-                if not ha_dati_significativi(riga_dati):
-                    continue
+                
                 
                 # Cerca se esiste già una lettura per questo mese/anno
                 lettura_esistente = LetturaContatore.objects.filter(
@@ -239,34 +237,35 @@ def salva_letture_trifasica(request, contatore_id):
             'message': f'Errore interno del server: {str(e)}'
         })
 
-def ha_dati_significativi(riga_dati):
-    """
-    Controlla se una riga ha almeno un dato significativo inserito
-    """
-    campi_numerici = ['a1_neg', 'a2_neg', 'a3_neg', 'a1_pos', 'a2_pos', 'a3_pos']
-    
-    # Controlla se c'è una data/ora
-    if riga_dati.get('data_ora_lettura'):
-        return True
-    
-    # Controlla se c'è almeno un valore numerico
-    for campo in campi_numerici:
-        valore = riga_dati.get(campo, '').strip()
-        if valore and valore != '0' and valore != '0.00':
-            return True
-    
-    return False
 
 def aggiorna_campi_lettura(lettura, riga_dati):
     """
     Aggiorna i campi dell'oggetto LetturaContatore con i dati ricevuti (MIGLIORATA)
+    CORRETTO per gestire correttamente il timezone italiano
     """
     # Aggiorna data/ora se presente
     data_ora_str = riga_dati.get('data_ora_lettura')
     if data_ora_str:
         try:
-            lettura.data_ora_lettura = parse_datetime(data_ora_str)
-        except:
+            # Importa timezone per gestire correttamente l'ora italiana
+            from django.utils import timezone as django_timezone
+            import pytz
+            
+            # Parse la datetime come naive (senza timezone)
+            dt_naive = parse_datetime(data_ora_str)
+            if dt_naive:
+                # Tratta la data come ora locale italiana, non UTC
+                italian_tz = pytz.timezone('Europe/Rome')
+                # Se la datetime è naive, rendila aware nel timezone italiano
+                if dt_naive.tzinfo is None:
+                    dt_aware = italian_tz.localize(dt_naive)
+                else:
+                    dt_aware = dt_naive
+                lettura.data_ora_lettura = dt_aware
+            else:
+                lettura.data_ora_lettura = None
+        except Exception as e:
+            logger.error(f"Errore nel parsing della data/ora: {data_ora_str} -> {e}")
             lettura.data_ora_lettura = None
     
     # Aggiorna i campi numerici con maggiore precisione
@@ -283,7 +282,7 @@ def aggiorna_campi_lettura(lettura, riga_dati):
     
     for campo_json, campo_modello in campi_numerici.items():
         valore_str = riga_dati.get(campo_json, '').strip()
-        if valore_str and valore_str != '0' and valore_str != '0.00':
+        if valore_str:  # CORRETTO: salva qualsiasi valore numerico valido, inclusi gli zeri
             try:
                 # Converti virgola in punto e poi in Decimal
                 valore_normalizzato = valore_str.replace(',', '.')

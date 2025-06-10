@@ -658,14 +658,15 @@ function popolaTabellaConDati(letture, anno) {
                 }
             }
             
-            // Aggiorna le celle numeriche (MIGLIORATO)
+            // Aggiorna le celle numeriche (MIGLIORATO) - CORRETTO per visualizzare anche i valori zero
             const campiNumerici = ['a1_neg', 'a2_neg', 'a3_neg', 'a1_pos', 'a2_pos', 'a3_pos'];
             campiNumerici.forEach(campo => {
                 const cell = row.querySelector(`[data-field="${campo}"]`);
                 if (cell && lettura[campo] !== null && lettura[campo] !== undefined && lettura[campo] !== '') {
                     // Usa il valore direttamente dal database senza parseFloat per evitare perdita di precisione
                     const valoreDalDB = lettura[campo].toString().trim();
-                    if (valoreDalDB && valoreDalDB !== '0' && valoreDalDB !== '0.00') {
+                    // CORREZIONE: Visualizza tutti i valori numerici validi, inclusi gli zeri
+                    if (valoreDalDB !== '') {
                         cell.textContent = valoreDalDB;
                     } else {
                         cell.textContent = '';

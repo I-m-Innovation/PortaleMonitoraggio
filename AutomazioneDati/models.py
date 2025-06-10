@@ -70,9 +70,9 @@ class LetturaContatore(models.Model):
     a2_neg = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
     a3_neg = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
     totale_neg = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
-    a1_pos = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.0'), blank=True)
-    a2_pos = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.0'), blank=True)
-    a3_pos = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.0'), blank=True)
+    a1_pos = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
+    a2_pos = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
+    a3_pos = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
     totale_pos = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
     # Dati per Libro Kaifa
     kaifa_180n = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)

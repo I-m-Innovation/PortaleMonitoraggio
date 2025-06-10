@@ -253,13 +253,31 @@ def ha_dati_significativi_monofasica(riga_dati):
 def aggiorna_campi_lettura_monofasica(lettura, riga_dati):
     """
     Aggiorna i campi della lettura con i dati ricevuti per sistema monofasica
+    CORRETTO per gestire correttamente il timezone italiano
     """
     # Aggiorna la data/ora se presente
     data_ora_str = riga_dati.get('data_ora_lettura')
     if data_ora_str:
         try:
-            lettura.data_ora_lettura = parse_datetime(data_ora_str)
-        except:
+            # Importa timezone per gestire correttamente l'ora italiana
+            from django.utils import timezone as django_timezone
+            import pytz
+            
+            # Parse la datetime come naive (senza timezone)
+            dt_naive = parse_datetime(data_ora_str)
+            if dt_naive:
+                # Tratta la data come ora locale italiana, non UTC
+                italian_tz = pytz.timezone('Europe/Rome')
+                # Se la datetime è naive, rendila aware nel timezone italiano
+                if dt_naive.tzinfo is None:
+                    dt_aware = italian_tz.localize(dt_naive)
+                else:
+                    dt_aware = dt_naive
+                lettura.data_ora_lettura = dt_aware
+            else:
+                lettura.data_ora_lettura = None
+        except Exception as e:
+            logger.error(f"Errore nel parsing della data/ora: {data_ora_str} -> {e}")
             lettura.data_ora_lettura = None
     
     # Aggiorna i campi numerici per sistema monofasica

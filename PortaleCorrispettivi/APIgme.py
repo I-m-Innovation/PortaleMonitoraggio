@@ -35,7 +35,7 @@ def scarica_dati_pun_mensili(anno, mese, username=None, password=None, cartella_
             dati_pun_esistenti = PunMonthlyData.objects.filter(anno=anno, mese=mese).first()
             if dati_pun_esistenti:
                 if stampare_media_dettaglio:
-                    import calendar
+                   
                     print(f"\nDati PUN trovati nel database per {calendar.month_name[mese]} {anno}: {dati_pun_esistenti.valore_medio:.6f}")
                 return dati_pun_esistenti.valore_medio
         except Exception as db_error:
