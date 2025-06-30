@@ -33,7 +33,7 @@ def crea_backup_database():
         db_path = os.path.join(settings.BASE_DIR, 'db.sqlite3')
         
         # Percorso di destinazione per il backup
-        backup_dir = r"C:\Users\Giulio Lazzaro\ownCloud - giulio.lazzaro@zilioenvironment.com@cloud.ziliogroup.com\LettureImpianti"
+        backup_dir = r"C:\Users\Sviluppo_Software_ZG\ownCloud\LettureImpianti"
         
         # Verifica che la cartella di destinazione esista
         if not os.path.exists(backup_dir):

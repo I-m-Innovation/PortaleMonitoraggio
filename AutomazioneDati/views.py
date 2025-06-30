@@ -456,11 +456,22 @@ def salva_diario_energie(request):
                 else:
                     reg_segnante_obj = regsegnanti_to_save_this_month[target_counter.id]
 
-                # Converti il valore in Decimal. Gestisci le stringhe vuote come None.
-                decimal_value = Decimal(str(value)) if value is not None and value != '' else None
-                
-                # Imposta l'attributo dinamicamente sull'oggetto reg_segnante_obj
-                setattr(reg_segnante_obj, model_field_name, decimal_value)
+                # Converti il valore in Decimal. Salva solo i valori maggiori di 0.
+                if value is not None and value != '':
+                    try:
+                        decimal_value = Decimal(str(value))
+                        # Salva solo se il valore è maggiore di 0
+                        if decimal_value > 0:
+                            setattr(reg_segnante_obj, model_field_name, decimal_value)
+                        else:
+                            # Se il valore è 0 o negativo, imposta a None (non salvare)
+                            setattr(reg_segnante_obj, model_field_name, None)
+                    except (ValueError, InvalidOperation):
+                        # Se la conversione fallisce, imposta a None
+                        setattr(reg_segnante_obj, model_field_name, None)
+                else:
+                    # Se il valore è None o stringa vuota, imposta a None
+                    setattr(reg_segnante_obj, model_field_name, None)
 
             # Salva tutti gli oggetti regsegnanti raccolti per il mese corrente
             for obj in regsegnanti_to_save_this_month.values():

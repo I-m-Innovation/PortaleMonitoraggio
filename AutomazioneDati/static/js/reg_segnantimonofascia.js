@@ -1,34 +1,59 @@
 // Funzione per validare il formato data/ora
 function validateDateTimeFormat(dateTimeString) {
     // Regex per il formato gg/mm/aaaa hh:mm
-    const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})$/;
-    const match = dateTimeString.match(regex);
+    const regexCompleto = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})$/;
+    // Regex per il formato gg/mm/aaaa (senza orario)
+    const regexSoloData = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
     
-    if (!match) {
-        return false;
+    const matchCompleto = dateTimeString.match(regexCompleto);
+    const matchSoloData = dateTimeString.match(regexSoloData);
+    
+    // Se è una data completa con orario
+    if (matchCompleto) {
+        const day = parseInt(matchCompleto[1], 10);
+        const month = parseInt(matchCompleto[2], 10);
+        const year = parseInt(matchCompleto[3], 10);
+        const hour = parseInt(matchCompleto[4], 10);
+        const minute = parseInt(matchCompleto[5], 10);
+        
+        // Verifica che i valori siano validi
+        if (month < 1 || month > 12) return false;
+        if (day < 1 || day > 31) return false;
+        if (hour < 0 || hour > 23) return false;
+        if (minute < 0 || minute > 59) return false;
+        
+        // Verifica giorni per mese (semplificata)
+        const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        if (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) {
+            daysInMonth[1] = 29; // Anno bisestile
+        }
+        
+        if (day > daysInMonth[month - 1]) return false;
+        
+        return true;
+    }
+    // Se è solo data senza orario
+    else if (matchSoloData) {
+        const day = parseInt(matchSoloData[1], 10);
+        const month = parseInt(matchSoloData[2], 10);
+        const year = parseInt(matchSoloData[3], 10);
+        
+        // Verifica che i valori siano validi
+        if (month < 1 || month > 12) return false;
+        if (day < 1 || day > 31) return false;
+        
+        // Verifica giorni per mese (semplificata)
+        const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        if (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) {
+            daysInMonth[1] = 29; // Anno bisestile
+        }
+        
+        if (day > daysInMonth[month - 1]) return false;
+        
+        return true;
     }
     
-    const day = parseInt(match[1], 10);
-    const month = parseInt(match[2], 10);
-    const year = parseInt(match[3], 10);
-    const hour = parseInt(match[4], 10);
-    const minute = parseInt(match[5], 10);
-    
-    // Verifica che i valori siano validi
-    if (month < 1 || month > 12) return false;
-    if (day < 1 || day > 31) return false;
-    if (hour < 0 || hour > 23) return false;
-    if (minute < 0 || minute > 59) return false;
-    
-    // Verifica giorni per mese (semplificata)
-    const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    if (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) {
-        daysInMonth[1] = 29; // Anno bisestile
-    }
-    
-    if (day > daysInMonth[month - 1]) return false;
-    
-    return true;
+    return false;
 }
 
 // Funzione per calcolare i totali di una riga per sistema monofasica
@@ -83,32 +108,53 @@ function convertToISODateTime(dateTimeString) {
     }
     
     // Regex per il formato gg/mm/aaaa hh:mm
-    const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})$/;
-    const match = dateTimeString.trim().match(regex);
+    const regexCompleto = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})$/;
+    // Regex per il formato gg/mm/aaaa (senza orario)
+    const regexSoloData = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
     
-    if (!match) {
-        console.warn('Match regex fallito per:', dateTimeString);
-        return null;
+    const matchCompleto = dateTimeString.trim().match(regexCompleto);
+    const matchSoloData = dateTimeString.trim().match(regexSoloData);
+    
+    if (matchCompleto) {
+        const day = matchCompleto[1].padStart(2, '0');
+        const month = matchCompleto[2].padStart(2, '0');
+        const year = matchCompleto[3];
+        const hour = matchCompleto[4].padStart(2, '0');
+        const minute = matchCompleto[5];
+        
+        // Crea la stringa in formato ISO: YYYY-MM-DDTHH:MM:SS
+        const isoDateTime = `${year}-${month}-${day}T${hour}:${minute}:00`;
+        
+        // Verifica che la data sia valida
+        const date = new Date(isoDateTime);
+        if (isNaN(date.getTime())) {
+            console.warn('Data non valida generata:', isoDateTime);
+            return null;
+        }
+        
+        console.log(`Conversione: ${dateTimeString} -> ${isoDateTime}`);
+        return isoDateTime;
+    } else if (matchSoloData) {
+        const day = matchSoloData[1].padStart(2, '0');
+        const month = matchSoloData[2].padStart(2, '0');
+        const year = matchSoloData[3];
+        
+        // Crea la stringa in formato ISO con orario 00:00
+        const isoDateTime = `${year}-${month}-${day}T00:00:00`;
+        
+        // Verifica che la data sia valida
+        const date = new Date(isoDateTime);
+        if (isNaN(date.getTime())) {
+            console.warn('Data non valida generata:', isoDateTime);
+            return null;
+        }
+        
+        console.log(`Conversione (con orario default): ${dateTimeString} -> ${isoDateTime}`);
+        return isoDateTime;
     }
     
-    const day = match[1].padStart(2, '0');
-    const month = match[2].padStart(2, '0');
-    const year = match[3];
-    const hour = match[4].padStart(2, '0');
-    const minute = match[5];
-    
-    // Crea la stringa in formato ISO: YYYY-MM-DDTHH:MM:SS
-    const isoDateTime = `${year}-${month}-${day}T${hour}:${minute}:00`;
-    
-    // Verifica che la data sia valida
-    const date = new Date(isoDateTime);
-    if (isNaN(date.getTime())) {
-        console.warn('Data non valida generata:', isoDateTime);
-        return null;
-    }
-    
-    console.log(`Conversione: ${dateTimeString} -> ${isoDateTime}`);
-    return isoDateTime;
+    console.warn('Match regex fallito per:', dateTimeString);
+    return null;
 }
 
 // Funzione per ottenere il token CSRF (se non esiste già)
@@ -163,7 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (!validateDateTimeFormat(value)) {
                 this.classList.add('date-error');
-                alert('Formato data/ora non valido. Usa il formato: gg/mm/aaaa hh:mm');
+                alert('Formato data/ora non valido. Usa il formato: gg/mm/aaaa hh:mm oppure solo gg/mm/aaaa (verrà impostato 00:00 come orario)');
             } else {
                 this.classList.remove('date-error');
             }
