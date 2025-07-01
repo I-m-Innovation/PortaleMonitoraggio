@@ -8,6 +8,9 @@ html, body {
     font-family: Arial, sans-serif;
 }
 
+
+
+
 /* Stili per il nuovo riquadro informativo */
 .info-box {
     width: 100%;
@@ -387,6 +390,7 @@ table td.modified {
 }
 #datitrifascia table tbody td:nth-child(2) {
     background-color: #f0e68c; /* Colonna "Data di presa" */
+    font-size: 1.3rem;
 }
 #datitrifascia table tbody td:nth-child(3),
 #datitrifascia table tbody td:nth-child(4),

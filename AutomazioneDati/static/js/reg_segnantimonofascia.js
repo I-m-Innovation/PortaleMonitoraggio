@@ -69,18 +69,52 @@ function calculateRowTotalsMonofasica(row) {
         return;
     }
     
-    // Recupera i valori delle celle editabili
+    // Recupera i valori delle celle editabili della riga corrente
     const kaifa180nValue = parseFloat(kaifa180nCell.textContent.trim().replace(',', '.')) || 0;
     const kaifa280nValue = parseFloat(kaifa280nCell.textContent.trim().replace(',', '.')) || 0;
     
-    // Calcola i totali (per ora manteniamo una logica semplice)
-    // In futuro potresti implementare calcoli più complessi basati sui valori precedenti
-    if (kaifa180nValue > 0) {
-        totale180nCell.textContent = kaifa180nValue.toString();
+    // Trova il mese corrente
+    const meseCorrente = parseInt(row.getAttribute('data-mese'));
+    
+    // Trova la riga del mese successivo per calcolare la differenza
+    let meseSuccessivo = meseCorrente + 1;
+    let rigaSuccessiva;
+    
+    // Gestisce il caso di dicembre (mese 12) che deve guardare gennaio dell'anno successivo (mese 13)
+    if (meseCorrente === 12) {
+        rigaSuccessiva = document.querySelector('tr[data-mese="13"]');
+    } else {
+        rigaSuccessiva = document.querySelector(`tr[data-mese="${meseSuccessivo}"]`);
     }
     
-    if (kaifa280nValue > 0) {
-        totaleKaifa280nCell.textContent = kaifa280nValue.toString();
+    // Calcola i totali come differenza tra il mese successivo e quello corrente
+    if (rigaSuccessiva) {
+        const kaifa180nSuccessivoCell = rigaSuccessiva.querySelector('[data-field="kaifa_180n"]');
+        const kaifa280nSuccessivoCell = rigaSuccessiva.querySelector('[data-field="kaifa_280n"]');
+        
+        if (kaifa180nSuccessivoCell && kaifa280nSuccessivoCell) {
+            const kaifa180nSuccessivoValue = parseFloat(kaifa180nSuccessivoCell.textContent.trim().replace(',', '.')) || 0;
+            const kaifa280nSuccessivoValue = parseFloat(kaifa280nSuccessivoCell.textContent.trim().replace(',', '.')) || 0;
+            
+                         // Calcola le differenze solo se entrambi i valori sono maggiori di 0
+             if (kaifa180nValue > 0 && kaifa180nSuccessivoValue > 0) {
+                 const differenza180n = kaifa180nSuccessivoValue - kaifa180nValue;
+                 totale180nCell.textContent = differenza180n >= 0 ? differenza180n.toFixed(3) : '';
+             } else {
+                 totale180nCell.textContent = '';
+             }
+             
+             if (kaifa280nValue > 0 && kaifa280nSuccessivoValue > 0) {
+                 const differenza280n = kaifa280nSuccessivoValue - kaifa280nValue;
+                 totaleKaifa280nCell.textContent = differenza280n >= 0 ? differenza280n.toFixed(3) : '';
+             } else {
+                 totaleKaifa280nCell.textContent = '';
+             }
+        }
+    } else {
+        // Se non c'è il mese successivo, svuota i totali
+        totale180nCell.textContent = '';
+        totaleKaifa280nCell.textContent = '';
     }
 }
 
@@ -252,6 +286,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Calcola i totali per questa riga
                     const row = this.closest('tr');
                     calculateRowTotalsMonofasica(row);
+                    
+                    // Calcola anche i totali del mese precedente, dato che ora il calcolo dipende dal mese successivo
+                    const meseCorrente = parseInt(row.getAttribute('data-mese'));
+                    let mesePrecedente = meseCorrente - 1;
+                    let rigaPrecedente;
+                    
+                    // Gestisce il caso di gennaio (mese 1) che deve guardare dicembre dell'anno precedente
+                    // Per gennaio dell'anno successivo (mese 13), il precedente è dicembre (mese 12)
+                    if (meseCorrente === 1) {
+                        // Per gennaio normale, non c'è un mese precedente nell'anno corrente
+                        rigaPrecedente = null;
+                    } else if (meseCorrente === 13) {
+                        // Per gennaio dell'anno successivo, il precedente è dicembre
+                        rigaPrecedente = document.querySelector('tr[data-mese="12"]');
+                    } else {
+                        rigaPrecedente = document.querySelector(`tr[data-mese="${mesePrecedente}"]`);
+                    }
+                    
+                    if (rigaPrecedente) {
+                        calculateRowTotalsMonofasica(rigaPrecedente);
+                    }
                 });
                 
                 // Evento durante la digitazione
@@ -270,10 +325,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Calcola i totali iniziali per tutte le righe al caricamento della pagina
-    const allRows = document.querySelectorAll('#datimonofascia tbody tr');
-    allRows.forEach(row => {
-        calculateRowTotalsMonofasica(row);
-    });
+    ricalcolaTuttiTotaliMonofasica();
     
     // Gestione del pulsante salvataggio monofasica
     const saveButton = document.getElementById('save-button-monofasica');
@@ -508,6 +560,9 @@ function aggiornaTabellaDatiSalvatiMonofasica(letture_salvate) {
             });
         }
     });
+    
+    // Ricalcola tutti i totali dopo aver aggiornato i dati
+    ricalcolaTuttiTotaliMonofasica();
 }
 
 // Funzione per convertire da formato ISO a formato italiano
@@ -518,7 +573,7 @@ function formatDateTimeToItalian(date) {
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
     
-    return `${day}/${month}/${year} ${hours}:${minutes}`;
+    return `${day}/${month}/${year} - ${hours}:${minutes}`;
 }
 
 // Funzione per testare la connettività
@@ -609,12 +664,28 @@ function popolaTabellaConDatiMonofasica(letture, anno) {
                 }
             });
             
-            // Ricalcola i totali per questa riga
-            calculateRowTotalsMonofasica(row);
         } else {
             console.warn(`Riga non trovata per mese ${mese_riga}`);
         }
     });
     
+    // Ricalcola tutti i totali dopo aver popolato la tabella
+    ricalcolaTuttiTotaliMonofasica();
+    
     console.log('Tabella monofasica popolata completamente');
+}
+
+// Funzione per ricalcolare tutti i totali della tabella monofasica
+function ricalcolaTuttiTotaliMonofasica() {
+    console.log('Ricalcolo di tutti i totali monofasica...');
+    
+    // Ottieni tutte le righe in ordine
+    const allRows = document.querySelectorAll('#datimonofascia tbody tr');
+    
+    // Calcola i totali per ogni riga (l'ordine è importante per i calcoli che dipendono dal mese successivo)
+    allRows.forEach(row => {
+        calculateRowTotalsMonofasica(row);
+    });
+    
+    console.log('Ricalcolo totali monofasica completato');
 }
