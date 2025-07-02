@@ -82,6 +82,82 @@ function calculateRowTotalsMonofasica(row) {
     if (kaifa280nValue > 0) {
         totaleKaifa280nCell.textContent = kaifa280nValue.toString();
     }
+    
+    // Dopo aver aggiornato i totali, ricalcola i consumi per tutte le righe
+    calculateAllConsumptions();
+}
+
+// Funzione per calcolare i consumi mensili per tutte le righe
+function calculateAllConsumptions() {
+    console.log('Calcolo consumi mensili per tutte le righe...');
+    
+    // Ottieni tutte le righe della tabella
+    const allRows = document.querySelectorAll('#datimonofascia tbody tr');
+    
+    // Array per memorizzare i totali di ogni mese
+    const totali180n = [];
+    const totali280n = [];
+    
+    // Prima passa: raccogli tutti i totali
+    allRows.forEach((row, index) => {
+        const totale180nCell = row.querySelector('[data-field="totale_180n"]');
+        const totale280nCell = row.querySelector('[data-field="totale_kaifa_280n"]');
+        
+        const totale180n = parseFloat(totale180nCell.textContent.trim().replace(',', '.')) || 0;
+        const totale280n = parseFloat(totale280nCell.textContent.trim().replace(',', '.')) || 0;
+        
+        totali180n[index] = totale180n;
+        totali280n[index] = totale280n;
+    });
+    
+    // Seconda passa: calcola i consumi come differenza
+    allRows.forEach((row, index) => {
+        const consumo180nCell = row.querySelector('[data-field="consumo_180n"]');
+        const consumo280nCell = row.querySelector('[data-field="consumo_280n"]');
+        
+        if (!consumo180nCell || !consumo280nCell) return;
+        
+        // Per calcolare il consumo del mese corrente:
+        // consumo = totale_mese_successivo - totale_mese_corrente
+        let consumo180n = 0;
+        let consumo280n = 0;
+        
+        // Se non è l'ultima riga, calcola la differenza con il mese successivo
+        if (index < allRows.length - 1) {
+            const totaleCorrente180n = totali180n[index];
+            const totaleSuccessivo180n = totali180n[index + 1];
+            const totaleCorrente280n = totali280n[index];
+            const totaleSuccessivo280n = totali280n[index + 1];
+            
+            // Calcola solo se entrambi i valori sono presenti e validi
+            if (totaleCorrente180n > 0 && totaleSuccessivo180n > 0) {
+                consumo180n = totaleSuccessivo180n - totaleCorrente180n;
+            }
+            
+            if (totaleCorrente280n > 0 && totaleSuccessivo280n > 0) {
+                consumo280n = totaleSuccessivo280n - totaleCorrente280n;
+            }
+        }
+        
+        // Aggiorna le celle dei consumi
+        if (consumo180n > 0) {
+            consumo180nCell.textContent = consumo180n.toFixed(2);
+            consumo180nCell.style.backgroundColor = '#e8f5e8'; // Verde chiaro per indicare valore calcolato
+        } else {
+            consumo180nCell.textContent = '';
+            consumo180nCell.style.backgroundColor = '';
+        }
+        
+        if (consumo280n > 0) {
+            consumo280nCell.textContent = consumo280n.toFixed(2);
+            consumo280nCell.style.backgroundColor = '#e8f5e8'; // Verde chiaro per indicare valore calcolato
+        } else {
+            consumo280nCell.textContent = '';
+            consumo280nCell.style.backgroundColor = '';
+        }
+    });
+    
+    console.log('Calcolo consumi completato');
 }
 
 // Funzione per validare che un valore sia numerico
@@ -222,7 +298,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Gestione delle celle numeriche per sistema monofasica
-    const numericFields = ['kaifa_180n', 'kaifa_280n', 'totale_180n', 'totale_kaifa_280n'];
+    const numericFields = ['kaifa_180n', 'kaifa_280n', 'totale_180n', 'totale_kaifa_280n', 'consumo_180n', 'consumo_280n'];
     
     numericFields.forEach(fieldName => {
         const cells = document.querySelectorAll(`[data-field="${fieldName}"]`);
@@ -274,6 +350,9 @@ document.addEventListener('DOMContentLoaded', function() {
     allRows.forEach(row => {
         calculateRowTotalsMonofasica(row);
     });
+    
+    // Calcola i consumi iniziali
+    calculateAllConsumptions();
     
     // Gestione del pulsante salvataggio monofasica
     const saveButton = document.getElementById('save-button-monofasica');
@@ -508,6 +587,9 @@ function aggiornaTabellaDatiSalvatiMonofasica(letture_salvate) {
             });
         }
     });
+    
+    // Ricalcola i consumi dopo aver aggiornato tutti i dati salvati
+    calculateAllConsumptions();
 }
 
 // Funzione per convertire da formato ISO a formato italiano
@@ -560,6 +642,13 @@ function pulisciTabellaMonofasica() {
         celleCalcolate.forEach(cella => {
             cella.textContent = '';
         });
+        
+        // Pulisci anche i campi di consumo
+        const celleConsumo = riga.querySelectorAll('.consumption-field');
+        celleConsumo.forEach(cella => {
+            cella.textContent = '';
+            cella.style.backgroundColor = ''; // Rimuovi anche il colore di sfondo
+        });
     });
     
     console.log('Tabella monofasica pulita');
@@ -608,13 +697,13 @@ function popolaTabellaConDatiMonofasica(letture, anno) {
                     cell.textContent = !isNaN(valore) ? valore.toString() : '';
                 }
             });
-            
-            // Ricalcola i totali per questa riga
-            calculateRowTotalsMonofasica(row);
         } else {
             console.warn(`Riga non trovata per mese ${mese_riga}`);
         }
     });
     
     console.log('Tabella monofasica popolata completamente');
+    
+    // Calcola i consumi dopo aver popolato tutti i dati
+    calculateAllConsumptions();
 }
