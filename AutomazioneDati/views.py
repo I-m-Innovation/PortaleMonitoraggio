@@ -8,6 +8,8 @@ import json
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import datetime
 import calendar
+import shutil
+import os
 from AutomazioneDati.models import  Contatore, LetturaContatore, regsegnanti
 from MonitoraggioImpianti.models import Impianto as MonitoraggioImpianto
 from django.contrib import messages
@@ -189,29 +191,35 @@ def diarioenergie(request, nickname):
                         val_successivo_prod = float(lettura_successiva.totale_180n or 0)
                     else: # Fallback
                         val_corrente_prod = val_successivo_prod = 0
-                    valore_campo_principale = round((val_successivo_prod - val_corrente_prod) * k_factor, 3)
+                    
+                    calcolato = round((val_successivo_prod - val_corrente_prod) * k_factor, 3)
+                    valore_campo_principale = calcolato if calcolato >= 0 else ""
 
                     # Prelevata (Campo kWh)
                     val_corrente_prel = float(lettura_corrente.totale_pos or 0)
                     val_successivo_prel = float(lettura_successiva.totale_pos or 0)
-                    valore_campo_secondario = round((val_successivo_prel - val_corrente_prel) * k_factor, 3)
+                    calcolato_prel = round((val_successivo_prel - val_corrente_prel) * k_factor, 3)
+                    valore_campo_secondario = calcolato_prel if calcolato_prel >= 0 else ""
 
                 elif counter_obj.tipologia == "Scambio":
                     # Autoconsumata (Campo kWh - totale_180n)
                     val_corrente_autocons = float(lettura_corrente.totale_180n or 0)
                     val_successivo_autocons = float(lettura_successiva.totale_180n or 0)
-                    valore_campo_principale = round((val_successivo_autocons - val_corrente_autocons) * k_factor, 3)
+                    calcolato = round((val_successivo_autocons - val_corrente_autocons) * k_factor, 3)
+                    valore_campo_principale = calcolato if calcolato >= 0 else ""
 
                     # Immessa (Campo kWh - totale_280n)
                     val_corrente_imm = float(lettura_corrente.totale_280n or 0)
                     val_successivo_imm = float(lettura_successiva.totale_280n or 0)
-                    valore_campo_secondario = round((val_successivo_imm - val_corrente_imm) * k_factor, 3)
+                    calcolato_imm = round((val_successivo_imm - val_corrente_imm) * k_factor, 3)
+                    valore_campo_secondario = calcolato_imm if calcolato_imm >= 0 else ""
 
                 elif counter_obj.tipologia == "Ausiliare":
                     # Ausiliare (Campo kWh - totale_pos)
                     val_corrente_aus = float(lettura_corrente.totale_pos or 0)
                     val_successivo_aus = float(lettura_successiva.totale_pos or 0)
-                    valore_campo_principale = round((val_successivo_aus - val_corrente_aus) * k_factor, 3)
+                    calcolato = round((val_successivo_aus - val_corrente_aus) * k_factor, 3)
+                    valore_campo_principale = calcolato if calcolato >= 0 else ""
 
             except Exception as e:
                 print(f"Errore nel calcolo dei dati del contatore {counter_obj.nome} (ID: {counter_obj.id}): {e}")
@@ -456,15 +464,15 @@ def salva_diario_energie(request):
                 else:
                     reg_segnante_obj = regsegnanti_to_save_this_month[target_counter.id]
 
-                # Converti il valore in Decimal. Salva solo i valori maggiori di 0.
+                                # Converti il valore in Decimal. Salva i valori maggiori o uguali a 0.
                 if value is not None and value != '':
                     try:
                         decimal_value = Decimal(str(value))
-                        # Salva solo se il valore è maggiore di 0
-                        if decimal_value > 0:
+                        # Salva se il valore è maggiore o uguale a 0 (include anche lo 0)
+                        if decimal_value >= 0:
                             setattr(reg_segnante_obj, model_field_name, decimal_value)
                         else:
-                            # Se il valore è 0 o negativo, imposta a None (non salvare)
+                            # Se il valore è negativo, imposta a None (non salvare)
                             setattr(reg_segnante_obj, model_field_name, None)
                     except (ValueError, InvalidOperation):
                         # Se la conversione fallisce, imposta a None
@@ -476,6 +484,32 @@ def salva_diario_energie(request):
             # Salva tutti gli oggetti regsegnanti raccolti per il mese corrente
             for obj in regsegnanti_to_save_this_month.values():
                 obj.save()
+
+        # Dopo il salvataggio con successo, crea una copia di backup del database
+        try:
+            # Percorso del database corrente (nella root del progetto)
+            current_db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'db.sqlite3')
+            
+            # Directory di destinazione per il backup
+            backup_directory = r'C:\Users\Sviluppo_Software_ZG\ownCloud\LettureImpianti'
+            
+            # Crea la directory di destinazione se non esiste
+            os.makedirs(backup_directory, exist_ok=True)
+            
+            # Genera il nome del file di backup con timestamp
+            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+            backup_filename = f'db_backup_{timestamp}.sqlite3'
+            backup_path = os.path.join(backup_directory, backup_filename)
+            
+            # Copia il database
+            shutil.copy2(current_db_path, backup_path)
+            
+            print(f"Backup del database creato con successo: {backup_path}")
+            
+        except Exception as backup_error:
+            # Se il backup fallisce, registra l'errore ma non bloccare la risposta di successo
+            print(f"Errore durante la creazione del backup del database: {backup_error}")
+            # Il salvataggio dei dati è comunque riuscito, quindi continuiamo con la risposta di successo
 
         return JsonResponse({'message': 'Dati salvati con successo!'}, status=200)
 
