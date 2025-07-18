@@ -61,7 +61,7 @@
                                     <col style="width: 10%;">
                                     <col style="width: 10%;">
                                     <col style="width: 10%;">
-                                    <col style="width: 10%;">
+                                    
                                 {% endif %}
                                 {% if contatore_produzione_sostituito %}
                                     <col style="width: 10%;"> <!-- Prodotta Campo kWh -->
@@ -69,12 +69,12 @@
                                     <col style="width: 10%;"> <!-- Prodotta G.S.E -->
                                     <col style="width: 10%;"> <!-- Prelevata Campo kWh -->
                                     <col style="width: 10%;"> <!-- Prelevata e-D -->
-                                    <col style="width: 10%;"> <!-- Prelevata G.S.E -->
+                                   
                                 {% endif %}
                                 {% if contatore_scambio_attivo %}
                                     <col style="width: 10%;">
                                     <col style="width: 10%;">
-                                    <col style="width: 10%;">
+                                    
                                     <col style="width: 10%;">
                                     <col style="width: 10%;">
                                     <col style="width: 10%;">
@@ -82,7 +82,7 @@
                                 {% if contatore_scambio_sostituito %}
                                     <col style="width: 10%;"> <!-- Autoconsumata Campo kWh -->
                                     <col style="width: 10%;"> <!-- Autoconsumata e-D -->
-                                    <col style="width: 10%;"> <!-- Autoconsumata G.S.E -->
+                                     <!-- Autoconsumata G.S.E -->
                                     <col style="width: 10%;"> <!-- Immessa Campo kWh -->
                                     <col style="width: 10%;"> <!-- Immessa e-D -->
                                     <col style="width: 10%;"> <!-- Immessa G.S.E -->
@@ -102,12 +102,12 @@
                                 <tr>
                                     <th colspan="1" rowspan="4">Mese</th>
                                     {% if contatore_produzione_attivo %}
-                                        <th colspan="6" class="contatore-info">
+                                        <th colspan="5" class="contatore-info">
                                             Dati contatore: {{ contatore_produzione_attivo.nome }} - Marca: {{ contatore_produzione_attivo.marca }} - Tipologia: {{ contatore_produzione_attivo.tipologia }} - Data installazione: {{ contatore_produzione_attivo.data_installazione|date:"d/m/Y" }}
                                         </th>
                                     {% endif %}
                                     {% if contatore_produzione_sostituito %}
-                                        <th colspan="6" class="contatore-info replaced-counter-info">
+                                        <th colspan="5" class="contatore-info replaced-counter-info">
                                             Dati contatore sostituito: {{ contatore_produzione_sostituito.nome }} - Marca: {{ contatore_produzione_sostituito.marca }} - Tipologia: {{ contatore_produzione_sostituito.tipologia }} - Data dismissione: {{ contatore_produzione_sostituito.data_dismissione|date:"d/m/Y" }}
                                         </th>
                                     {% endif %}
@@ -135,18 +135,18 @@
                                 <tr>
                                     {% if contatore_produzione_attivo %}
                                         <th colspan="3">Prodotta</th>
-                                        <th colspan="3">Prelevata</th>
+                                        <th colspan="2">Prelevata</th>
                                     {% endif %}
                                     {% if contatore_produzione_sostituito %}
                                         <th colspan="3">Prodotta Sostituita</th>
-                                        <th colspan="3">Prelevata Sostituita</th>
+                                        <th colspan="2">Prelevata Sostituita</th>
                                     {% endif %}
                                     {% if contatore_scambio_attivo %}
-                                        <th colspan="3">Prelevata </th>
+                                        <th colspan="2">Prelevata </th>
                                         <th colspan="3">Immessa </th>
                                     {% endif %}
                                     {% if contatore_scambio_sostituito %}
-                                        <th colspan="3">Prelevata Sostituita</th>
+                                        <th colspan="2">Prelevata Sostituita</th>
                                         <th colspan="3">Immessa Sostituita</th>
                                     {% endif %}
                                     {% if contatore_ausiliare_attivo %}
@@ -159,18 +159,18 @@
                                 <tr>
                                     {% if contatore_produzione_attivo %}
                                         <th>Campo kWh</th><th>e-D</th><th>G.S.E</th>
-                                        <th>Campo kWh</th><th>e-D</th><th>G.S.E</th>
+                                        <th>Campo kWh</th><th>e-D</th>
                                     {% endif %}
                                     {% if contatore_produzione_sostituito %}
                                         <th>Campo kWh</th><th>e-D</th><th>G.S.E</th>
-                                        <th>Campo kWh</th><th>e-D</th><th>G.S.E</th>
+                                        <th>Campo kWh</th><th>e-D</th>
                                     {% endif %}
                                     {% if contatore_scambio_attivo %}
-                                        <th>Campo kWh</th><th>e-D</th><th>G.S.E</th>
+                                        <th>Campo kWh</th><th>e-D</th>
                                         <th>Campo kWh</th><th>e-D</th><th>G.S.E</th>
                                     {% endif %}
                                     {% if contatore_scambio_sostituito %}
-                                        <th>Campo kWh</th><th>e-D</th><th>G.S.E</th>
+                                        <th>Campo kWh</th><th>e-D</th><th>
                                         <th>Campo kWh</th><th>e-D</th><th>G.S.E</th>
                                     {% endif %}
                                     {% if contatore_ausiliare_attivo %}
@@ -192,7 +192,7 @@
                                         <td data-field="prod_gse" contenteditable="true" data-type="number">{{ dato_mese.prod_gse|default_if_none:"" }}</td>
                                         <td data-field="prel_campo" contenteditable="true" data-type="number">{{ dato_mese.prel_campo|default_if_none:"" }}</td>
                                         <td data-field="prel_ed" contenteditable="true" data-type="number">{{ dato_mese.prel_ed|default_if_none:"" }}</td>
-                                        <td data-field="prel_gse" contenteditable="true" data-type="number">{{ dato_mese.prel_gse|default_if_none:"" }}</td>
+                                        
                                     {% endif %}
                                     {# Dati Produzione (Sostituito) #}
                                     {% if contatore_produzione_sostituito %}
@@ -201,14 +201,14 @@
                                         <td data-field="prod_gse_sostituito" contenteditable="true" data-type="number">{{ dato_mese.prod_gse_sostituito|default_if_none:"" }}</td>
                                         <td data-field="prel_campo_sostituito" contenteditable="true" data-type="number">{{ dato_mese.prel_campo_sostituito|default_if_none:"" }}</td>
                                         <td data-field="prel_ed_sostituito" contenteditable="true" data-type="number">{{ dato_mese.prel_ed_sostituito|default_if_none:"" }}</td>
-                                        <td data-field="prel_gse_sostituito" contenteditable="true" data-type="number">{{ dato_mese.prel_gse_sostituito|default_if_none:"" }}</td>
+                                      
                                     {% endif %}
 
                                     {# Dati Scambio (Attivo) #}
                                     {% if contatore_scambio_attivo %}
                                         <td data-field="autocons_campo" contenteditable="true" data-type="number">{{ dato_mese.autocons_campo|default_if_none:"" }}</td>
                                         <td data-field="autocons_ed" contenteditable="true" data-type="number">{{ dato_mese.autocons_ed|default_if_none:"" }}</td>
-                                        <td data-field="autocons_gse" contenteditable="true" data-type="number">{{ dato_mese.autocons_gse|default_if_none:"" }}</td>
+                                        
                                         <td data-field="imm_campo" contenteditable="true" data-type="number">{{ dato_mese.imm_campo|default_if_none:"" }}</td>
                                         <td data-field="imm_ed" contenteditable="true" data-type="number">{{ dato_mese.imm_ed|default_if_none:"" }}</td>
                                         <td data-field="imm_gse" contenteditable="true" data-type="number">{{ dato_mese.imm_gse|default_if_none:"" }}</td>
@@ -217,7 +217,7 @@
                                     {% if contatore_scambio_sostituito %}
                                         <td data-field="autocons_campo_sostituito" contenteditable="true" data-type="number">{{ dato_mese.autocons_campo_sostituito|default_if_none:"" }}</td>
                                         <td data-field="autocons_ed_sostituito" contenteditable="true" data-type="number">{{ dato_mese.autocons_ed_sostituito|default_if_none:"" }}</td>
-                                        <td data-field="autocons_gse_sostituito" contenteditable="true" data-type="number">{{ dato_mese.autocons_gse_sostituito|default_if_none:"" }}</td>
+                                        
                                         <td data-field="imm_campo_sostituito" contenteditable="true" data-type="number">{{ dato_mese.imm_campo_sostituito|default_if_none:"" }}</td>
                                         <td data-field="imm_ed_sostituito" contenteditable="true" data-type="number">{{ dato_mese.imm_ed_sostituito|default_if_none:"" }}</td>
                                         <td data-field="imm_gse_sostituito" contenteditable="true" data-type="number">{{ dato_mese.imm_gse_sostituito|default_if_none:"" }}</td>

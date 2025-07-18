@@ -216,7 +216,7 @@ def tabellacorrispettivi_data(anno_nickname):
 
 	# CODICE DI ELEABORAZIONE DEI DATI NEI DIARI DELLE LETTURE E CASH FLOW
 	try:
-		# OTTIENI DATI DAL MODELLO LetturaContatore INVECE DEL FILE EXCEL
+		# OTTIENI DATI DAL MODELLO LetturaContatore INSTEAD DEL FILE EXCEL
 		letture = LetturaContatore.objects.filter(
 			contatore__impianto=impianto,
 			mese__year=anno
@@ -407,38 +407,37 @@ def get_available_years(nickname):
     from AutomazioneDati.models import regsegnanti
     from django.db.models import Q
     
-    # Prova a trovare un contatore associato all'impianto
     try:
-        contatore_obj = Contatore.objects.filter(
-            Q(impianto_nickname=nickname) | 
-            Q(impianto__nickname=nickname)
-        ).first()
-        
-        if contatore_obj:
-            # Se abbiamo trovato un contatore, usa il suo ID per filtrare regsegnanti
-            anni = list(regsegnanti.objects.filter(contatore=contatore_obj.id)
-                                      .values_list('anno', flat=True)
-                                      .distinct()
-                                      .order_by('anno'))
+        # Recupero di TUTTI i contatori legati all'impianto (tramite relazione o nickname)
+        contatori_qs = Contatore.objects.filter(
+            Q(impianto__nickname=nickname) | Q(impianto_nickname=nickname)
+        )
+
+        if contatori_qs.exists():
+            # Se esistono più contatori, recupero gli anni presenti in regsegnanti per TUTTI
+            anni = list(
+                regsegnanti.objects.filter(contatore__in=contatori_qs)
+                .values_list('anno', flat=True)
+                .distinct()
+                .order_by('anno')
+            )
         else:
-            # Se non troviamo un contatore, proviamo a cercare direttamente per nickname
-            # Questo presuppone che esista un campo contatore che potrebbe contenere il nickname
-            anni = list(regsegnanti.objects.filter(contatore=nickname)
-                                      .values_list('anno', flat=True)
-                                      .distinct()
-                                      .order_by('anno'))
-            
-            # Se ancora non troviamo nulla, restituiamo una lista vuota o degli anni di default
-            if not anni:
-                print(f"Nessun anno trovato per l'impianto {nickname}")
-                # Restituisci anni di default o una lista vuota
-                anni = []
-        
+            # Fallback: nessun contatore trovato, provo comunque a filtrare i registri
+            anni = list(
+                regsegnanti.objects.filter(contatore__isnull=True)  # forza lista vuota se non troviamo corrispondenze
+                .values_list('anno', flat=True)
+                .distinct()
+                .order_by('anno')
+            )
+
+        if not anni:
+            print(f"Nessun anno trovato per l'impianto {nickname}")
+
         return anni
-    
+
     except Exception as e:
         print(f"Errore nel recupero degli anni disponibili per {nickname}: {str(e)}")
-        # Restituisci una lista vuota in caso di errore
+        # In caso di errore, restituisco lista vuota per evitare crash lato client
         return []
 
 # Aggiungiamo una nuova API view per esporre questi anni
@@ -699,75 +698,81 @@ def dati_mensili_tabella_api(request):
             # Recupera le credenziali FTP direttamente dal modulo APIgme
             # Non c'è bisogno di cercare nelle impostazioni di Django
             
-            # Cerca contatore sia per impianto che per nickname
-            contatore_obj = Contatore.objects.filter(
-                models.Q(impianto=impianto_obj.id) | 
+            # Recupero di TUTTI i contatori collegati all'impianto (potrebbero esserne presenti più di uno)
+            contatori_qs = Contatore.objects.filter(
+                models.Q(impianto=impianto_obj.id) |
                 models.Q(impianto_nickname=impianto_obj.nickname)
-            ).first()
-            
-            data_response = [] # Rinomino la variabile per chiarezza
+            )
 
-            if not contatore_obj:
+            data_response = []  # Lista finale che verrà restituita
+
+            if not contatori_qs.exists():
                 print(f"Nessun contatore trovato per l'impianto {impianto_obj.nome_impianto}")
                 
                 # Cerca direttamente letture per questo impianto usando regsegnanti
                 try:
-                    # Usa direttamente regsegnanti invece di DatiMensiliTabella
+                    # Usa direttamente regsegnanti come fallback
                     dati_reg = regsegnanti.objects.filter(anno=int(anno_richiesto))
-                    
-                    # Se il modello regsegnanti non ha un campo impianto ma ha impianto_nickname
+
+                    # Se in passato esisteva il campo impianto_nickname, filtra anche per quello
                     if hasattr(regsegnanti, 'impianto_nickname'):
                         dati_reg = dati_reg.filter(impianto_nickname=impianto_obj.nickname)
                     
                     print(f"Dati trovati (fallback regsegnanti): {dati_reg.count()} record")
                     
+                    # Aggregazione per mese del fallback
+                    monthly_tmp = {}
                     for dato in dati_reg:
-                        # Scarica direttamente i dati PUN dal server FTP
-                        media_pun_mensile = scarica_dati_pun_mensili(
-                            int(anno_richiesto), 
-                            dato.mese, 
-                            GME_FTP_USERNAME, 
-                            GME_FTP_PASSWORD, 
-                            stampare_media_dettaglio=False
-                        )
-                        print(f"DEBUG: Media PUN mensile (scaricata da FTP) per {anno_richiesto}/{dato.mese}: {media_pun_mensile}")
-                        
-                        # Verifica che prod_campo non sia None e lo converte a float
+                        mese_key = dato.mese
+
+                        # Calcola energia incentivata per la riga attuale
                         if dato.prod_campo is not None:
-                            # Converti Decimal a float prima di moltiplicare
                             prod_campo_float = float(dato.prod_campo)
                             prod_campo_98 = prod_campo_float * 0.98
-                            
-                            # Verifica anche che imm_campo non sia None
-                            if dato.imm_campo is not None:
-                                imm_campo_float = float(dato.imm_campo)
-                                energia_incentivata = min(prod_campo_98, imm_campo_float)
-                            else:
-                                energia_incentivata = prod_campo_98
+                            imm_campo_float = float(dato.imm_campo) if dato.imm_campo else 0
+                            energia_incentivata = min(prod_campo_98, imm_campo_float) if imm_campo_float else prod_campo_98
                         else:
-                            # Se prod_campo è None, imposta energia_incentivata a 0 o None
+                            prod_campo_float = 0
+                            imm_campo_float = 0
                             energia_incentivata = 0
-                            prod_campo_float = 0  # Assicurati che sia 0 anche qui
-                            imm_campo_float = 0   # Imposta anche imm_campo_float a 0
-                        
-                        # Carica dati dai file Excel per questo mese
-                        dati_excel = carica_dati_da_excel(impianto_obj, int(anno_richiesto), dato.mese)
-                        
+
+                        if mese_key not in monthly_tmp:
+                            monthly_tmp[mese_key] = {
+                                'energia_kwh': 0,
+                                'prod_campo_originale': 0,
+                                'imm_campo': 0
+                            }
+
+                        monthly_tmp[mese_key]['energia_kwh'] += energia_incentivata
+                        monthly_tmp[mese_key]['prod_campo_originale'] += prod_campo_float
+                        monthly_tmp[mese_key]['imm_campo'] += imm_campo_float
+                    
+                    # Una volta aggregato, crea le righe di risposta definitive
+                    for mese, valori in monthly_tmp.items():
+                        media_pun_mensile = scarica_dati_pun_mensili(
+                            int(anno_richiesto),
+                            mese,
+                            GME_FTP_USERNAME,
+                            GME_FTP_PASSWORD,
+                            stampare_media_dettaglio=False,
+                        )
+
+                        dati_excel = carica_dati_da_excel(impianto_obj, int(anno_richiesto), mese)
+
                         data_response.append({
-                            'mese': dato.mese,
-                            'energia_kwh': energia_incentivata,
+                            'mese': mese,
+                            'energia_kwh': valori['energia_kwh'],
                             'corrispettivo_incentivo': None,
                             'corrispettivo_altro': None,
-                            # Utilizza i dati caricati dai file Excel, se disponibili
                             'fatturazione_tfo': dati_excel['fatturazione_tfo'],
                             'fatturazione_altro': dati_excel['fatturazione_altro'],
                             'incassi': dati_excel['incassi'],
                             'controllo_scarto': None,
                             'controllo_percentuale': None,
                             'media_pun_mensile': media_pun_mensile,
-                            'prod_campo_originale': prod_campo_float,
-                            'imm_campo': imm_campo_float if 'imm_campo_float' in locals() else None,  # Aggiungi imm_campo alla risposta
-                            'debug_info': dati_excel.get('debug_info', [])  # Includi le informazioni di debug
+                            'prod_campo_originale': valori['prod_campo_originale'],
+                            'imm_campo': valori['imm_campo'],
+                            'debug_info': dati_excel.get('debug_info', []),
                         })
                     
                     return JsonResponse({'success': True, 'data': data_response})
@@ -777,60 +782,69 @@ def dati_mensili_tabella_api(request):
                 
                 return JsonResponse({'success': True, 'data': []}) # Risposta vuota se fallback fallisce
             
-            print(f"Contatore trovato: ID {contatore_obj.id}")
-            
-            dati_reg = regsegnanti.objects.filter(contatore=contatore_obj, anno=int(anno_richiesto))
-            print(f"Dati trovati (regsegnanti con contatore): {dati_reg.count()} record")
-            
+            # --- SE SONO PRESENTI UNO O PIÙ CONTATORI ---
+
+            dati_reg = regsegnanti.objects.filter(contatore__in=contatori_qs, anno=int(anno_richiesto))
+
+            print(f"Dati trovati (regsegnanti con contatore): {dati_reg.count()} record distribuiti su {contatori_qs.count()} contatori")
+
+            # Aggrego i dati per mese, sommando l'energia (e altri valori se necessario)
+            monthly_data = {}
+
             for dato in dati_reg:
                 # Scarica direttamente i dati PUN dal server FTP
-                media_pun_mensile = scarica_dati_pun_mensili(
-                    int(anno_richiesto), 
-                    dato.mese, 
-                    GME_FTP_USERNAME, 
-                    GME_FTP_PASSWORD, 
-                    stampare_media_dettaglio=False
-                )
-                print(f"DEBUG: Media PUN mensile (scaricata da FTP) per {anno_richiesto}/{dato.mese}: {media_pun_mensile}")
+                mese_key = dato.mese
 
-                # Carica dati dai file Excel per questo mese
-                dati_excel = carica_dati_da_excel(impianto_obj, int(anno_richiesto), dato.mese)
-                
-                # Verifica che prod_campo non sia None e lo converte a float
+                # Calcolo dell'energia incentivata per la singola riga
                 if dato.prod_campo is not None:
-                    # Converti Decimal a float prima di moltiplicare
                     prod_campo_float = float(dato.prod_campo)
                     prod_campo_98 = prod_campo_float * 0.98
-                    
-                    # Verifica anche che imm_campo non sia None
-                    if dato.imm_campo is not None:
-                        imm_campo_float = float(dato.imm_campo)
-                        energia_incentivata = min(prod_campo_98, imm_campo_float)
-                    else:
-                        energia_incentivata = prod_campo_98
+                    imm_campo_float = float(dato.imm_campo) if dato.imm_campo else 0
+                    energia_incentivata = min(prod_campo_98, imm_campo_float) if imm_campo_float else prod_campo_98
                 else:
-                    # Se prod_campo è None, imposta energia_incentivata a 0 o None
+                    prod_campo_float = 0
+                    imm_campo_float = 0
                     energia_incentivata = 0
-                    prod_campo_float = 0  # Assicurati che sia 0 anche qui
-                    imm_campo_float = 0   # Imposta anche imm_campo_float a 0
-                
+
+                if mese_key not in monthly_data:
+                    monthly_data[mese_key] = {
+                        'energia_kwh': 0,
+                        'prod_campo_originale': 0,
+                        'imm_campo': 0,
+                    }
+
+                monthly_data[mese_key]['energia_kwh'] += energia_incentivata
+                monthly_data[mese_key]['prod_campo_originale'] += prod_campo_float
+                monthly_data[mese_key]['imm_campo'] += imm_campo_float
+
+            # Dopo il ciclo, costruisco la risposta finale per ciascun mese
+            for mese, valori in monthly_data.items():
+                media_pun_mensile = scarica_dati_pun_mensili(
+                    int(anno_richiesto),
+                    mese,
+                    GME_FTP_USERNAME,
+                    GME_FTP_PASSWORD,
+                    stampare_media_dettaglio=False,
+                )
+
+                dati_excel = carica_dati_da_excel(impianto_obj, int(anno_richiesto), mese)
+
                 data_response.append({
-                    'mese': dato.mese,
-                    'energia_kwh': energia_incentivata,
+                    'mese': mese,
+                    'energia_kwh': valori['energia_kwh'],
                     'corrispettivo_incentivo': None,
                     'corrispettivo_altro': None,
-                    # Utilizza i dati caricati dai file Excel, se disponibili
                     'fatturazione_tfo': dati_excel['fatturazione_tfo'],
                     'fatturazione_altro': dati_excel['fatturazione_altro'],
                     'incassi': dati_excel['incassi'],
                     'controllo_scarto': None,
                     'controllo_percentuale': None,
                     'media_pun_mensile': media_pun_mensile,
-                    'prod_campo_originale': prod_campo_float,
-                    'imm_campo': imm_campo_float if 'imm_campo_float' in locals() else None,  # Aggiungi imm_campo alla risposta
-                    'debug_info': dati_excel.get('debug_info', [])  # Includi le informazioni di debug
+                    'prod_campo_originale': valori['prod_campo_originale'],
+                    'imm_campo': valori['imm_campo'],
+                    'debug_info': dati_excel.get('debug_info', []),
                 })
-            
+ 
             return JsonResponse({'success': True, 'data': data_response})
             
         except Exception as e:
@@ -933,19 +947,19 @@ def tabellamisure_data(anno_nickname):
         if not impianto_obj:
             return {"error": "Impianto non trovato", "TableMisure": []}
             
-        # Cerca il contatore associato all'impianto
-        contatore_obj = Contatore.objects.filter(
-            models.Q(impianto=impianto_obj.id) | 
+        # Cerca tutti i contatori associati all'impianto
+        contatori_qs = Contatore.objects.filter(
+            models.Q(impianto=impianto_obj.id) |
             models.Q(impianto_nickname=impianto_obj.nickname)
-        ).first()
-        
+        )
+
         misure_data = []
-        
-        # Se esiste un contatore associato, cerca i dati nel modello regsegnanti
-        if contatore_obj:
-            dati_reg = regsegnanti.objects.filter(contatore=contatore_obj, anno=int(anno))
+
+        # Se esistono contatori, recupera tutti i registri per tali contatori
+        if contatori_qs.exists():
+            dati_reg = regsegnanti.objects.filter(contatore__in=contatori_qs, anno=int(anno))
         else:
-            # Altrimenti cerca direttamente per impianto_nickname
+            # Fallback: cerca direttamente per impianto_nickname (compatibilità con vecchi dati)
             dati_reg = regsegnanti.objects.filter(anno=int(anno))
             if hasattr(regsegnanti, 'impianto_nickname'):
                 dati_reg = dati_reg.filter(impianto_nickname=impianto_obj.nickname)
@@ -1000,15 +1014,15 @@ class DatiAggregatiCentrali(APIView):
 			for impianto in impianti:
 				print(f"Elaborando impianto: {impianto.nome_impianto}")
 				
-				# Cerca il contatore associato all'impianto
-				contatore_obj = Contatore.objects.filter(
-					models.Q(impianto=impianto.id) | 
+				# Cerca tutti i contatori associati all'impianto
+				contatori_qs = Contatore.objects.filter(
+					models.Q(impianto=impianto.id) |
 					models.Q(impianto_nickname=impianto.nickname)
-				).first()
-				
-				if contatore_obj:
-					# Ottieni i dati dal modello regsegnanti
-					dati_reg = regsegnanti.objects.filter(contatore=contatore_obj, anno=anno)
+				)
+
+				if contatori_qs.exists():
+					# Ottieni i dati dal modello regsegnanti per tutti i contatori
+					dati_reg = regsegnanti.objects.filter(contatore__in=contatori_qs, anno=anno)
 				else:
 					# Fallback: cerca direttamente per impianto_nickname se il campo esiste
 					dati_reg = regsegnanti.objects.filter(anno=anno)

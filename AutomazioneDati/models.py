@@ -128,7 +128,7 @@ class regsegnanti(models.Model):
     prod_gse = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
     prel_campo = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
     prel_ed = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
-    prel_gse = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
+    
     
     # Per i contatori Kaifa
     autocons_campo = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
@@ -137,6 +137,7 @@ class regsegnanti(models.Model):
     imm_campo = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
     imm_ed = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
     imm_gse = models.DecimalField(max_digits=15, decimal_places=3, null=True, blank=True)
+
 
 
     class Meta:

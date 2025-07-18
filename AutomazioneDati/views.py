@@ -58,10 +58,22 @@ def diarioenergie(request, nickname):
     contatore_scambio_attivo = contatori_all_types.filter(tipologia="Scambio", data_dismissione__isnull=True).first()
     contatore_ausiliare_attivo = contatori_all_types.filter(tipologia="Ausiliare", data_dismissione__isnull=True).first()
 
-    # Identifica il contatore "sostituito" (quello dismesso nell'anno corrente) per ciascuna tipologia
-    contatore_produzione_sostituito = contatori_all_types.filter(tipologia="Produzione", data_dismissione__year=anno_corrente).first()
-    contatore_scambio_sostituito = contatori_all_types.filter(tipologia="Scambio", data_dismissione__year=anno_corrente).first()
-    contatore_ausiliare_sostituito = contatori_all_types.filter(tipologia="Ausiliare", data_dismissione__year=anno_corrente).first()
+    # Identifica il contatore "sostituito" (quello dismesso che era attivo durante l'anno) per ciascuna tipologia
+    # Include tutti i contatori dismessi che erano attivi durante l'anno visualizzato, non solo quelli dismessi nell'anno corrente
+    contatore_produzione_sostituito = contatori_all_types.filter(
+        tipologia="Produzione", 
+        data_dismissione__isnull=False
+    ).order_by('-data_dismissione').first()  # Ordina per data dismissione decrescente per prendere il più recente
+
+    contatore_scambio_sostituito = contatori_all_types.filter(
+        tipologia="Scambio", 
+        data_dismissione__isnull=False
+    ).order_by('-data_dismissione').first()
+
+    contatore_ausiliare_sostituito = contatori_all_types.filter(
+        tipologia="Ausiliare", 
+        data_dismissione__isnull=False
+    ).order_by('-data_dismissione').first()
 
     print(f"DEBUG: Contatore Produzione Attivo: {contatore_produzione_attivo.nome if contatore_produzione_attivo else 'Nessuno'}")
     print(f"DEBUG: Contatore Produzione Sostituito: {contatore_produzione_sostituito.nome if contatore_produzione_sostituito else 'Nessuno'}")
@@ -76,9 +88,9 @@ def diarioenergie(request, nickname):
     has_ausiliare = contatore_ausiliare_attivo is not None or contatore_ausiliare_sostituito is not None
 
     # Determina se c'è stata una sostituzione effettiva per una data tipologia
-    has_sostituzione_produzione = contatore_produzione_attivo is not None and contatore_produzione_sostituito is not None
-    has_sostituzione_scambio = contatore_scambio_attivo is not None and contatore_scambio_sostituito is not None
-    has_sostituzione_ausiliare = contatore_ausiliare_attivo is not None and contatore_ausiliare_sostituito is not None
+    has_sostituzione_produzione = contatore_produzione_sostituito is not None
+    has_sostituzione_scambio = contatore_scambio_sostituito is not None
+    has_sostituzione_ausiliare = contatore_ausiliare_sostituito is not None
 
     print(f"DEBUG: has_produzione: {has_produzione}")
     print(f"DEBUG: has_scambio: {has_scambio}")
@@ -118,9 +130,9 @@ def diarioenergie(request, nickname):
     # Conta quante colonne dovremo mostrare per regolare il layout
     numero_gruppi_colonne = 0
     if contatore_produzione_attivo:
-        numero_gruppi_colonne += 6  # Prodotta (3) + Prelevata (3)
+        numero_gruppi_colonne += 5  # Prodotta (3) + Prelevata (2)
     if contatore_produzione_sostituito:
-        numero_gruppi_colonne += 6  # Prodotta (3) + Prelevata (3) del contatore sostituito
+        numero_gruppi_colonne += 5  # Prodotta (3) + Prelevata (2) del contatore sostituito
     if contatore_scambio_attivo:
         numero_gruppi_colonne += 6  # Autoconsumata (3) + Immessa (3)
     if contatore_scambio_sostituito:
@@ -202,15 +214,28 @@ def diarioenergie(request, nickname):
                     valore_campo_secondario = calcolato_prel if calcolato_prel >= 0 else ""
 
                 elif counter_obj.tipologia == "Scambio":
-                    # Autoconsumata (Campo kWh - totale_180n)
-                    val_corrente_autocons = float(lettura_corrente.totale_180n or 0)
-                    val_successivo_autocons = float(lettura_successiva.totale_180n or 0)
+                    if tipologia_fascio == "trifascio":
+                        val_corrente_autocons = float(lettura_corrente.totale_neg or 0)
+                        val_successivo_autocons = float(lettura_successiva.totale_neg or 0)
+                    elif tipologia_fascio == "monofascio":
+                        val_corrente_autocons = float(lettura_corrente.totale_180n or 0)
+                        val_successivo_autocons = float(lettura_successiva.totale_180n or 0)
+                    else: # Fallback
+                        val_corrente_autocons = val_successivo_autocons = 0
+                    
                     calcolato = round((val_successivo_autocons - val_corrente_autocons) * k_factor, 3)
                     valore_campo_principale = calcolato if calcolato >= 0 else ""
 
                     # Immessa (Campo kWh - totale_280n)
-                    val_corrente_imm = float(lettura_corrente.totale_280n or 0)
-                    val_successivo_imm = float(lettura_successiva.totale_280n or 0)
+                    if tipologia_fascio == "trifascio":
+                        val_corrente_imm = float(lettura_corrente.totale_pos or 0)
+                        val_successivo_imm = float(lettura_successiva.totale_pos or 0)
+                    elif tipologia_fascio == "monofascio":
+                        val_corrente_imm = float(lettura_corrente.totale_180n or 0)
+                        val_successivo_imm = float(lettura_successiva.totale_180n or 0)
+                    else: # Fallback
+                        val_corrente_imm = val_successivo_imm = 0
+
                     calcolato_imm = round((val_successivo_imm - val_corrente_imm) * k_factor, 3)
                     valore_campo_secondario = calcolato_imm if calcolato_imm >= 0 else ""
 
@@ -239,7 +264,7 @@ def diarioenergie(request, nickname):
             data["gse"] = reg_segnante.prod_gse if reg_segnante else ""
             data["campo_secondario"] = valore_campo_secondario if valore_campo_secondario != "" else ""
             data["ed_secondario"] = reg_segnante.prel_ed if reg_segnante else ""
-            data["gse_secondario"] = reg_segnante.prel_gse if reg_segnante else ""
+           
         elif counter_obj.tipologia == "Scambio":
             data["ed"] = reg_segnante.autocons_ed if reg_segnante else ""
             data["gse"] = reg_segnante.autocons_gse if reg_segnante else ""
@@ -266,7 +291,7 @@ def diarioenergie(request, nickname):
         riga["prod_gse"] = prod_data_attivo.get("gse")
         riga["prel_campo"] = prod_data_attivo.get("campo_secondario")
         riga["prel_ed"] = prod_data_attivo.get("ed_secondario")
-        riga["prel_gse"] = prod_data_attivo.get("gse_secondario")
+       
 
         # --- Dati Produzione (Contatore Sostituito) ---
         if has_sostituzione_produzione:
@@ -276,7 +301,7 @@ def diarioenergie(request, nickname):
             riga["prod_gse_sostituito"] = prod_data_sostituito.get("gse")
             riga["prel_campo_sostituito"] = prod_data_sostituito.get("campo_secondario")
             riga["prel_ed_sostituito"] = prod_data_sostituito.get("ed_secondario")
-            riga["prel_gse_sostituito"] = prod_data_sostituito.get("gse_secondario")
+           
         else:
             # Assicurati che i campi siano vuoti se non c'è sostituzione
             riga["prod_campo_sostituito"] = riga["prod_ed_sostituito"] = riga["prod_gse_sostituito"] = ""
@@ -398,7 +423,7 @@ def salva_diario_energie(request):
             "prod_gse": ("prod_gse", counters_by_type_status.get("Produzione_attivo")),
             "prel_campo": ("prel_campo", counters_by_type_status.get("Produzione_attivo")),
             "prel_ed": ("prel_ed", counters_by_type_status.get("Produzione_attivo")),
-            "prel_gse": ("prel_gse", counters_by_type_status.get("Produzione_attivo")),
+            
 
             # Produzione Sostituito
             "prod_campo_sostituito": ("prod_campo", counters_by_type_status.get("Produzione_sostituito")),
@@ -406,7 +431,7 @@ def salva_diario_energie(request):
             "prod_gse_sostituito": ("prod_gse", counters_by_type_status.get("Produzione_sostituito")),
             "prel_campo_sostituito": ("prel_campo", counters_by_type_status.get("Produzione_sostituito")),
             "prel_ed_sostituito": ("prel_ed", counters_by_type_status.get("Produzione_sostituito")),
-            "prel_gse_sostituito": ("prel_gse", counters_by_type_status.get("Produzione_sostituito")),
+           
 
             # Scambio Attivo
             "autocons_campo": ("autocons_campo", counters_by_type_status.get("Scambio_attivo")),
@@ -496,15 +521,14 @@ def salva_diario_energie(request):
             # Crea la directory di destinazione se non esiste
             os.makedirs(backup_directory, exist_ok=True)
             
-            # Genera il nome del file di backup con timestamp
-            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-            backup_filename = f'db_backup_{timestamp}.sqlite3'
+            # Nome fisso del file di backup (sovrascrive sempre lo stesso file)
+            backup_filename = 'db_backup.sqlite3'
             backup_path = os.path.join(backup_directory, backup_filename)
             
-            # Copia il database
+            # Copia il database (sovrascrive il file esistente se presente)
             shutil.copy2(current_db_path, backup_path)
             
-            print(f"Backup del database creato con successo: {backup_path}")
+            print(f"Backup del database aggiornato con successo: {backup_path}")
             
         except Exception as backup_error:
             # Se il backup fallisce, registra l'errore ma non bloccare la risposta di successo
