@@ -58,20 +58,30 @@ function validateDateTimeFormat(dateTimeString) {
 
 // Funzione per calcolare i totali di una riga
 function calculateRowTotals(row) {
-    // Calcola totale negativo (A1- + A2- + A3-)
+    // Ottieni i testi delle celle
     const a1_neg_text = row.querySelector('[data-field="a1_neg"]').textContent.trim();
     const a2_neg_text = row.querySelector('[data-field="a2_neg"]').textContent.trim();
     const a3_neg_text = row.querySelector('[data-field="a3_neg"]').textContent.trim();
-    
-    const a1_neg = a1_neg_text ? parseFloat(a1_neg_text.replace(',', '.')) : 0;
-    const a2_neg = a2_neg_text ? parseFloat(a2_neg_text.replace(',', '.')) : 0;
-    const a3_neg = a3_neg_text ? parseFloat(a3_neg_text.replace(',', '.')) : 0;
-    
-    // Calcola totale positivo (A1+ + A2+ + A3+)
     const a1_pos_text = row.querySelector('[data-field="a1_pos"]').textContent.trim();
     const a2_pos_text = row.querySelector('[data-field="a2_pos"]').textContent.trim();
     const a3_pos_text = row.querySelector('[data-field="a3_pos"]').textContent.trim();
     
+    // Verifica se tutte le celle sono vuote
+    const tuttiValoriVuoti = [a1_neg_text, a2_neg_text, a3_neg_text, a1_pos_text, a2_pos_text, a3_pos_text]
+        .every(text => text === '');
+    
+    // Se tutti i valori sono vuoti, pulisci i totali e esci
+    if (tuttiValoriVuoti) {
+        row.querySelector('[data-field="totale_neg"]').textContent = '';
+        row.querySelector('[data-field="totale_pos"]').textContent = '';
+        console.log(`Riga mese ${row.getAttribute('data-mese')}: Nessun dato inserito, totali azzerati`);
+        return;
+    }
+    
+    // Converti i valori in numeri (solo se non vuoti, altrimenti 0)
+    const a1_neg = a1_neg_text ? parseFloat(a1_neg_text.replace(',', '.')) : 0;
+    const a2_neg = a2_neg_text ? parseFloat(a2_neg_text.replace(',', '.')) : 0;
+    const a3_neg = a3_neg_text ? parseFloat(a3_neg_text.replace(',', '.')) : 0;
     const a1_pos = a1_pos_text ? parseFloat(a1_pos_text.replace(',', '.')) : 0;
     const a2_pos = a2_pos_text ? parseFloat(a2_pos_text.replace(',', '.')) : 0;
     const a3_pos = a3_pos_text ? parseFloat(a3_pos_text.replace(',', '.')) : 0;

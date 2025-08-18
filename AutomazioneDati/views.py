@@ -226,15 +226,20 @@ def diarioenergie(request, nickname):
                     calcolato = round((val_successivo_autocons - val_corrente_autocons) * k_factor, 3)
                     valore_campo_principale = calcolato if calcolato >= 0 else ""
 
-                    # Immessa (Campo kWh - totale_280n)
-                    if tipologia_fascio == "trifascio":
-                        val_corrente_imm = float(lettura_corrente.totale_pos or 0)
-                        val_successivo_imm = float(lettura_successiva.totale_pos or 0)
-                    elif tipologia_fascio == "monofascio":
-                        val_corrente_imm = float(lettura_corrente.totale_180n or 0)
-                        val_successivo_imm = float(lettura_successiva.totale_180n or 0)
-                    else: # Fallback
-                        val_corrente_imm = val_successivo_imm = 0
+                    # Immessa (Campo kWh) - usa 2.8.0 se disponibile, altrimenti fallback precedente
+                    if (getattr(lettura_corrente, 'totale_280n', None) is not None 
+                        and getattr(lettura_successiva, 'totale_280n', None) is not None):
+                        val_corrente_imm = float(lettura_corrente.totale_280n or 0)
+                        val_successivo_imm = float(lettura_successiva.totale_280n or 0)
+                    else:
+                        if tipologia_fascio == "trifascio":
+                            val_corrente_imm = float(lettura_corrente.totale_pos or 0)
+                            val_successivo_imm = float(lettura_successiva.totale_pos or 0)
+                        elif tipologia_fascio == "monofascio":
+                            val_corrente_imm = float(lettura_corrente.totale_180n or 0)
+                            val_successivo_imm = float(lettura_successiva.totale_180n or 0)
+                        else: # Fallback
+                            val_corrente_imm = val_successivo_imm = 0
 
                     calcolato_imm = round((val_successivo_imm - val_corrente_imm) * k_factor, 3)
                     valore_campo_secondario = calcolato_imm if calcolato_imm >= 0 else ""

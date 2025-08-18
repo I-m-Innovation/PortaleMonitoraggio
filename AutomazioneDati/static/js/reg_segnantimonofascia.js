@@ -112,15 +112,17 @@ function calculateAllConsumptions() {
     
     // Seconda passa: calcola i consumi come differenza
     allRows.forEach((row, index) => {
-        const consumo180nCell = row.querySelector('[data-field="consumo_180n"]');
-        const consumo280nCell = row.querySelector('[data-field="consumo_280n"]');
+        const consumo180nCell = row.querySelector('[data-field="delta_180n"]');
+        const consumo280nCell = row.querySelector('[data-field="delta_280n"]');
         
         if (!consumo180nCell || !consumo280nCell) return;
         
         // Per calcolare il consumo del mese corrente:
-        // consumo = totale_mese_successivo - totale_mese_corrente
-        let consumo180n = 0;
-        let consumo280n = 0;
+        // consumo = totale_mese_successivo - totale_mese_corrente  
+        let consumo180n = null;
+        let consumo280n = null;
+        let haCalcolato180n = false;
+        let haCalcolato280n = false;
         
         // Se non è l'ultima riga, calcola la differenza con il mese successivo
         if (index < allRows.length - 1) {
@@ -132,24 +134,26 @@ function calculateAllConsumptions() {
             // Calcola solo se entrambi i valori sono presenti e validi
             if (totaleCorrente180n > 0 && totaleSuccessivo180n > 0) {
                 consumo180n = totaleSuccessivo180n - totaleCorrente180n;
+                haCalcolato180n = true;
             }
             
             if (totaleCorrente280n > 0 && totaleSuccessivo280n > 0) {
                 consumo280n = totaleSuccessivo280n - totaleCorrente280n;
+                haCalcolato280n = true;
             }
         }
         
         // Aggiorna le celle dei consumi
-        if (consumo180n > 0) {
-            consumo180nCell.textContent = consumo180n.toFixed(2);
+        if (haCalcolato180n && consumo180n !== null && !isNaN(consumo180n)) {
+            consumo180nCell.textContent = consumo180n.toFixed(3);
             consumo180nCell.style.backgroundColor = '#e8f5e8'; // Verde chiaro per indicare valore calcolato
         } else {
             consumo180nCell.textContent = '';
             consumo180nCell.style.backgroundColor = '';
         }
         
-        if (consumo280n > 0) {
-            consumo280nCell.textContent = consumo280n.toFixed(2);
+        if (haCalcolato280n && consumo280n !== null && !isNaN(consumo280n)) {
+            consumo280nCell.textContent = consumo280n.toFixed(3);
             consumo280nCell.style.backgroundColor = '#e8f5e8'; // Verde chiaro per indicare valore calcolato
         } else {
             consumo280nCell.textContent = '';
@@ -298,7 +302,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Gestione delle celle numeriche per sistema monofasica
-    const numericFields = ['kaifa_180n', 'kaifa_280n', 'totale_180n', 'totale_kaifa_280n', 'consumo_180n', 'consumo_280n'];
+    const numericFields = ['kaifa_180n', 'kaifa_280n', 'totale_180n', 'totale_kaifa_280n', 'delta_180n', 'delta_280n'];
     
     numericFields.forEach(fieldName => {
         const cells = document.querySelectorAll(`[data-field="${fieldName}"]`);
