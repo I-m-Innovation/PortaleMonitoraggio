@@ -203,15 +203,22 @@ def diarioenergie(request, nickname):
                         val_successivo_prod = float(lettura_successiva.totale_180n or 0)
                     else: # Fallback
                         val_corrente_prod = val_successivo_prod = 0
-                    
-                    calcolato = round((val_successivo_prod - val_corrente_prod) * k_factor, 3)
-                    valore_campo_principale = calcolato if calcolato >= 0 else ""
+                    # Se entrambe le letture sono 0, consideriamo il valore come non ancora calcolato -> cella vuota
+                    if val_corrente_prod == 0 and val_successivo_prod == 0:
+                        valore_campo_principale = ""
+                    else:
+                        calcolato = round((val_successivo_prod - val_corrente_prod) * k_factor, 3)
+                        valore_campo_principale = calcolato if calcolato >= 0 else ""
 
                     # Prelevata (Campo kWh)
                     val_corrente_prel = float(lettura_corrente.totale_pos or 0)
                     val_successivo_prel = float(lettura_successiva.totale_pos or 0)
-                    calcolato_prel = round((val_successivo_prel - val_corrente_prel) * k_factor, 3)
-                    valore_campo_secondario = calcolato_prel if calcolato_prel >= 0 else ""
+                    # Anche qui: se entrambe le letture sono 0, cella vuota
+                    if val_corrente_prel == 0 and val_successivo_prel == 0:
+                        valore_campo_secondario = ""
+                    else:
+                        calcolato_prel = round((val_successivo_prel - val_corrente_prel) * k_factor, 3)
+                        valore_campo_secondario = calcolato_prel if calcolato_prel >= 0 else ""
 
                 elif counter_obj.tipologia == "Scambio":
                     if tipologia_fascio == "trifascio":
