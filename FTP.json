@@ -1,0 +1,10 @@
+{
+    "FTP_Ziliog_user": "ftpdaticentzilio",
+    "FTP_Ziliog_pass": "Sd2PqAS.We8zBK",
+    "FTP_Ziliog_host": "192.168.10.211",
+    "FTP_Ziliog_port": 21,
+    "FTP_Ziliog_folder": "/dati/",
+  
+    "FTP_GME_user": "DAMIANOZILIO",
+    "FTP_GME_pass": "O12L10Z1"
+  }

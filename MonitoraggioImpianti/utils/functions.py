@@ -3,12 +3,14 @@ import os
 from ftplib import FTP
 from datetime import datetime, timedelta
 import numpy as np
-
+import json
 
 def GET_SAVE_DATA_FTP(folder, filename, nick):
-	ftp = FTP("192.168.10.211", timeout=120)
-	ftp.login('ftpdaticentzilio', 'Sd2PqAS.We8zBK')
-	ftp.cwd('/dati/' + folder)
+	with open('FTP.json', 'r') as f:
+		FTP_Ziliog = json.load(f)
+	ftp = FTP(FTP_Ziliog['FTP_Ziliog_host'], timeout=120)
+	ftp.login(FTP_Ziliog['FTP_Ziliog_user'], FTP_Ziliog['FTP_Ziliog_pass'])
+	ftp.cwd(FTP_Ziliog['FTP_Ziliog_folder'] + folder)
 	gFile = open('temporary/' + nick + '/' + filename, "wb")
 	ftp.retrbinary("RETR " + filename, gFile.write)
 	gFile.close()

@@ -4,11 +4,14 @@ import io
 import calendar
 from datetime import datetime, timedelta
 import os
-import requests
+
+import json
 
 # Credenziali FTP del GME
-GME_FTP_USERNAME = "DAMIANOZILIO"  # Rimossi gli spazi superflui
-GME_FTP_PASSWORD = "O12L10Z1"
+with open('FTP.json', 'r') as f:
+	FTP_GME = json.load(f)
+GME_FTP_USERNAME = FTP_GME['FTP_GME_user']
+GME_FTP_PASSWORD = FTP_GME['FTP_GME_pass']
 
 def scarica_dati_pun_mensili(anno, mese, username=None, password=None, cartella_salvataggio=None, stampare_media_dettaglio=True, force_download=False):
     """
