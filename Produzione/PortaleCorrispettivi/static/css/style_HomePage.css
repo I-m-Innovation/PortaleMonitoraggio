@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap');
+
+html {
+    font-family: "Roboto", sans-serif;
+    zoom: 100%
+}
+
+.background-image {
+    position: fixed;
+    z-index: 1;
+    background-image: url("/static/images/HomePage/Cerveteri1-1-scaled.png");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: 100% 100%;
+    width: 100%;
+    height: 100vh;
+    -webkit-filter: blur(1px);
+    -moz-filter: blur(1px);
+    -o-filter: blur(1px);
+    -ms-filter: blur(1px);
+    filter: blur(1px);
+    border: solid 0;
+}
+
+nav {
+    --rebecca-purple: hsl(111, 17%, 15%);
+    background-image: linear-gradient(
+    to bottom right,
+    hsla(203, 92%, 35.5%, 0.25),
+    var(--rebecca-purple),
+    hsla(27.6, 87.1%, 35.7%, 0.25)
+    );
+    background-color: var(--rebecca-purple);
+}
+
+.content {
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+.card{
+    border-radius: 1px;
+    background: radial-gradient(circle at 90% 80%, rgb(87, 108, 117) 0%, rgb(76, 94, 103) 100.2%);
+    border: none;
+    height: 300px;
+    box-shadow: 0 6px 10px rgb(58, 58, 58), 0 0 6px rgba(59, 59, 59, 0.05);
+    transition: .3s transform cubic-bezier(.155,1.105,.295,1.12),.3s box-shadow,.3s -webkit-transform cubic-bezier(.155,1.105,.295,1.12);
+    cursor: pointer;
+    margin-bottom: 10px;
+    padding: 8px 3px 3px 3px ;
+    width: 250px
+}
+
+.card:hover{
+    transform: scale(1.005);
+    box-shadow: 0 10px 20px rgba(16, 16, 16, 0.6), 0 4px 8px rgba(0,0,0,.06);
+}
+
+#ricky {
+    background-image: linear-gradient(to right bottom, #ce6bd3, #ff63a6, #ff806a, #ffb629, #e2eb12);
+    /*background-image: url("/static/images/HomePage/fairy_world.png");*/
+    /*background-size: 100% 50%;*/
+    /*background-repeat: repeat;*/
+    /*background-color: lightpink;*/
+    /* you need to match the shadow color to your background or image border for the desired effect*/
+}
+
+
