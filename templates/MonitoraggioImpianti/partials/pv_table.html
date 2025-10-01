@@ -86,7 +86,7 @@
 		      MiniChart_{{ nickname }}.setOption({
 		          color: ['rgb(248,123,104)'],
 		          xAxis: [{ data: [], show: false }], 
-		          yAxis: {type: 'value', min: 0, offset:80, max: {{ impianto.potenza_installata|stringformat:".2f" }}, splitLine: {show: false}, },
+		          yAxis: {type: 'value', min: 0, offset:80, max: {{ impianto.potenza_installata|stringformat:".2f" }}, splitLine: {show: false}, show: false},
 		          grid:[{top:0,bottom:0,right:0,left:0}],
 		          series: [{
 				          data: [], type: 'line', areaStyle: {},showSymbol: false,lineStyle:{width: 1,}

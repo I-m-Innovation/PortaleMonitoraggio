@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Imposta (o aggiorna se già esistente) il parametro 'year' nella query string
             // con il valore dell'anno selezionato.
-            // Ad esempio, se l'URL era "pagina.html?contatore_id=1" e selectedYear è "2022",
+            // Ad esempio, se l'URL era "pagina.htIlml?contatore_id=1" e selectedYear è "2022",
             // diventerà "pagina.html?contatore_id=1&year=2022".
             // Se era "pagina.html?year=2023", diventerà "pagina.html?year=2022".
             currentUrl.searchParams.set('year', selectedYear);

@@ -1,429 +1,239 @@
-$(document).ready(function() {
-    // Aggiungere questo per il debug
-    console.log("URL base della pagina:", window.location.origin);
-    console.log("Percorso della pagina:", window.location.pathname);
-    
-    // Ottieni tutti gli anni disponibili dalle tabelle nella pagina
-    const anni = [];
-    $('table[id^="table1_"]').each(function() {
-        const anno = $(this).attr('id').split('_')[1];
-        anni.push(anno);
-        console.log("Trovata tabella per l'anno:", anno);
-    });
-    
-    // Costanti TFO per impianto (€/kWh)
-    const TFO_RATES = {
-        'ionico_foresta': 0.21,
-        'san_teodoro': 0.21,
-        'ponte_giurino': 0.21,
-        'petilia_bf_partitore': 0.21
-        // Aggiungi altri impianti secondo necessità
-    };
-    
-    // Ottieni il nickname dell'impianto dal percorso URL
-    const nickname = window.location.pathname.split('/').filter(segment => segment).pop();
-    
-    // Imposta il tasso TFO per questo impianto
-    const tfoRate = TFO_RATES[nickname] || 0.21; // Default a 0.21 se non trovato
-    
-    // Mostra il tasso TFO nell'header della tabella
-    $('.tfo-rate-indicator').text(` (${tfoRate} €/kWh)`);
-    
-    // Inizializzazione per ogni anno
-    anni.forEach(function(anno) {
-        caricaDatiTabella(anno);
-        
-        // Aggiungi event listener per salvare i dati
-        $(`#save-table-data-${anno}`).on('click', function() {
-            salvaDatiTabella(anno);
-        });
-    });
-    
-    // Aggiungi event listener per il calcolo dei controlli
-    $(document).on('input', '.table-input', function() {
-        const tableId = $(this).closest('table').attr('id');
-        const anno = tableId.split('_')[1];
-        calcolaControlli(anno);
-        calcolaTotali(anno);
-    });
-    
-    // Aggiungi event listener per il calcolo TFO quando cambia l'energia
-    $(document).on('input', '.energy-input', function() {
-        const mese = $(this).data('mese');
-        const anno = $(this).closest('table').attr('id').split('_')[1];
-        const energia = parseFloat($(this).val()) || 0;
-        const prodCampoOriginale = parseFloat($(this).attr('data-prod-campo')) || 0; // Usa il valore originale salvato
-        
-        // Calcola il valore TFO
-        const tfoValue = energia * tfoRate;
-        
-        // Aggiorna la cella TFO
-        $(`#table1_${anno} .tfo-value[data-mese="${mese}"]`).text(tfoValue.toFixed(2) + " €");
-        
-        // Aggiorna automaticamente anche il campo corrispettivo_incentivo per mantenere la consistenza dei dati
-        $(`#table1_${anno} input[data-mese="${mese}"][data-campo="corrispettivo_incentivo"]`).val(tfoValue.toFixed(2));
+document.addEventListener('DOMContentLoaded', function() {
+    const tables = document.querySelectorAll('.js-tabella-corrispettivi');
+    if (!tables || tables.length === 0) return;
 
-        // Calcola e aggiorna il valore PUN
-        const media_pun_mensile_attr = $(this).attr('data-media-pun'); // Leggi l'attributo data
-        let valorePUN = 0;
-        if (media_pun_mensile_attr !== undefined && media_pun_mensile_attr !== null && !isNaN(parseFloat(media_pun_mensile_attr))) {
-            const media_pun_mensile = parseFloat(media_pun_mensile_attr) / 1000; // Converti da €/MWh a €/kWh
-            if (!isNaN(media_pun_mensile)) {
-                // MODIFICA: Visualizza direttamente la media PUN mensile (€/kWh)
-                // Rimosso: (prodCampoOriginale * 0.02) * media_pun_mensile;
-                valorePUN = media_pun_mensile;
-            }
-        }
-        $(`#table1_${anno} .pun-value[data-mese="${mese}"]`).text(valorePUN.toFixed(3)); // Formattato a 3 decimali
-        
-        // Ricalcola controlli e totali
-        calcolaControlli(anno);
-        calcolaTotali(anno);
-    });
-    
-    function mostraDebugInfo(dati, anno) {
-        // Crea o recupera il contenitore per il debug
-        let debugContainer = $(`#debug-container-${anno}`);
-        if (debugContainer.length === 0) {
-            $(`#table1_${anno}`).after(`<div id="debug-container-${anno}" class="debug-container" style="margin: 10px 0; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; display: none;"><h5>Informazioni di debug</h5><div id="debug-content-${anno}"></div></div>`);
-            debugContainer = $(`#debug-container-${anno}`);
-            
-            
-           
-        }
-        
-        // Raccogli tutte le informazioni di debug
-        let debugContent = $(`#debug-content-${anno}`);
-        debugContent.empty();
-        
-        // Aggiungi informazioni generali
-        debugContent.append(`<p><strong>Dati ricevuti:</strong> ${dati.length} record</p>`);
-        
-        // Aggiungi informazioni specifiche per ogni mese
-        dati.forEach(function(dato) {
-            if (dato.debug_info && dato.debug_info.length > 0) {
-                const debugBox = $(`<div class="debug-box" style="margin-bottom: 10px; padding: 8px; border-left: 3px solid #518ffa;"></div>`);
-                debugBox.append(`<h6>Debug per il mese ${dato.mese}</h6>`);
-                
-                const debugList = $('<ul style="margin-bottom: 0;"></ul>');
-                dato.debug_info.forEach(function(info) {
-                    debugList.append(`<li>${info}</li>`);
-                });
-                
-                debugBox.append(debugList);
-                debugContent.append(debugBox);
-            }
-        });
-    }
-    
-    function caricaDatiTabella(anno) {
-        console.log(`Caricamento dati per l'anno ${anno}...`);
-        
-        $.ajax({
-            url: '/corrispettivi/api/dati-mensili-tabella/',
-            method: 'GET',
-            data: {
-                impianto: nickname,
-                anno: anno
-            },
-            success: function(response) {
-                if (!response.success) {
-                    console.error(`Errore nel caricamento dei dati: ${response.error}`);
-                    return;
+    tables.forEach(function(table) {
+        const anno = table.getAttribute('data-anno');
+        const nickname = table.getAttribute('data-nickname');
+        if (!anno || !nickname) return;
+
+        const mesi = Array.from({ length: 12 }, (_, i) => i + 1);
+
+        // Chiamate annuali (5-6 richieste al posto di 12xN)
+        Promise.all([
+            fetch(`/corrispettivi/api/annuale/energia-kwh/${encodeURIComponent(nickname)}/${anno}/`).then(r => r.json()).catch(() => ({ success:false })),
+            fetch(`/corrispettivi/api/annuale/dati-tfo/${encodeURIComponent(nickname)}/${anno}/`).then(r => r.json()).catch(() => ({ success:false })),
+            fetch(`/corrispettivi/api/annuale/dati-CNI/${encodeURIComponent(nickname)}/${anno}/`).then(r => r.json()).catch(() => ({ success:false })),
+            fetch(`/corrispettivi/api/annuale/dati-fatturazione-tfo/${encodeURIComponent(nickname)}/${anno}/`).then(r => r.json()).catch(() => ({ success:false })),
+            fetch(`/corrispettivi/api/annuale/dati-energia-non-incentivata/${encodeURIComponent(nickname)}/${anno}/`).then(r => r.json()).catch(() => ({ success:false })),
+            fetch(`/corrispettivi/api/annuale/dati-riepilogo-pagamenti/${encodeURIComponent(nickname)}/${anno}/`).then(r => r.json()).catch(() => ({ success:false })),
+            fetch(`/corrispettivi/api/annuale/percentuale-controllo/${encodeURIComponent(nickname)}/${anno}/`).then(r => r.json()).catch(() => ({ success:false })),
+            fetch(`/corrispettivi/api/annuale/commenti/${encodeURIComponent(nickname)}/${anno}/`).then(r => r.json()).catch(() => ({ success:false }))
+        ]).then(([energiaAnn, tfoAnn, cniAnn, fattTfoAnn, niAnn, incAnn, percCtrlAnn, commAnn]) => {
+            const energiaByM = (energiaAnn && energiaAnn.per_month) || {};
+            const tfoByM = (tfoAnn && tfoAnn.per_month) || {};
+            const cniByM = (cniAnn && cniAnn.per_month) || {};
+            const fattTfoByM = (fattTfoAnn && fattTfoAnn.per_month) || {};
+            const niByM = (niAnn && niAnn.per_month) || {};
+            const incByM = (incAnn && incAnn.per_month) || {};
+            const percCtrlByM = (percCtrlAnn && percCtrlAnn.per_month) || {};
+            const commentsByM = (commAnn && commAnn.comments_by_month) || {};
+
+            mesi.forEach(mese => {
+                // Energia
+                const cellEnergia = table.querySelector(`.energia-value[data-mese="${mese}"]`);
+                if (cellEnergia) {
+                    const v = energiaByM[mese] ?? energiaByM[String(mese)] ?? null;
+                    if (v === null || typeof v === 'undefined') {
+                        cellEnergia.textContent = 'NuN';
+                    } else {
+                        const sum = parseFloat(v) || 0;
+                        cellEnergia.textContent = sum === 0 ? '0' : Math.round(sum).toLocaleString('it-IT');
+                    }
                 }
-                
-                console.log(`Dati caricati con successo per ${anno}: ${response.data.length} record`);
-                
-                // Aggiorna la tabella con i dati ricevuti
-                aggiornaTabellaConDati(response.data, anno);
-                
-                // Mostra informazioni di debug se presenti
-                if (response.data.some(d => d.debug_info && d.debug_info.length > 0)) {
-                    mostraDebugInfo(response.data, anno);
+
+                // TFO
+                const cellTFO = table.querySelector(`.tfo-value[data-mese="${mese}"]`);
+                if (cellTFO) {
+                    const v = tfoByM[mese] ?? tfoByM[String(mese)] ?? null;
+                    console.log(`[DEBUG TFO] Mese: ${mese}, Valore originale: ${v}, Tipo: ${typeof v}`);
+                    if (v === null || typeof v === 'undefined') {
+                        cellTFO.textContent = 'NuN';
+                    } else {
+                        const sum = parseFloat(v) || 0;
+                        console.log(`[DEBUG TFO] Mese: ${mese}, Valore convertito: ${sum}, Testo finale: ${sum === 0 ? '0 €' : sum.toFixed(2).replace('.', ',') + ' €'}`);
+                        cellTFO.textContent = sum === 0 ? '0 €' : sum.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+                    }
                 }
-                
-                // Calcola controlli e totali dopo aver caricato i dati
-                calcolaControlli(anno);
-                calcolaTotali(anno);
-            },
-            error: function(error) {
-                console.error(`Errore durante il caricamento dei dati per l'anno ${anno}:`, error);
-            }
-        });
-    }
-    
-    function aggiornaTabellaConDati(dati, anno) {
-        // Log dei valori PUN mensili
-        console.log(`--- DATI PUN MENSILI per l'anno ${anno} ---`);
-        
-        dati.forEach(function(dato) {
-            if (dato.mese < 1 || dato.mese > 12) return;
-            
-            // Input per l'energia
-            const energyInputElement = $(`#table1_${anno} input[data-mese="${dato.mese}"][data-campo="energia_kwh"]`);
-            
-            // Salva il valore originale dell'energia per calcoli futuri
-            energyInputElement.attr('data-prod-campo', dato.energia_kwh);
-            
-            // Memorizza il valore imm_campo come attributo data (AGGIUNTA)
-            energyInputElement.attr('data-imm-campo', dato.imm_campo || dato.energia_kwh);
-            
-            // Salva il valore PUN se disponibile
-            if (dato.media_pun_mensile !== undefined) {
-                energyInputElement.attr('data-media-pun', dato.media_pun_mensile);
-                console.log(`PUN mese ${dato.mese}/${anno}: ${dato.media_pun_mensile} €/MWh`);
-            }
-            
-            // Calcola il valore TFO
-            const tfoRate = parseFloat($('.tfo-rate-indicator').text().match(/[\d.]+/)[0] || 0.21);
-            const tfoValue = (parseFloat(dato.energia_kwh) || 0) * tfoRate;
-            
-            // Calcola il valore PUN
-            const media_pun_mensile_mwh = parseFloat(energyInputElement.attr('data-media-pun')) || 0; // Questo è in €/MWh
-            // MODIFICA: Visualizza la media PUN mensile convertita in €/kWh
-            // Rimosso: (parseFloat(dato.energia_kwh) || 0) * 0.02 * (media_pun_mensile_mwh / 1000);
-            let valorePUN = (media_pun_mensile_mwh / 1); // Converti in €/kWh
-            
-            // Popola i campi della tabella con i dati caricati
-            energyInputElement.val(dato.energia_kwh || '');
-            
-            // Aggiorna TFO e PUN nelle celle di visualizzazione
-            $(`#table1_${anno} .tfo-value[data-mese="${dato.mese}"]`).text((tfoValue || 0).toFixed(2) + " €");
-            $(`#table1_${anno} .pun-value[data-mese="${dato.mese}"]`).text((valorePUN || 0).toFixed(3));
-            
-            // CORRISPETTIVI
-            // Aggiorna campo corrispettivo_incentivo (nascosto ma usato nei calcoli)
-            $(`<input type="hidden" data-mese="${dato.mese}" data-campo="corrispettivo_incentivo" value="${tfoValue.toFixed(2)}">`)
-                .appendTo(`#table1_${anno} td.tfo-value[data-mese="${dato.mese}"]`);
-            
-            $(`#table1_${anno} input[data-mese="${dato.mese}"][data-campo="corrispettivo_altro"]`).val(dato.corrispettivo_altro || '');
-            
-            // FATTURAZIONE - Correzione: assicurarsi che i dati vadano nelle colonne corrette
-            // Il valore "fatturazione_tfo" va nella colonna "TFO**"
-            $(`#table1_${anno} input[data-mese="${dato.mese}"][data-campo="fatturazione_tfo"]`).val(dato.fatturazione_tfo || '');
-            // Il valore "fatturazione_altro" va nella colonna "Energia non incentivata"
-            $(`#table1_${anno} input[data-mese="${dato.mese}"][data-campo="fatturazione_altro"]`).val(dato.fatturazione_altro || '');
-            
-            // INCASSI - Corrispondente alla colonna "Incassi" (Riepilogo Pagamenti)
-            $(`#table1_${anno} input[data-mese="${dato.mese}"][data-campo="incassi"]`).val(dato.incassi || '');
-            
-            // Calcola controllo
-            const corrispettivi = (parseFloat(tfoValue) || 0) + (parseFloat(dato.corrispettivo_altro) || 0);
-            const fatturazione = (parseFloat(dato.fatturazione_tfo) || 0) + (parseFloat(dato.fatturazione_altro) || 0);
-            
-            if (!isNaN(corrispettivi) && !isNaN(fatturazione)) {
-                const scarto = corrispettivi - fatturazione;
-                const percentuale = fatturazione !== 0 ? (scarto / fatturazione) * 100 : 0;
-                
-                // Mostra i risultati del controllo
-                $(`#table1_${anno} .controllo-scarto[data-mese="${dato.mese}"]`).text(scarto.toFixed(2));
-                $(`#table1_${anno} .controllo-percentuale[data-mese="${dato.mese}"]`).text(percentuale.toFixed(2) + '%');
-                
-                // Colora le celle di controllo in base allo scarto
-                const controlloScartoCell = $(`#table1_${anno} .controllo-scarto[data-mese="${dato.mese}"]`);
-                const controlloPercentualeCell = $(`#table1_${anno} .controllo-percentuale[data-mese="${dato.mese}"]`);
-                
-                controlloScartoCell.removeClass('text-danger text-success');
-                controlloPercentualeCell.removeClass('text-danger text-success');
-                
-                if (percentuale < -1) {
-                    controlloScartoCell.addClass('text-danger');
-                    controlloPercentualeCell.addClass('text-danger');
-                } else {
-                    controlloScartoCell.addClass('text-success');
-                    controlloPercentualeCell.addClass('text-success');
+
+                // CNI
+                const cellCNI = table.querySelector(`.CNI-value[data-mese="${mese}"]`);
+                if (cellCNI) {
+                    const v = cniByM[mese] ?? cniByM[String(mese)] ?? null;
+                    if (v === null || typeof v === 'undefined') {
+                        cellCNI.textContent = 'NuN';
+                    } else {
+                        const sum = parseFloat(v) || 0;
+                        cellCNI.textContent = sum === 0 ? '0' : Math.round(sum).toLocaleString('it-IT');
+                    }
                 }
-            }
-        });
-    }
-    
-    function salvaDatiTabella(anno) {
-        console.log(`Salvataggio dati per l'anno ${anno}...`);
-        
-        const dati = [];
-        
-        // Per ogni mese dell'anno, raccogli i dati dalla tabella
-        for (let mese = 1; mese <= 12; mese++) {
-            const energia_kwh = parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="energia_kwh"]`).val()) || null;
-            
-            // Se non c'è energia, non salviamo i dati per questo mese
-            if (energia_kwh === null) continue;
-            
-            // Ottieni il valore TFO dalla cella o dall'input nascosto
-            const tfoValue = parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="corrispettivo_incentivo"]`).val()) || 
-                            parseFloat($(`#table1_${anno} .tfo-value[data-mese="${mese}"]`).text()) || null;
-            
-            const punValue = parseFloat($(`#table1_${anno} .pun-value[data-mese="${mese}"]`).text()) || null;
-            
-            // Leggi i valori dai campi FATTURAZIONE e INCASSI
-            const fatturazione_tfo = parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="fatturazione_tfo"]`).val()) || null;
-            const fatturazione_altro = parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="fatturazione_altro"]`).val()) || null;
-            const corrispettivo_altro = parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="corrispettivo_altro"]`).val()) || null;
-            const incassi = parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="incassi"]`).val()) || null;
-            
-            dati.push({
-                mese: mese,
-                energia_kwh: energia_kwh,
-                corrispettivo_incentivo: tfoValue,
-                corrispettivo_altro: corrispettivo_altro,
-                fatturazione_tfo: fatturazione_tfo,
-                fatturazione_altro: fatturazione_altro,
-                incassi: incassi
+
+                // Fatturazione TFO
+                const cellfatturazioneTFO = table.querySelector(`.fatturazione-tfo-value[data-mese="${mese}"]`);
+                if (cellfatturazioneTFO) {
+                    const v = fattTfoByM[mese] ?? fattTfoByM[String(mese)] ?? null;
+                    if (v === null || typeof v === 'undefined') {
+                        cellfatturazioneTFO.textContent = 'NuN';
+                    } else {
+                        const sum = parseFloat(v) || 0;
+                        cellfatturazioneTFO.textContent = sum === 0 ? '0 €' : sum.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+                    }
+                }
+
+                // Energia non incentivata (altro)
+                const cellEnergiaNonIncentivata = table.querySelector(`.fatturazione-altro-value[data-mese="${mese}"]`);
+                if (cellEnergiaNonIncentivata) {
+                    const v = niByM[mese] ?? niByM[String(mese)] ?? null;
+                    if (v === null || typeof v === 'undefined') {
+                        cellEnergiaNonIncentivata.textContent = 'NuN';
+                    } else {
+                        const sum = parseFloat(v) || 0;
+                        cellEnergiaNonIncentivata.textContent = sum === 0 ? '0' : sum.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    }
+                }
+
+                // Incassi
+                const cellIncassi = table.querySelector(`.incassi-value[data-mese="${mese}"]`);
+                if (cellIncassi) {
+                    const v = incByM[mese] ?? incByM[String(mese)] ?? null;
+                    if (v === null || typeof v === 'undefined') {
+                        cellIncassi.textContent = 'NuN';
+                    } else {
+                        const sum = parseFloat(v) || 0;
+                        cellIncassi.textContent = sum === 0 ? '0 €' : sum.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+                    }
+                }
+
+                // Percentuale/controllo scarto
+                const cellPercentualeControllo = table.querySelector(`.controllo-scarto[data-mese="${mese}"]`);
+                if (cellPercentualeControllo) {
+                    const v = percCtrlByM[mese] ?? percCtrlByM[String(mese)] ?? null;
+                    if (v === null || typeof v === 'undefined') {
+                        cellPercentualeControllo.textContent = 'NuN €';
+                    } else {
+                        const val = parseFloat(v) || 0;
+                        cellPercentualeControllo.textContent = val.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+                    }
+                }
+
+                // Commenti
+                const cellCommento = table.querySelector(`.commento-value[data-mese="${mese}"]`);
+                if (cellCommento) {
+                    const input = cellCommento.querySelector('.js-commento-input');
+                    const btn = cellCommento.querySelector('.js-salva-commento');
+                    const dataCommento = commentsByM[mese] || commentsByM[String(mese)] || { testo: '', stato: '' };
+                    if (input) input.value = dataCommento.testo || '';
+                    if (btn && input) {
+                        btn.addEventListener('click', function () {
+                            const payload = { nickname: nickname, anno: parseInt(anno), mese: mese, testo: input.value };
+                            fetch(`/corrispettivi/api/salva-commento/`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            })
+                                .then(resp => { if (!resp.ok) throw new Error('Errore risposta server'); return resp.json(); })
+                                .then(json => {
+                                    if (json && json.success) {
+                                        btn.innerHTML = '<i class="fa fa-check" aria-hidden="true"></i>';
+                                        setTimeout(() => { btn.innerHTML = '<i class="fa fa-save" aria-hidden="true"></i>'; }, 1200);
+                                    } else {
+                                        alert('Errore nel salvataggio del commento');
+                                    }
+                                })
+                                .catch(err => {
+                                    console.error('Errore salva commento:', err);
+                                    alert('Errore nel salvataggio del commento');
+                                });
+                        });
+                    }
+                }
             });
-        }
-        
-        // Invia i dati al server
-        $.ajax({
-            url: '/corrispettivi/api/dati-mensili-tabella/',
-            method: 'POST',
-            data: {
-                impianto: nickname,
-                anno: anno,
-                dati: JSON.stringify(dati),
-                csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
-            },
-            success: function(response) {
-                if (response.success) {
-                    $(`#success-alert-${anno}`).fadeIn().delay(3000).fadeOut();
-                    caricaDatiTabella(anno); // Ricarica i dati per aggiornare gli scarti e percentuali
-                } else {
-                    $(`#error-alert-${anno}`).text('Errore: ' + response.error).fadeIn().delay(5000).fadeOut();
-                }
-            },
-            error: function(error) {
-                $(`#error-alert-${anno}`).text('Errore durante il salvataggio dei dati.').fadeIn().delay(5000).fadeOut();
-                console.error(`Errore durante il salvataggio dei dati per l'anno ${anno}:`, error);
-            }
+
+            // Aggiorna totali una volta sola dopo il riempimento
+            aggiornaTotaleEnergiaAnnuale(table);
+            aggiornaTotaleTFOAnnuale(table);
+            aggiornaTotaleEnergiaNonIncentivata(table);
+            aggiornaTotaleFatturazioneTFOAnnuale(table);
+            aggiornaTotaleIncassiAnnuale(table);
+        }).catch(err => {
+            console.error('Errore caricamento annuale:', err);
         });
-    }
-    
-    function calcolaControlli(anno) {
-        console.log(`--- CALCOLI DI CONTROLLO DETTAGLIATI (anno ${anno}) ---`);
-        
-        // Calcola gli scarti e le percentuali per ogni mese dell'anno specifico
-        for (let mese = 1; mese <= 12; mese++) {
-            // Leggi i valori necessari
-            const tfoText = $(`#table1_${anno} .tfo-value[data-mese="${mese}"]`).text();
-            const tfoValue = parseFloat(tfoText.replace('€', '')) || 0;
-
-            const energyInput = $(`#table1_${anno} input[data-mese="${mese}"][data-campo="energia_kwh"]`);
-            const lettura_imm_campo = parseFloat(energyInput.attr('data-imm-campo')) || 0;
-
-            const punValue = parseFloat($(`#table1_${anno} .pun-value[data-mese="${mese}"]`).text()) || 0;
-
-            const tfoFatturazione = parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="fatturazione_tfo"]`).val()) || 0;
-            const energiaNonIncentivata = parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="fatturazione_altro"]`).val()) || 0;
-
-            console.log(`\n=== CONTROLLO MESE ${mese}/${anno} ===`);
-            console.log(`Valori di input:`);
-            console.log(`- Energia (kWh): ${lettura_imm_campo}`);
-            console.log(`- TFO Value: ${tfoValue}`);
-            console.log(`- PUN Value: ${punValue}`);
-            console.log(`- TFO Fatturazione: ${tfoFatturazione}`);
-            console.log(`- Energia Non Incentivata: ${energiaNonIncentivata}`);
-            console.log(`- TFO Rate: ${0.21}`);
-
-            // --- INIZIO MODIFICA: Applica la formula richiesta ---
-            // 1. Calcola la parte tra parentesi quadre
-            let parteInterna = 0;
-            let parteInternaPerPun = 0;
-            
-            if (0.21 !== 0) { // Evita divisione per zero
-                parteInterna = lettura_imm_campo - (tfoValue / 0.21);
-                parteInternaPerPun = parteInterna * (punValue / 1000);
-                
-                console.log(`\nCalcolo della quota:`);
-                console.log(`- Parte interna: ${lettura_imm_campo} - (${tfoValue} / 0.21) = ${parteInterna}`);
-                console.log(`- Parte interna × (PUN / 1000): ${parteInterna} × (${punValue} / 1000) = ${parteInternaPerPun}`);
-            }
-            
-            // 2. Somma TFO + parteInternaPerPun
-            const valore_formula = tfoValue + parteInternaPerPun;
-            console.log(`\nValore formula: TFO + parteInternaPerPun = ${tfoValue} + ${parteInternaPerPun} = ${valore_formula}`);
-            
-            // 3. Sottrai TFO_fatturazione + energia non incentivata
-            const fatturazione_totale = tfoFatturazione + energiaNonIncentivata;
-            const scarto = valore_formula - fatturazione_totale;
-            console.log(`Scarto: ${valore_formula} - (${tfoFatturazione} + ${energiaNonIncentivata}) = ${scarto}`);
-            // --- FINE MODIFICA ---
-
-            // Calcola percentuale
-            let percentuale = 0;
-            if (fatturazione_totale !== 0) {
-                percentuale = (scarto / fatturazione_totale) * 100;
-            }
-            console.log(`Percentuale: (${scarto} / ${fatturazione_totale}) * 100 = ${percentuale.toFixed(2)}%`);
-            console.log(`Risultato: ${percentuale < -1 ? 'Errore (rosso)' : 'OK (verde)'}`);
-
-            // Aggiorna la cella del controllo scarto
-            $(`#table1_${anno} .controllo-scarto[data-mese="${mese}"]`).text(scarto.toFixed(2));
-            $(`#table1_${anno} .controllo-percentuale[data-mese="${mese}"]`).text(percentuale.toFixed(2) + '%');
-
-            // Aggiungi classe per colorare le celle in base ai valori
-            const controlloScartoCell = $(`#table1_${anno} .controllo-scarto[data-mese="${mese}"]`);
-            const controlloPercentualeCell = $(`#table1_${anno} .controllo-percentuale[data-mese="${mese}"]`);
-            
-            // Reset classi
-            controlloScartoCell.removeClass('text-danger text-success');
-            controlloPercentualeCell.removeClass('text-danger text-success');
-            
-            // Applica colori
-            if (percentuale < -1) {
-                controlloScartoCell.addClass('text-danger');
-                controlloPercentualeCell.addClass('text-danger');
-            } else {
-                controlloScartoCell.addClass('text-success');
-                controlloPercentualeCell.addClass('text-success');
-            }
-        }
-    }
-    
-    function calcolaTotali(anno) {
-        // Calcola i totali annuali per ogni colonna dell'anno specifico
-        let totale_energia = 0;
-        let totale_corrispettivo_incentivo = 0; // Questo è il TFO
-        let totale_pun_calcolato = 0; // Nuovo totale per PUN
-        let totale_corrispettivo_altro = 0;
-        let totale_fatturazione_tfo = 0;
-        let totale_fatturazione_altro = 0;
-        let totale_incassi = 0;
-        let totale_tfo = 0;
-        
-        for (let mese = 1; mese <= 12; mese++) {
-            totale_energia += parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="energia_kwh"]`).val()) || 0;
-            totale_corrispettivo_incentivo += parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="corrispettivo_incentivo"]`).val()) || 0; // Somma TFO da input (o cella .tfo-value)
-            totale_corrispettivo_altro += parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="corrispettivo_altro"]`).val()) || 0;
-            totale_fatturazione_tfo += parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="fatturazione_tfo"]`).val()) || 0;
-            totale_fatturazione_altro += parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="fatturazione_altro"]`).val()) || 0;
-            totale_incassi += parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="incassi"]`).val()) || 0;
-            
-            // Calcola e somma il valore TFO (per il totale_tfo usato sotto)
-            const energia = parseFloat($(`#table1_${anno} input[data-mese="${mese}"][data-campo="energia_kwh"]`).val()) || 0;
-            totale_tfo += energia * tfoRate;
-
-            // Per il calcolo del totale PUN, leggiamo direttamente dalle celle
-            totale_pun_calcolato += parseFloat($(`#table1_${anno} .pun-value[data-mese="${mese}"]`).text()) || 0;
-        }
-        
-        // Calcola totali di scarto e percentuale
-        const totale_corrispettivi = totale_corrispettivo_incentivo + totale_corrispettivo_altro;
-        const totale_fatturazione = totale_fatturazione_tfo + totale_fatturazione_altro;
-        const totale_scarto = totale_corrispettivi - totale_fatturazione;
-        let totale_percentuale = 0;
-        
-        if (totale_fatturazione !== 0) {
-            totale_percentuale = (totale_scarto / totale_fatturazione) * 100;
-        }
-        
-        // Aggiorna i totali nella riga del totale annuale
-        $(`#table1_${anno} .totale-energia`).text(totale_energia.toFixed(2));
-        $(`#table1_${anno} .totale-corrispettivo-incentivo`).text(totale_tfo.toFixed(2)); // Totale TFO
-        $(`#table1_${anno} .totale-pun`).text(totale_pun_calcolato.toFixed(3)); // Aggiorna totale PUN
-        $(`#table1_${anno} .totale-corrispettivo-altro`).text(totale_corrispettivo_altro.toFixed(2));
-        $(`#table1_${anno} .totale-fatturazione-tfo`).text(totale_fatturazione_tfo.toFixed(2));
-        $(`#table1_${anno} .totale-fatturazione-altro`).text(totale_fatturazione_altro.toFixed(2));
-        $(`#table1_${anno} .totale-incassi`).text(totale_incassi.toFixed(2));
-        $(`#table1_${anno} .totale-controllo-scarto`).text(totale_scarto.toFixed(2));
-        $(`#table1_${anno} .totale-controllo-percentuale`).text(totale_percentuale.toFixed(2) + '%');
-    }
+    });
 });
+
+function aggiornaTotaleEnergiaAnnuale(table) {
+    let totale = 0;
+    const celle = table.querySelectorAll('.energia-value');
+    celle.forEach(td => {
+        // Ignora le celle che contengono "NuN" o "Nun"
+        if (td.textContent === 'NuN' || td.textContent === 'Nun') return;
+        
+        // Rimuoviamo i separatori delle migliaia e convertiamo la virgola decimale
+        const v = parseFloat(td.textContent.replace(/\./g, '').replace(',', '.'));
+        if (!isNaN(v)) totale += v;
+    });
+    const totaleCell = table.querySelector('.totale-energia');
+    if (totaleCell) totaleCell.textContent = totale ? totale.toString().replace('.', ',') : '';
+}
+
+function aggiornaTotaleTFOAnnuale(table) {
+    let totale = 0;
+    const celle = table.querySelectorAll('.tfo-value');
+   
+    celle.forEach(td => {
+        // Ignora le celle che contengono "NuN" o "Nun"
+        if (td.textContent === 'NuN' || td.textContent === 'Nun') return;
+        
+        // Rimuoviamo i separatori delle migliaia e il simbolo dell'euro, poi convertiamo la virgola decimale
+        const v = parseFloat(td.textContent.replace(/\./g, '').replace(',', '.').replace(' €', ''));
+        if (!isNaN(v)) totale += v;
+    });
+    const totaleCell = table.querySelector('.totale-corrispettivo-incentivo');
+    if (totaleCell) totaleCell.textContent = totale ? totale.toFixed(2).replace('.', ',') + ' €' : '';
+}
+
+
+function aggiornaTotaleEnergiaNonIncentivata(table) {
+    let totale = 0;
+    const celle = table.querySelectorAll('.fatturazione-altro-value');
+    celle.forEach(td => {
+        // Ignora le celle che contengono "NuN" o "Nun"
+        if (td.textContent === 'NuN' || td.textContent === 'Nun') return;
+        
+        // Rimuoviamo i separatori delle migliaia e convertiamo la virgola decimale
+        const v = parseFloat(td.textContent.replace(/\./g, '').replace(',', '.'));
+        if (!isNaN(v)) totale += v;
+    });
+    const totaleCell = table.querySelector('.totale-fatturazione-altro');
+    if (totaleCell) totaleCell.textContent = totale ? totale.toString().replace('.', ',') : '';
+}
+
+function aggiornaTotaleFatturazioneTFOAnnuale(table) {
+    let totale = 0;
+    const celle = table.querySelectorAll('.fatturazione-tfo-value');
+    celle.forEach(td => {
+        // Ignora le celle che contengono "NuN" o "Nun"
+        if (td.textContent === 'NuN' || td.textContent === 'Nun') return;
+        
+        // Rimuoviamo i separatori delle migliaia e il simbolo dell'euro, poi convertiamo la virgola decimale
+        const v = parseFloat(td.textContent.replace(/\./g, '').replace(',', '.').replace(' €', ''));
+        if (!isNaN(v)) totale += v;
+    });
+    const totaleCell = table.querySelector('.totale-fatturazione-tfo');
+    if (totaleCell) totaleCell.textContent = totale ? totale.toFixed(2).replace('.', ',') + ' €' : '';
+}
+
+function aggiornaTotaleIncassiAnnuale(table) {
+    let totale = 0;
+    const celle = table.querySelectorAll('.incassi-value');
+    celle.forEach(td => {
+        // Ignora le celle che contengono "NuN" o "Nun"
+        if (td.textContent === 'NuN' || td.textContent === 'Nun') return;
+        
+        // Rimuoviamo i separatori delle migliaia e il simbolo dell'euro, poi convertiamo la virgola decimale
+        const v = parseFloat(td.textContent.replace(/\./g, '').replace(',', '.').replace(' €', ''));
+        if (!isNaN(v)) totale += v;
+    });
+    const totaleCell = table.querySelector('.totale-incassi');
+    if (totaleCell) totaleCell.textContent = totale ? totale.toFixed(2).replace('.', ',') + ' €' : '';
+}

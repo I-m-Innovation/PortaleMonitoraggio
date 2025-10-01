@@ -418,14 +418,29 @@ def salva_diario_energie(request):
         ).order_by('data_installazione')
 
         # Mappa per memorizzare i contatori attivi e sostituiti per tipologia
+        # Allineata alla logica della vista GET: 
+        # - attivo = data_dismissione is null
+        # - sostituito = ultimo contatore dismesso (data_dismissione non null) per tipologia
         counters_by_type_status = {}
-        for c in all_counters_for_impianto:
-            if c.data_dismissione and c.data_dismissione.year == anno:
-                # Questo contatore è stato sostituito nell'anno corrente
-                counters_by_type_status[f"{c.tipologia}_sostituito"] = c
-            elif c.data_dismissione is None:
-                # Questo è il contatore attivo
-                counters_by_type_status[f"{c.tipologia}_attivo"] = c
+        for tipologia in ["Produzione", "Scambio", "Ausiliare"]:
+            # Contatore attivo per tipologia
+            attivo = next((c for c in all_counters_for_impianto if c.tipologia == tipologia and c.data_dismissione is None), None)
+            if attivo:
+                counters_by_type_status[f"{tipologia}_attivo"] = attivo
+
+            # Ultimo contatore dismesso per tipologia (se presente nell'intervallo considerato)
+            dismessi = [c for c in all_counters_for_impianto if c.tipologia == tipologia and c.data_dismissione is not None]
+            if dismessi:
+                dismessi.sort(key=lambda x: x.data_dismissione, reverse=True)
+                counters_by_type_status[f"{tipologia}_sostituito"] = dismessi[0]
+
+        # Debug: riepilogo mappatura contatori attivi/sostituiti
+        try:
+            print("DEBUG salva_diario_energie - counters_by_type_status:")
+            for k, v in counters_by_type_status.items():
+                print(f"  {k}: ID={v.id}, Nome={v.nome}, Dismissione={v.data_dismissione}")
+        except Exception:
+            pass
 
         # Definisci la mappatura dai nomi dei campi del frontend ai nomi dei campi del modello e all'oggetto contatore di destinazione
         field_mapping = {
@@ -487,6 +502,9 @@ def salva_diario_energie(request):
                 model_field_name, target_counter = field_mapping.get(field_name, (None, None))
 
                 if not target_counter:
+                    # Log utile se il campo fa riferimento ad un contatore sostituito ma non presente
+                    if field_name.endswith('_sostituito'):
+                        print(f"DEBUG salva_diario_energie - Nessun contatore sostituito trovato per campo '{field_name}' nel {anno}.")
                     continue # Nessun contatore valido trovato per questo campo in base ai contatori attivi/sostituiti correnti
 
                 # Ottieni o crea l'oggetto regsegnanti per questo contatore specifico, anno, mese
