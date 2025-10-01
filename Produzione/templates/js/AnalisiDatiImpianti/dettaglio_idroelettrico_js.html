@@ -1,0 +1,187 @@
+<script>
+		$(document).ready(function(){
+				/* ID CHARTS */
+				var Chart1 = echarts.init(document.getElementById('chart-year'));
+				var Chart2 = echarts.init(document.getElementById('chart-3D'));
+                
+				window.addEventListener('resize', function() {Chart1.resize();});
+				window.addEventListener('resize', function() {Chart2.resize();});
+				
+				/* URL DATI */
+				var endpoint = '{% url 'api-analisi-impianto' nickname %}';
+				
+				/* VARIABILI */
+				var potenza = [];
+				var portata = [];
+				var pressione = [];
+				var timestamps = [];
+				var rendimento = [];
+				let today_max = 0;
+				let month_max = 0;
+				let year_max = 0;
+				
+				const warmpalette = [
+						'rgb(255,227,161)', 'rgb(232,183,20)',
+						'rgb(180,152,133)','rgb(116,87,69)',
+						'rgb(220,156,191)','rgb(160,27,104)',
+						'rgb(255,194,190)','rgb(209,65,36)',
+				];
+				const coolpalette = [
+						'rgb(173,220,145)', 'rgb(31,160,64)',
+						'rgb(137,182,181)','rgb(0,114,206)',
+						'rgb(37,118,117)','rgb(157,174,204)',
+						'rgb(126,183,232)','rgb(37,75,135)',
+				];
+				const colors = [warmpalette[7],coolpalette[3],warmpalette[2],coolpalette[3],coolpalette[2]]
+				
+				/* CHIAMATA AJAX PER I DATI */
+				$.get(endpoint).done(function (Chart_data) {
+						/* AGGIORNAMENTO VARIABILI */
+						timestamps = Chart_data.time;
+						potenza = Chart_data.pot;
+						portata = Chart_data.port;
+						pressione = Chart_data.pres;
+						rendimento = Chart_data.eta;
+						today_max = Chart_data.today_max;
+						month_max = Chart_data.month_max;
+						year_max = Chart_data.year_max;
+						
+						let coords = portata.map((el, index)=> [el, pressione[index],rendimento[index]]);
+                            
+						/* AGGIORNAMTO MASSIMI GIORNO, MESE, ANNO */
+						document.getElementById("today_max").innerHTML = toLocale(today_max,2) + ' kW';
+						document.getElementById("month_max").innerHTML = toLocale(month_max,2) + ' kW';
+						document.getElementById("year_max").innerHTML = toLocale(year_max,2) + ' kW';
+						
+						/* GRAFICO DATI ANNO */
+						Chart1.setOption({
+								title: false, 
+								color: colors, 
+								tooltip: {trigger: 'axis'}, 
+								legend: {},
+								toolbox: {right: 10, top: 0,
+										feature: {
+												dataZoom: {xAxisIndex: 'none', },
+												dataView: {show: true, readOnly: false }, 
+												restore: {show: true}, 
+												saveAsImage: {show: true}
+										}
+								},
+                dataZoom: [
+	                  {bottom:'1%',show: true, realtime: true, start: 90, end: 100, xAxisIndex: [0,1],height: 60,throttle: 0},
+	                  {type: 'inside',show: true, realtime: true, start: 90, end: 100,xAxisIndex: [0,1],height: 60,throttle: 0}
+                ],
+								/* DUE GRAFICI COLLEGATI SOPRA: POTENZA E PORTATA, SOTTO: RENDIMENTO, PORTATA E PRESSIONE*/
+							  grid: [{top: '5%', height: '42%',right: '10%' }, {top: '47%', height: '42%',right: '10%'}],
+								/* TIMESTAMPS */
+								xAxis: [
+                    {gridIndex: 0, data: timestamps, splitLine:{ show: true }, axisLine: {show: true}, axisTick: {show: false}, axisLabel: {show:false}},
+                    {gridIndex: 1, data: timestamps, splitLine:{ show: true }, axisLine: {show: true}, axisTick: {show: true}},
+                ],
+								/* FORMAT ASSE Y */
+                yAxis: [
+                    {
+                        gridIndex: 0, type: 'value', name: 'Potenza (kW)', nameLocation: 'middle', nameGap: 32,
+                        axisLine: {show: true, lineStyle: {color: warmpalette[7],}}, min: 0, max: {{ impianto.potenza_installata|stringformat:".2f" }},
+                        axisLabel: {
+                              formatter: val => val === 0 ? '': val
+                        },axisTick: {show: true}
+                    },
+                    {
+	                      gridIndex: 0, type: 'value', name: 'Portata ({{ impianto.unita_misura }})', nameLocation: 'middle', nameGap: 30,
+	                      axisLine: {show: true, lineStyle: {color: coolpalette[7],}}, min: 0, max: {{ impianto.Var2_max|stringformat:".2f" }},
+	                      axisLabel: {
+                              formatter: val => val === 0 ? '': val
+                        },axisTick: {show: true}
+                    },
+                    {
+	                      gridIndex: 1, type: 'value', position:'left',name: 'Rendimento (%)', 
+	                      nameLocation: 'middle', nameGap: 30, max: 100, min: 0, axisLine: {show: true, lineStyle: {color: warmpalette[2],}},
+	                      axisLabel: {
+                              formatter: val => val === 0 ? '': val
+                        },axisTick: {show: true}
+                    },
+                    {
+                        gridIndex: 1, type: 'value', position:'right',offset: 50,name: 'Portata ({{ impianto.unita_misura }})', 
+	                      nameLocation: 'middle', nameGap: 30, axisLine: {show: true, lineStyle: {color: coolpalette[7]} },
+	                      axisLabel: {
+                              formatter: val => val === 0 ? '': val
+                        },axisTick: {show: true}, min: 0, max: {{ impianto.Var2_max|stringformat:".2f" }}*1.5,
+                    },
+                    {
+                        gridIndex: 1, type: 'value', position:'right',name: 'Pressione (BarG)', 
+	                      nameLocation: 'middle', nameGap: 30, axisLine: {show: true, lineStyle: {color: coolpalette[4]}},
+	                      axisLabel: {
+                              formatter: val => val === 0 ? '': val
+                        },axisTick: {show: true},  min: 0, max: {{ impianto.Var3_max|stringformat:".2f" }}*2,
+                    },
+                ],
+								/* DATI - LINEE */
+                series: [
+                    /* POTENZA */
+                    {
+                        name: 'Potenza', type: 'line', data: potenza,
+                        areaStyle: {
+	                          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+			                          {offset: 0, color: warmpalette[7]}, 
+			                          {offset: 1, color: warmpalette[6]}
+	                          ])
+                        },
+                        markLine: {data: [{ type:'average',label:{position:'insideEndTop', backgroundColor: '#efefef',
+			                          formatter: params => toLocale(params.value,2) + ' kW'}}],},
+                        xAxisIndex: 0, yAxisIndex: 0, lineStyle: {width: 1,},showSymbol: false, large: true,
+                        tooltip: {valueFormatter: value => toLocale(value,2) + ' kW'}
+                    },
+		                /* PORTATA */
+                    {
+                        name: 'Portata', type: 'line', xAxisIndex: 0, yAxisIndex: 1, data: portata,
+                        lineStyle: {width: 0.8,},emphasis: {focus: 'series'},showSymbol: false, large: true,
+                        markLine: {data: [{ type:'average',label:{position:'insideEndTop', backgroundColor: '#efefef',
+			                          formatter: params => toLocale(params.value,2) + ' {{ impianto.unita_misura }}'}}],},
+                        tooltip: {valueFormatter: value => toLocale(value,2) + ' {{ impianto.unita_misura }}'}
+                    },
+		                /* ---------------------------------------------------------------------------------------------- */
+		                /* RENDIMENTO */
+                    {
+                        data: rendimento, type: 'line', name: 'Rendimento', xAxisIndex: 1, yAxisIndex: 2, smooth: true,
+                        lineStyle: {width: 1.5,},showSymbol: false, large: true,
+                        markLine: {data: [{ type:'average', 
+			                          label:{position:'insideEndTop', backgroundColor: '#efefef',
+			                          formatter: params => toLocale(params.value,2) + ' %'}}],},
+                        tooltip: {valueFormatter: value => toLocale(value,2) + ' %'}
+                    },
+		                /* PORTATA */
+                    {
+                        name: 'Portata ', type: 'line', xAxisIndex: 1, yAxisIndex: 3, data: portata,
+                        showSymbol: false, lineStyle: {width: 0.8,}, large: true,
+	                      tooltip: {valueFormatter: value => toLocale(value,2) + ' {{ impianto.unita_misura }}'}
+                    },
+		                /* PRESSIONE */
+                    {
+                        name: 'Pressione', type: 'line', xAxisIndex: 1, yAxisIndex: 4, data: pressione,
+	                      showSymbol: false, lineStyle: {width: 1,}, large: true,
+	                      markLine: {data: [{ type:'average',label:{position:'insideEndTop', backgroundColor: '#efefef',
+					                      formatter: params => toLocale(params.value,2) + ' BarG'}}],},
+	                      tooltip: {valueFormatter: value => toLocale(value,2) + ' BarG'}
+                    }
+                ]
+						});
+                
+						/* GRAFICO DATI 3D */
+						Chart2.setOption({
+								grid3D: {viewControl: {projection: 'orthographic'}},
+								color: ['rgb(61,114,196)','rgb(166,220,83)','rgb(255,41,0)'],
+								tooltip: {},
+								xAxis3D: {name: 'Portata', axisLabel: {formatter: '{value} {{ impianto.unita_misura }}'}, axisLine: {show: true, lineStyle: {color: coolpalette[7]}}}, 
+								yAxis3D: {name: 'Pressione', axisLabel: {formatter: '{value} BarG'}, axisLine: {show: true, lineStyle: {color: coolpalette[4]}}}, 
+								zAxis3D: {min: 0, max: 100, name: 'Rendimento',axisLabel: {formatter: '{value} %'}, position: 'right'},
+								legend: {},
+								series: [
+										{data: coords, type: 'scatter3D', symbolSize: 1.5, name: 'Dati da inizio anno'},
+										{data: coords.slice(-672), type: 'scatter3D', symbolSize: 3, name: 'Dati ultima settimana'},
+										{data: coords.slice(-1), type: 'scatter3D', symbolSize: 6, name: 'Ultimo dato'},
+								]
+						})
+				});
+		})
+</script>

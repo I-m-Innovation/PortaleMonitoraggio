@@ -1,0 +1,329 @@
+{% extends 'base_layout.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <!-- Inclusione del CSS personalizzato per il Diario delle Letture -->
+    <link rel="stylesheet" href="{% static 'css/reg_segnanti.css' %}">
+
+    <link rel="stylesheet" href="{% static 'css/diarioenergie.css' %}">
+    <!-- Inclusione del CSS per Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+{% endblock extra_css %}
+
+{% block content %}
+
+<div class="container-fluid">
+    <!-- Aggiungi qui il token CSRF che verrà utilizzato da JavaScript -->
+    {% csrf_token %}
+
+    <div class="row">
+        <!-- Sezione tabella (75% su desktop, 100% su mobile) -->
+        <div class="col-lg-9 col-md-8 col-12">
+            <div class="tabelladiarioenergie">
+                <div class="table-container table-responsive">
+                    <div class="header-bar">
+                        <div class="header-title">
+                            {{ impianto.nome_impianto }}
+                        </div>
+                        <div class="dropdown-container">
+                            <select id="year-select" class="custom-select">
+                                <option value="2020" {% if anno_corrente == '2020' %}selected{% endif %}>2020</option>
+                                <option value="2021" {% if anno_corrente == '2021' %}selected{% endif %}>2021</option>
+                                <option value="2022" {% if anno_corrente == '2022' %}selected{% endif %}>2022</option>
+                                <option value="2023" {% if anno_corrente == '2023' %}selected{% endif %}>2023</option>
+                                <option value="2024" {% if anno_corrente == '2024' %}selected{% endif %}>2024</option>
+                                <option value="2025" {% if anno_corrente == '2025' %}selected{% endif %}>2025</option>
+                                <option value="2026" {% if anno_corrente == '2026' %}selected{% endif %}>2026</option>
+                                <option value="2027" {% if anno_corrente == '2027' %}selected{% endif %}>2027</option>
+                                <option value="2028" {% if anno_corrente == '2028' %}selected{% endif %}>2028</option>
+                                <option value="2029" {% if anno_corrente == '2029' %}selected{% endif %}>2029</option> 
+                            </select>
+                        </div>
+
+                    </div>
+
+                    
+                    <div id="diarioenergie" 
+                        data-contatore-id="{{ contatore.id }}" 
+                        data-marca="{{ contatore.marca }}" 
+                        data-contatore-k="{{ contatore.k }}" 
+                        class="table-content 
+                               {% if has_produzione %}has-produzione{% endif %}
+                               {% if has_scambio %}has-scambio{% endif %}
+                               {% if has_ausiliare %}has-ausiliare{% endif %}">
+                        <table class="table table-bordered table-sm">
+                            <colgroup>
+                                <!-- Colonna fissa per il Mese -->
+                                <col style="width: 10%;">
+                                {% if contatore_produzione_attivo %}
+                                    <col style="width: 10%;">
+                                    <col style="width: 10%;">
+                                    <col style="width: 10%;">
+                                    <col style="width: 10%;">
+                                    <col style="width: 10%;">
+                                    
+                                {% endif %}
+                                {% if contatore_produzione_sostituito %}
+                                    <col style="width: 10%;"> <!-- Prodotta Campo kWh -->
+                                    <col style="width: 10%;"> <!-- Prodotta e-D -->
+                                    <col style="width: 10%;"> <!-- Prodotta G.S.E -->
+                                    <col style="width: 10%;"> <!-- Prelevata Campo kWh -->
+                                    <col style="width: 10%;"> <!-- Prelevata e-D -->
+                                   
+                                {% endif %}
+                                {% if contatore_scambio_attivo %}
+                                    <col style="width: 10%;">
+                                    <col style="width: 10%;">
+                                    
+                                    <col style="width: 10%;">
+                                    <col style="width: 10%;">
+                                    <col style="width: 10%;">
+                                {% endif %}
+                                {% if contatore_scambio_sostituito %}
+                                    <col style="width: 10%;"> <!-- Autoconsumata Campo kWh -->
+                                    <col style="width: 10%;"> <!-- Autoconsumata e-D -->
+                                     <!-- Autoconsumata G.S.E -->
+                                    <col style="width: 10%;"> <!-- Immessa Campo kWh -->
+                                    <col style="width: 10%;"> <!-- Immessa e-D -->
+                                    <col style="width: 10%;"> <!-- Immessa G.S.E -->
+                                {% endif %}
+                                {% if contatore_ausiliare_attivo %}
+                                    <col style="width: 10%;">
+                                    <col style="width: 10%;">
+                                    <col style="width: 10%;">
+                                {% endif %}
+                                {% if contatore_ausiliare_sostituito %}
+                                    <col style="width: 10%;"> <!-- Ausiliare Campo kWh -->
+                                    <col style="width: 10%;"> <!-- Ausiliare e-D -->
+                                    <col style="width: 10%;"> <!-- Ausiliare G.S.E -->
+                                {% endif %}
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th colspan="1" rowspan="4">Mese</th>
+                                    {% if contatore_produzione_attivo %}
+                                        <th colspan="5" class="contatore-info">
+                                            Dati contatore: {{ contatore_produzione_attivo.nome }} - Marca: {{ contatore_produzione_attivo.marca }} - Tipologia: {{ contatore_produzione_attivo.tipologia }} - Data installazione: {{ contatore_produzione_attivo.data_installazione|date:"d/m/Y" }}
+                                        </th>
+                                    {% endif %}
+                                    {% if contatore_produzione_sostituito %}
+                                        <th colspan="5" class="contatore-info replaced-counter-info">
+                                            Dati contatore sostituito: {{ contatore_produzione_sostituito.nome }} - Marca: {{ contatore_produzione_sostituito.marca }} - Tipologia: {{ contatore_produzione_sostituito.tipologia }} - Data dismissione: {{ contatore_produzione_sostituito.data_dismissione|date:"d/m/Y" }}
+                                        </th>
+                                    {% endif %}
+                                    {% if contatore_scambio_attivo %}
+                                        <th colspan="6" class="contatore-info">
+                                            Dati contatore: {{ contatore_scambio_attivo.nome }} - Marca: {{ contatore_scambio_attivo.marca }} - Tipologia: {{ contatore_scambio_attivo.tipologia }} - Data installazione: {{ contatore_scambio_attivo.data_installazione|date:"d/m/Y" }}
+                                        </th>
+                                    {% endif %}
+                                    {% if contatore_scambio_sostituito %}
+                                        <th colspan="6" class="contatore-info replaced-counter-info">
+                                            Dati contatore sostituito: {{ contatore_scambio_sostituito.nome }} - Marca: {{ contatore_scambio_sostituito.marca }} - Tipologia: {{ contatore_scambio_sostituito.tipologia }} - Data dismissione: {{ contatore_scambio_sostituito.data_dismissione|date:"d/m/Y" }}
+                                        </th>
+                                    {% endif %}
+                                    {% if contatore_ausiliare_attivo %}
+                                        <th colspan="3" class="contatore-info">
+                                            Dati contatore: {{ contatore_ausiliare_attivo.nome }} - Marca: {{ contatore_ausiliare_attivo.marca }} - Tipologia: {{ contatore_ausiliare_attivo.tipologia }} - Data installazione: {{ contatore_ausiliare_attivo.data_installazione|date:"d/m/Y" }}
+                                        </th>
+                                    {% endif %}
+                                    {% if contatore_ausiliare_sostituito %}
+                                        <th colspan="3" class="contatore-info replaced-counter-info">
+                                            Dati contatore sostituito: {{ contatore_ausiliare_sostituito.nome }} - Marca: {{ contatore_ausiliare_sostituito.marca }} - Tipologia: {{ contatore_ausiliare_sostituito.tipologia }} - Data dismissione: {{ contatore_ausiliare_sostituito.data_dismissione|date:"d/m/Y" }}
+                                        </th>
+                                    {% endif %}
+                                </tr>
+                                <tr>
+                                    {% if contatore_produzione_attivo %}
+                                        <th colspan="3">Prodotta</th>
+                                        <th colspan="2">Prelevata</th>
+                                    {% endif %}
+                                    {% if contatore_produzione_sostituito %}
+                                        <th colspan="3">Prodotta Sostituita</th>
+                                        <th colspan="2">Prelevata Sostituita</th>
+                                    {% endif %}
+                                    {% if contatore_scambio_attivo %}
+                                        <th colspan="2">Prelevata </th>
+                                        <th colspan="3">Immessa </th>
+                                    {% endif %}
+                                    {% if contatore_scambio_sostituito %}
+                                        <th colspan="2">Prelevata Sostituita</th>
+                                        <th colspan="3">Immessa Sostituita</th>
+                                    {% endif %}
+                                    {% if contatore_ausiliare_attivo %}
+                                        <th colspan="3">Ausiliare</th>
+                                    {% endif %}
+                                    {% if contatore_ausiliare_sostituito %}
+                                        <th colspan="3">Ausiliare Sostituita</th>
+                                    {% endif %}
+                                </tr>
+                                <tr>
+                                    {% if contatore_produzione_attivo %}
+                                        <th>Campo kWh</th><th>e-D</th><th>G.S.E</th>
+                                        <th>Campo kWh</th><th>e-D</th>
+                                    {% endif %}
+                                    {% if contatore_produzione_sostituito %}
+                                        <th>Campo kWh</th><th>e-D</th><th>G.S.E</th>
+                                        <th>Campo kWh</th><th>e-D</th>
+                                    {% endif %}
+                                    {% if contatore_scambio_attivo %}
+                                        <th>Campo kWh</th><th>e-D</th>
+                                        <th>Campo kWh</th><th>e-D</th><th>G.S.E</th>
+                                    {% endif %}
+                                    {% if contatore_scambio_sostituito %}
+                                        <th>Campo kWh</th><th>e-D</th><th>
+                                        <th>Campo kWh</th><th>e-D</th><th>G.S.E</th>
+                                    {% endif %}
+                                    {% if contatore_ausiliare_attivo %}
+                                        <th>Campo kWh</th><th>e-D</th><th>G.S.E</th>
+                                    {% endif %}
+                                    {% if contatore_ausiliare_sostituito %}
+                                        <th>Campo kWh</th><th>e-D</th><th>G.S.E</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for dato_mese in dati_mensili_template %}
+                                <tr data-mese="{{ dato_mese.mese_numero }}">
+                                    <td>{{ dato_mese.mese_nome }}</td>
+                                    {# Dati Produzione (Attivo) #}
+                                    {% if contatore_produzione_attivo %}
+                                        <td data-field="prod_campo" contenteditable="true" data-type="number">{{ dato_mese.prod_campo|default_if_none:"" }}</td>
+                                        <td data-field="prod_ed" contenteditable="true" data-type="number">{{ dato_mese.prod_ed|default_if_none:"" }}</td>
+                                        <td data-field="prod_gse" contenteditable="true" data-type="number">{{ dato_mese.prod_gse|default_if_none:"" }}</td>
+                                        <td data-field="prel_campo" contenteditable="true" data-type="number">{{ dato_mese.prel_campo|default_if_none:"" }}</td>
+                                        <td data-field="prel_ed" contenteditable="true" data-type="number">{{ dato_mese.prel_ed|default_if_none:"" }}</td>
+                                        
+                                    {% endif %}
+                                    {# Dati Produzione (Sostituito) #}
+                                    {% if contatore_produzione_sostituito %}
+                                        <td data-field="prod_campo_sostituito" contenteditable="true" data-type="number">{{ dato_mese.prod_campo_sostituito|default_if_none:"" }}</td>
+                                        <td data-field="prod_ed_sostituito" contenteditable="true" data-type="number">{{ dato_mese.prod_ed_sostituito|default_if_none:"" }}</td>
+                                        <td data-field="prod_gse_sostituito" contenteditable="true" data-type="number">{{ dato_mese.prod_gse_sostituito|default_if_none:"" }}</td>
+                                        <td data-field="prel_campo_sostituito" contenteditable="true" data-type="number">{{ dato_mese.prel_campo_sostituito|default_if_none:"" }}</td>
+                                        <td data-field="prel_ed_sostituito" contenteditable="true" data-type="number">{{ dato_mese.prel_ed_sostituito|default_if_none:"" }}</td>
+                                      
+                                    {% endif %}
+
+                                    {# Dati Scambio (Attivo) #}
+                                    {% if contatore_scambio_attivo %}
+                                        <td data-field="autocons_campo" contenteditable="true" data-type="number">{{ dato_mese.autocons_campo|default_if_none:"" }}</td>
+                                        <td data-field="autocons_ed" contenteditable="true" data-type="number">{{ dato_mese.autocons_ed|default_if_none:"" }}</td>
+                                        
+                                        <td data-field="imm_campo" contenteditable="true" data-type="number">{{ dato_mese.imm_campo|default_if_none:"" }}</td>
+                                        <td data-field="imm_ed" contenteditable="true" data-type="number">{{ dato_mese.imm_ed|default_if_none:"" }}</td>
+                                        <td data-field="imm_gse" contenteditable="true" data-type="number">{{ dato_mese.imm_gse|default_if_none:"" }}</td>
+                                    {% endif %}
+                                    {# Dati Scambio (Sostituito) #}
+                                    {% if contatore_scambio_sostituito %}
+                                        <td data-field="autocons_campo_sostituito" contenteditable="true" data-type="number">{{ dato_mese.autocons_campo_sostituito|default_if_none:"" }}</td>
+                                        <td data-field="autocons_ed_sostituito" contenteditable="true" data-type="number">{{ dato_mese.autocons_ed_sostituito|default_if_none:"" }}</td>
+                                        
+                                        <td data-field="imm_campo_sostituito" contenteditable="true" data-type="number">{{ dato_mese.imm_campo_sostituito|default_if_none:"" }}</td>
+                                        <td data-field="imm_ed_sostituito" contenteditable="true" data-type="number">{{ dato_mese.imm_ed_sostituito|default_if_none:"" }}</td>
+                                        <td data-field="imm_gse_sostituito" contenteditable="true" data-type="number">{{ dato_mese.imm_gse_sostituito|default_if_none:"" }}</td>
+                                    {% endif %}
+
+                                    {# Dati Ausiliare (Attivo) #}
+                                    {% if contatore_ausiliare_attivo %}
+                                        <td data-field="aus_campo" contenteditable="true" data-type="number">{{ dato_mese.aus_campo|default_if_none:"" }}</td>
+                                        <td data-field="aus_ed" contenteditable="true" data-type="number">{{ dato_mese.aus_ed|default_if_none:"" }}</td>
+                                        <td data-field="aus_gse" contenteditable="true" data-type="number">{{ dato_mese.aus_gse|default_if_none:"" }}</td>
+                                    {% endif %}
+                                    {# Dati Ausiliare (Sostituito) #}
+                                    {% if contatore_ausiliare_sostituito %}
+                                        <td data-field="aus_campo_sostituito" contenteditable="true" data-type="number">{{ dato_mese.aus_campo_sostituito|default_if_none:"" }}</td>
+                                        <td data-field="aus_ed_sostituito" contenteditable="true" data-type="number">{{ dato_mese.aus_ed_sostituito|default_if_none:"" }}</td>
+                                        <td data-field="aus_gse_sostituito" contenteditable="true" data-type="number">{{ dato_mese.aus_gse_sostituito|default_if_none:"" }}</td>
+                                    {% endif %}
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    {# Questo colspan dovrebbe coprire tutte le possibili colonne: 1 per il mese + il numero calcolato in views.py #}
+                                    <td colspan="{{ 1|add:numero_gruppi_colonne }}" class="text-center">
+                                        Nessun dato disponibile per l'anno e il contatore selezionati, oppure mancano letture per il calcolo.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-lg-3 col-md-5 col-13">
+            <div class="lista_contatori card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Elenco Contatori</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% if contatori %}
+                            {% for cnt in contatori %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <a href="{% url 'elenco-contatori' impianto.nickname %}?contatore_id={{ cnt.id }}" class="contatore-link">
+                                        <span class="contatore-nome">{{ cnt.nome }} </span>
+                                        {% if cnt.data_dismissione %}
+                                            - Data dismissione: {{ cnt.data_dismissione|date:"d/m/Y" }}
+                                        {% endif %}
+                                    </a>
+                                    {# Sostituiamo l'SVG semplice con un form per l'eliminazione #}
+                                    <form method="POST" action="{% url 'elimina_contatore' cnt.id %}" onsubmit="return confirm('Sei sicuro di voler eliminare il contatore \'{{ cnt.nome }}\' e tutte le sue letture associate? L\'azione è irreversibile.');" style="display: inline; margin-left: auto; margin-right: 10px;">
+                                        {% csrf_token %} {# Token di sicurezza Django #}
+                                        <button type="submit" class="btn btn-link p-0 m-0 align-middle" style="color: #dc3545; border: none; background: none; vertical-align: middle;" title="Elimina contatore">
+                                            {# Icona cestino dentro il pulsante #}
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
+                                                <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.06l.5-8.5a.5.5 0 0 0-.47-.53"/>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                    {# Fine form eliminazione #}
+                                    <span class="badge {% if cnt.tipologia == 'Produzione' %}bg-success{% elif cnt.tipologia == 'Scambio' %}bg-primary{% else %}bg-secondary{% endif %} rounded-pill">
+                                        <i class="bi bi-lightning-charge-fill"></i>
+                                    </span>
+                                </li>
+                            {% endfor %}
+                        {% else %}
+                            <li class="list-group-item text-center">
+                                Nessun contatore registrato
+                            </li>
+                        {% endif %}
+
+                        <!-- Pulsante per aggiungere un nuovo contatore -->
+                        <li class="list-group-item text-center">
+                            <a href="{% url 'nuovo-contatore' impianto.nickname %}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-plus-circle"></i> Aggiungi Contatore
+                            </a>
+                        </li>
+
+
+                        <li class="list-group-item text-center">
+                            <a href="{% url 'sostituzione-contatore' impianto.nickname %}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-plus-circle"></i> Sostituzione Contatore
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- All'interno del form (o vicino al pulsante Salva) -->
+<input type="hidden" name="contatore_id" value="{{ contatore.id }}">
+
+<!-- Pulsante Salva fisso in basso a destra -->
+<div class="save-button-container">
+    <button id="diarioenergie_save" class="btn" type="button">
+        <i class="bi bi-save"></i> Salva
+    </button>
+</div>
+
+{% endblock content %}
+
+{% block extra_js %}
+    <script src="{% static 'js/diarioenergie.js' %}"></script>
+{% endblock extra_js %}
+

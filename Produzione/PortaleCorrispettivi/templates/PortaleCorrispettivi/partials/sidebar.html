@@ -1,0 +1,23 @@
+{% load static %}
+
+<div class="container-fluid ms-1 py-2" style="background-color: white; border: 1px solid lightgrey">
+	<h4 style="color: #4a3c54; font-weight: lighter">Seleziona impianto</h4>
+	
+	<div class="list-group list-group-mine">
+		<ul class="list-group">
+			{% for nickname, impianto in impianti.items %}
+				<a class="list-group-item mb-2 py-2" href="{% url 'dettaglio-corrispettivi' nickname %}" style="text-decoration: none; color: #283c50">
+					<div class="ms-2 me-auto">
+		        <div class="fw-bold"><b>{{ impianto.nome_impianto }}</b> <i class="fa fa-angle-right" aria-hidden="true"></i></div>
+		      </div>
+				</a>
+			{% endfor %}
+			<hr class="py-0 my-1">
+			<a class="list-group-item my-2 border" href="{% url 'corrispettivi-home' %}" style="text-decoration: none; color: #283c50;">
+				<div class="ms-2 me-auto">
+					<div class="fw-bold"><b>Totale idroelettrico</b> <i class="fa fa-angle-right" aria-hidden="true"></i></div>
+				</div>
+			</a>
+		</ul>
+	</div>
+</div>

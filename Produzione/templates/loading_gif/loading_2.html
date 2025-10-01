@@ -1,0 +1,22 @@
+{% extends 'base_layout.html' %}
+{% load static %}
+
+{% block title %}Portale Impianti{% endblock %}
+
+{% block body %}
+	<div class="d-flex justify-content-center align-items-center" style="height: 100vh; background-color: white">
+		<div id="display"></div>
+	</div>
+	
+	<script type="text/JavaScript">
+			var img = document.createElement("img"), 
+					imageUrl = "{% static 'images/gif_zilio.GIF' %}";
+			img.src = imageUrl;
+			$("#display").append(img);
+			window.restartAnim = function () {
+					img.src = "";
+					img.src = imageUrl;
+			}
+      setTimeout("location.href = '{% url 'analisi-home'  %}';",4000);
+	</script>
+{% endblock %}

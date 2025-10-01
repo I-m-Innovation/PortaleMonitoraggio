@@ -1,0 +1,113 @@
+{% load static %}
+<div class="container">
+	<div class="row scheda-corrispettivi d-flex align-items-center mb-2" style="min-height: 7vh">
+			<!-- RIGA BLU CON ESPANDIBILE -->
+		<div class="col-1 border-end" ><h5>{{ anno }}</h5></div>
+		<div class="col-8">
+			<a class="btn anchor-scheda-corrispettivi" data-bs-toggle="collapse" href="#tabella1_{{ anno }}" role="button" aria-expanded="false">
+				<i class="fa fa-eur"></i>&nbsp;Corrispettivi
+			</a>
+			<a class="btn anchor-scheda-corrispettivi" data-bs-toggle="collapse" href="#tabella2_{{ anno }}" role="button" aria-expanded="false">
+				<i class="fa fa-search"></i>&nbsp;Misure
+			</a>
+			{% if nickname == 'ponte_giurino' %}
+			<a class="btn anchor-scheda-corrispettivi" data-bs-toggle="collapse" href="#tabella3_{{ anno }}" role="button" aria-expanded="false">
+				<i class="fa fa-tint"></i>&nbsp;Consorzi
+			</a>
+			{% endif %}
+			<a class="btn anchor-scheda-corrispettivi" data-bs-toggle="collapse" href="#grafico_{{ anno }}" role="button" aria-expanded="false">
+				<i class="fa fa-bar-chart"></i>&nbsp;Grafici
+			</a>
+		</div>
+	</div>
+	 <div class="collapse multi-collapse" id="tabella1_{{ anno }}">
+		<div class="col my-1" style="border: 1px solid #ececec; background-color: rgba(255,255,255,0.7)">
+			<div class="row p-2">
+				<h5 style="margin-bottom: 0">Tabella 1</h5>
+				<span>Scheda di confronto stime, corrispettivi e fatturazione</span>
+				{% include 'PortaleCorrispettivi/partials/tabella1.html' %}
+			</div>
+		</div>
+	</div>
+	<div class="collapse multi-collapse" id="tabella2_{{ anno }}">
+		<div class="col my-1" style="border: 1px solid #ececec; background-color: rgba(255,255,255,0.7)">
+			<div class="row p-2">
+				<h5 style="margin-bottom: 0">Tabella 2</h5>
+				<span>Report misure di energia (CAMPO, e-Distribuzione, GSE); controllo errori di misurazione </span>
+				{% include 'PortaleCorrispettivi/partials/tabella2.html' %}
+			</div>
+		</div>
+	</div> 
+	{% if nickname == 'ponte_giurino' %}
+		<div class="collapse multi-collapse" id="tabella3_{{ anno }}">
+			<div class="col my-1" style="border: 1px solid #ececec; background-color: rgba(255,255,255,0.7)">
+				<div class="row p-2 m-0 border-bottom">
+					<span>Schede dei corrispettivi di energia e calcolo canone di gestione delle condotte.</span>
+					<table id="table3_{{ anno }}" class="cell-border compact" style="width: 95%; border: 1px solid lightgrey">
+						<thead>
+						<tr data-dt-order="disable">
+							<th>n.</th>
+				      <th data-dt-order="disable"> Mese </th>
+				      <th data-dt-order="disable" style="text-align: center" > <i class="fa fa-eur" aria-hidden="true"></i>&nbsp;Incassi<sup>*</sup></th>
+							<th style="text-align: center" > <i class="fa fa-external-link-square" aria-hidden="true"></i>&nbsp;Canone </th>
+							<th data-dt-order="disable" style="text-align: center"> <i class="fa fa-bolt" aria-hidden="true"></i>&nbsp;Energia </th>
+						</tr>
+						</thead>
+					</table>
+					<span><sup>*</sup>L'incasso è sempre calcolato sulla produzione di energia dei mesi precedenti.</span>
+					{% if anno == curr_anno %}
+						<div class="col mx-5" style="border: 1px solid #f19494;">
+							<h5>Fatturazione Canone di Gestione Condotte ({{ anno }} Primo Periodo)</h5>
+							<p><u style="margin: 0">Oggetto:</u> Canone per utilizzo delle condotte idriche e manufatti idrici di proprietà della Comunità Montana Valle Imagna come da convenzione del 27.07.2017.
+								PERIODO 01 OTTOBRE {{ anno|add:"-1" }} - 31 MARZO {{ anno }}</p>
+							<p style="margin-bottom: 0"><u>Imponibile:</u>&nbsp;<span style="font-weight: bold" id="imponibile1"></span>&nbsp;&nbsp;<u>IVA (22%):</u>&nbsp;<span style="font-weight: bold" id="iva1"></span>&nbsp;&nbsp;<u>TOTALE FATTURA:</u>&nbsp;<span style="font-weight: bold" id="totale1"></span></p>
+						</div>
+					{% endif %}
+				</div>
+				<div class="row p-2 m-0">
+					<span>Schede dei corrispettivi di energia e calcolo canone di gestione delle condotte.</span>
+					<table id="table4_{{ anno }}" class="cell-border compact" style="width: 95%; border: 1px solid lightgrey">
+						<thead>
+						<tr data-dt-order="disable">
+				      <th>n.</th>
+				      <th> Mese </th>
+				      <th style="text-align: center" > <i class="fa fa-eur" aria-hidden="true"></i>&nbsp;Incassi </th>
+							<th style="text-align: center" > <i class="fa fa-external-link-square" aria-hidden="true"></i>&nbsp;Canone </th>
+							<th style="text-align: center"> <i class="fa fa-bolt" aria-hidden="true"></i>&nbsp;Energia </th>
+						</tr>
+						</thead>
+					</table>
+					<span><sup>*</sup>L'incasso è sempre calcolato sulla produzione di energia dei mesi precedenti.</span>
+					{% if anno == curr_anno%}
+						<div class="col mx-5" style="border: 1px solid #f19494;">
+							<h5>Fatturazione Canone di Gestione Condotte ({{ anno }} Secondo Periodo)</h5>
+							<p><u style="margin: 0">Oggetto:</u> Canone per utilizzo delle condotte idriche e manufatti idrici di propreità della Comunità Montana Valle Imagna come da convenzione del 27.07.2017.
+								PERIODO 01 APRILE {{ anno|add:"-1" }} - 30 SETTEMBRE {{ anno }}</p>
+							<p style="margin-bottom: 0"><u>Imponibile:</u>&nbsp;<span style="font-weight: bold" id="imponibile2"></span>&nbsp;&nbsp;<u>IVA (22%):</u>&nbsp;<span style="font-weight: bold" id="iva2"></span>&nbsp;&nbsp;<u>TOTALE FATTURA:</u>&nbsp;<span style="font-weight: bold" id="totale2"></span></p>
+						</div>
+					{% endif %}
+				</div>
+			</div>
+		</div>
+	{% endif %}
+	<div class="collapse multi-collapse" id="grafico_{{ anno }}">
+		<div class="col my-1" style="border: 1px solid #ececec; background-color: rgba(255,255,255,0.7)">
+			<div class="row p-3">
+				<h5 style="margin-bottom: 0">Visualizzazione grafica</h5>
+				<div id="chart_{{ anno }}" style="height: 450px; width: 1200px"></div>
+				
+			
+			
+				
+				<!-- Aggiungiamo i riferimenti alla libreria Highcharts -->
+				<script src="https://code.highcharts.com/highcharts.js"></script>
+				<script src="https://code.highcharts.com/modules/exporting.js"></script>
+				<script src="https://code.highcharts.com/modules/export-data.js"></script>
+				<script src="https://code.highcharts.com/modules/accessibility.js"></script>
+				<script src="{% static 'js/graficocorrispettivi.js' %}"></script>
+            
+			</div>
+		</div>
+	</div>
+</div>
+
