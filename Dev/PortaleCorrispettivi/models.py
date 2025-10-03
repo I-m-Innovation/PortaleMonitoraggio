@@ -244,15 +244,15 @@ class DatiMensiliTabella(models.Model):
 		super().save(*args, **kwargs)
 
 
-# Aggiungi questo nuovo modello per salvare i dati PUN mensili
-class PunMonthlyData(models.Model):
-	anno = models.IntegerField()
-	mese = models.IntegerField()
-	valore_medio = models.FloatField()
-	ultima_modifica = models.DateTimeField(auto_now=True)
-	
-	class Meta:
-		unique_together = ('anno', 'mese')
-		
+
+
+
+class commento_tabellacorrispettivi(models.Model):
+	impianto = models.ForeignKey(Impianto, on_delete=models.CASCADE, null=False, blank=False)
+	anno = models.IntegerField(null=False, blank=False, editable=False)
+	mese = models.IntegerField(null=False, blank=False)
+	testo = models.TextField(null=False, blank=False)
+	stato = models.CharField(max_length=50, null=False, blank=False, default='', choices=choices,)
+
 	def __str__(self):
-		return f"PUN {self.mese}/{self.anno}: {self.valore_medio}"
+		return self.testo + ' - ' + self.impianto.nome_impianto + ' - ' + str(self.mese) + ' - ' + self.stato

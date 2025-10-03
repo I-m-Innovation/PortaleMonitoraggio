@@ -71,170 +71,227 @@
     color: #555;
     font-style: italic;
   }
+
+  /* Stili per i valori non editabili */
+  .readonly-value {
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 500;
+  }
 </style>
 
-<table id="table1_{{ anno }}" class="display compact" style="width:100%; ">
+<table id="table1_{{ anno }}" class="display compact js-tabella-corrispettivi" style="width:100%; " data-anno="{{ anno }}" data-nickname="{{ nickname }}">
 	<thead>
 		<tr data-dt-order="disable">
 			
       <th rowspan="2" > Mese </th>
-      <th rowspan="2" style="text-align: center" > <i class="fa fa-bolt" aria-hidden="true"></i>&nbsp;Energia<sup>*</sup><br>(kWh) </th>
+      <th rowspan="2" style="text-align: center" id="energia-value" data-campo="energia_kwh" > <i class="fa fa-bolt" aria-hidden="true"></i>&nbsp;Energia<br>(kWh) </th>
       <th colspan="2" style="text-align: center" > <i class="fa fa-line-chart" aria-hidden="true"></i>&nbsp;Corrispettivi </th>
       <th colspan="2" style="text-align: center" > <i class="fa fa-file-text" aria-hidden="true"></i>&nbsp;Fatturazione </th>
       <th rowspan="2" style="text-align: center" > <i class="fa fa-eur" aria-hidden="true"></i>&nbsp;Incassi </th>
-      <th  rowspan="2" colspan="2" style="text-align: center" > <i class="fa fa-check" aria-hidden="true"></i>&nbsp;Controllo<sup>***</sup> </th>
+      <th  rowspan="2" style="text-align: center" > <i class="fa fa-check" aria-hidden="true"></i>&nbsp;Controllo<sup>***</sup> </th>
+	  <th rowspan="2" style="text-align: center" > <i class="fa fa-comment" aria-hidden="true"></i>&nbsp;Commento </th>
     </tr>
     <tr data-dt-order="disable">
       <th style="text-align: center" id="tfo-corrispettivo"  >TFO<span class="tfo-rate-indicator"></span></th>
-      <th style="text-align: center" > PUN </th>
+      <th style="text-align: center" > CNI </th>
       <th style="text-align: center" id="tfofatturazione"  > TFO<sup>**</sup></th>
-      <th style="text-align: center" > Energia non incentivata </th>
+      <th style="text-align: center" id="eni-value"> Energia non incentivata </th>
     </tr>
   </thead>
 	<tbody>
 		<!-- Add your rows here -->
 		<tr>
 			<td>Gennaio</td>
-			<td><input type="number" class="form-control table-input energy-input" data-mese="1" data-campo="energia_kwh"></td>
-			<td class="tfo-value" data-mese="1"></td>
-			<td class="pun-value" data-mese="1"></td>
-			<td><input type="number" class="form-control table-input" data-mese="1" data-campo="fatturazione_tfo"></td>
-			<td><input type="number" class="form-control table-input" data-mese="1" data-campo="fatturazione_altro"></td>
-			<td><input type="number" class="form-control table-input" data-mese="1" data-campo="incassi"></td>
+			<td class="energia-value readonly-value" data-mese="1" data-campo="energia_kwh"></td>
+			<td class="tfo-value readonly-value" data-mese="1"></td>
+			<td class="CNI-value readonly-value" data-mese="1"></td>
+			<td class="fatturazione-tfo-value readonly-value" data-mese="1" data-campo="fatturazione_tfo"></td>
+			<td class="fatturazione-altro-value readonly-value" data-mese="1" data-campo="fatturazione_altro"></td>
+			<td class="incassi-value readonly-value" data-mese="1" data-campo="incassi"></td>
 			<td class="controllo-scarto" data-mese="1"></td>
-			<td class="controllo-percentuale" data-mese="1"></td>
+			{% comment %} <td class="controllo-percentuale" data-mese="1"></td> {% endcomment %}
+			<td class="commento-value" data-mese="1">
+				<input type="text" class="js-commento-input" placeholder="Aggiungi commento" style="width: 85%;" />
+				<button type="button" class="js-salva-commento" title="Salva" data-mese="1"><i class="fa fa-save" aria-hidden="true"></i></button>
+			</td>
 		</tr>
 		<tr>
 			<td>Febbraio</td>
-			<td><input type="number" class="form-control table-input energy-input" data-mese="2" data-campo="energia_kwh"></td>
-			<td class="tfo-value" data-mese="2"></td>
-			<td class="pun-value" data-mese="2"></td>
-			<td><input type="number" class="form-control table-input" data-mese="2" data-campo="fatturazione_tfo"></td>
-			<td><input type="number" class="form-control table-input" data-mese="2" data-campo="fatturazione_altro"></td>
-			<td><input type="number" class="form-control table-input" data-mese="2" data-campo="incassi"></td>
+			<td class="energia-value readonly-value" data-mese="2" data-campo="energia_kwh"></td>
+			<td class="tfo-value readonly-value" data-mese="2"></td>
+			<td class="CNI-value readonly-value" data-mese="2"></td>
+			<td class="fatturazione-tfo-value readonly-value" data-mese="2" data-campo="fatturazione_tfo"></td>
+			<td class="fatturazione-altro-value readonly-value" data-mese="2" data-campo="fatturazione_altro"></td>
+			<td class="incassi-value readonly-value" data-mese="2" data-campo="incassi"></td>
 			<td class="controllo-scarto" data-mese="2"></td>
-			<td class="controllo-percentuale" data-mese="2"></td>
+			{% comment %} <td class="controllo-percentuale" data-mese="2"></td> {% endcomment %}
+			<td class="commento-value" data-mese="2">
+				<input type="text" class="js-commento-input" placeholder="Aggiungi commento" style="width: 85%;" />
+				<button type="button" class="js-salva-commento" title="Salva" data-mese="2"><i class="fa fa-save" aria-hidden="true"></i></button>
+			</td>
 		</tr>
 		<tr>
 			<td>Marzo</td>
-			<td><input type="number" class="form-control table-input energy-input" data-mese="3" data-campo="energia_kwh"></td>
-			<td class="tfo-value" data-mese="3"></td>
-			<td class="pun-value" data-mese="3"></td>
-			<td><input type="number" class="form-control table-input" data-mese="3" data-campo="fatturazione_tfo"></td>
-			<td><input type="number" class="form-control table-input" data-mese="3" data-campo="fatturazione_altro"></td>
-			<td><input type="number" class="form-control table-input" data-mese="3" data-campo="incassi"></td>
+			<td class="energia-value readonly-value" data-mese="3" data-campo="energia_kwh"></td>
+			<td class="tfo-value readonly-value" data-mese="3"></td>
+			<td class="CNI-value readonly-value" data-mese="3"></td>
+			<td class="fatturazione-tfo-value readonly-value" data-mese="3" data-campo="fatturazione_tfo"></td>
+			<td class="fatturazione-altro-value readonly-value" data-mese="3" data-campo="fatturazione_altro"></td>
+			<td class="incassi-value readonly-value" data-mese="3" data-campo="incassi"></td>
 			<td class="controllo-scarto" data-mese="3"></td>
-			<td class="controllo-percentuale" data-mese="3"></td>
+			{% comment %} <td class="controllo-percentuale" data-mese="3"></td> {% endcomment %}
+			<td class="commento-value" data-mese="3">
+				<input type="text" class="js-commento-input" placeholder="Aggiungi commento" style="width: 85%;" />
+				<button type="button" class="js-salva-commento" title="Salva" data-mese="3"><i class="fa fa-save" aria-hidden="true"></i></button>
+			</td>
 		</tr>
 		<tr>
 			<td>Aprile</td>
-			<td><input type="number" class="form-control table-input energy-input" data-mese="4" data-campo="energia_kwh"></td>
-			<td class="tfo-value" data-mese="4"></td>
-			<td class="pun-value" data-mese="4"></td>
-			<td><input type="number" class="form-control table-input" data-mese="4" data-campo="fatturazione_tfo"></td>
-			<td><input type="number" class="form-control table-input" data-mese="4" data-campo="fatturazione_altro"></td>
-			<td><input type="number" class="form-control table-input" data-mese="4" data-campo="incassi"></td>
+			<td class="energia-value readonly-value" data-mese="4" data-campo="energia_kwh"></td>
+			<td class="tfo-value readonly-value" data-mese="4"></td>
+			<td class="CNI-value readonly-value" data-mese="4"></td>
+			<td class="fatturazione-tfo-value readonly-value" data-mese="4" data-campo="fatturazione_tfo"></td>
+			<td class="fatturazione-altro-value readonly-value" data-mese="4" data-campo="fatturazione_altro"></td>
+			<td class="incassi-value readonly-value" data-mese="4" data-campo="incassi"></td>
 			<td class="controllo-scarto" data-mese="4"></td>
-			<td class="controllo-percentuale" data-mese="4"></td>
+			{% comment %} <td class="controllo-percentuale" data-mese="4"></td> {% endcomment %}
+			<td class="commento-value" data-mese="4">
+				<input type="text" class="js-commento-input" placeholder="Aggiungi commento" style="width: 85%;" />
+				<button type="button" class="js-salva-commento" title="Salva" data-mese="4"><i class="fa fa-save" aria-hidden="true"></i></button>
+			</td>
 		</tr>
 		<tr>
 			<td>Maggio</td>
-			<td><input type="number" class="form-control table-input energy-input" data-mese="5" data-campo="energia_kwh"></td>
-			<td class="tfo-value" data-mese="5"></td>
-			<td class="pun-value" data-mese="5"></td>
-			<td><input type="number" class="form-control table-input" data-mese="5" data-campo="fatturazione_tfo"></td>
-			<td><input type="number" class="form-control table-input" data-mese="5" data-campo="fatturazione_altro"></td>
-			<td><input type="number" class="form-control table-input" data-mese="5" data-campo="incassi"></td>
+			<td class="energia-value readonly-value" data-mese="5" data-campo="energia_kwh"></td>
+			<td class="tfo-value readonly-value" data-mese="5"></td>
+			<td class="CNI-value readonly-value" data-mese="5"></td>
+			<td class="fatturazione-tfo-value readonly-value" data-mese="5" data-campo="fatturazione_tfo"></td>
+			<td class="fatturazione-altro-value readonly-value" data-mese="5" data-campo="fatturazione_altro"></td>
+			<td class="incassi-value readonly-value" data-mese="5" data-campo="incassi"></td>
 			<td class="controllo-scarto" data-mese="5"></td>
-			<td class="controllo-percentuale" data-mese="5"></td>
+			{% comment %} <td class="controllo-percentuale" data-mese="5"></td> {% endcomment %}
+			<td class="commento-value" data-mese="5">
+				<input type="text" class="js-commento-input" placeholder="Aggiungi commento" style="width: 85%;" />
+				<button type="button" class="js-salva-commento" title="Salva" data-mese="5"><i class="fa fa-save" aria-hidden="true"></i></button>
+			</td>
 		</tr>
 		<tr>
 			<td>Giugno</td>
-			<td><input type="number" class="form-control table-input energy-input" data-mese="6" data-campo="energia_kwh"></td>
-			<td class="tfo-value" data-mese="6"></td>
-			<td class="pun-value" data-mese="6"></td>
-			<td><input type="number" class="form-control table-input" data-mese="6" data-campo="fatturazione_tfo"></td>
-			<td><input type="number" class="form-control table-input" data-mese="6" data-campo="fatturazione_altro"></td>
-			<td><input type="number" class="form-control table-input" data-mese="6" data-campo="incassi"></td>
+			<td class="energia-value readonly-value" data-mese="6" data-campo="energia_kwh"></td>
+			<td class="tfo-value readonly-value" data-mese="6"></td>
+			<td class="CNI-value readonly-value" data-mese="6"></td>
+			<td class="fatturazione-tfo-value readonly-value" data-mese="6" data-campo="fatturazione_tfo"></td>
+			<td class="fatturazione-altro-value readonly-value" data-mese="6" data-campo="fatturazione_altro"></td>
+			<td class="incassi-value readonly-value" data-mese="6" data-campo="incassi"></td>
 			<td class="controllo-scarto" data-mese="6"></td>
-			<td class="controllo-percentuale" data-mese="6"></td>
+			{% comment %} <td class="controllo-percentuale" data-mese="6"></td> {% endcomment %}
+			<td class="commento-value" data-mese="6">
+				<input type="text" class="js-commento-input" placeholder="Aggiungi commento" style="width: 85%;" />
+				<button type="button" class="js-salva-commento" title="Salva" data-mese="6"><i class="fa fa-save" aria-hidden="true"></i></button>
+			</td>
 		</tr>
 		<tr>
 			<td>Luglio</td>
-			<td><input type="number" class="form-control table-input energy-input" data-mese="7" data-campo="energia_kwh"></td>
-			<td class="tfo-value" data-mese="7"></td>
-			<td class="pun-value" data-mese="7"></td>
-			<td><input type="number" class="form-control table-input" data-mese="7" data-campo="fatturazione_tfo"></td>
-			<td><input type="number" class="form-control table-input" data-mese="7" data-campo="fatturazione_altro"></td>
-			<td><input type="number" class="form-control table-input" data-mese="7" data-campo="incassi"></td>
+			<td class="energia-value readonly-value" data-mese="7" data-campo="energia_kwh"></td>
+			<td class="tfo-value readonly-value" data-mese="7"></td>
+			<td class="CNI-value readonly-value" data-mese="7"></td>
+			<td class="fatturazione-tfo-value readonly-value" data-mese="7" data-campo="fatturazione_tfo"></td>
+			<td class="fatturazione-altro-value readonly-value" data-mese="7" data-campo="fatturazione_altro"></td>
+			<td class="incassi-value readonly-value" data-mese="7" data-campo="incassi"></td>
 			<td class="controllo-scarto" data-mese="7"></td>
-			<td class="controllo-percentuale" data-mese="7"></td>
+			{% comment %} <td class="controllo-percentuale" data-mese="7"></td> {% endcomment %}
+			<td class="commento-value" data-mese="7">
+				<input type="text" class="js-commento-input" placeholder="Aggiungi commento" style="width: 85%;" />
+				<button type="button" class="js-salva-commento" title="Salva" data-mese="7"><i class="fa fa-save" aria-hidden="true"></i></button>
+			</td>
 		</tr>
 		<tr>
 			<td>Agosto</td>
-			<td><input type="number" class="form-control table-input energy-input" data-mese="8" data-campo="energia_kwh"></td>
-			<td class="tfo-value" data-mese="8"></td>
-			<td class="pun-value" data-mese="8"></td>
-			<td><input type="number" class="form-control table-input" data-mese="8" data-campo="fatturazione_tfo"></td>
-			<td><input type="number" class="form-control table-input" data-mese="8" data-campo="fatturazione_altro"></td>
-			<td><input type="number" class="form-control table-input" data-mese="8" data-campo="incassi"></td>
+			<td class="energia-value readonly-value" data-mese="8" data-campo="energia_kwh"></td>
+			<td class="tfo-value readonly-value" data-mese="8"></td>
+			<td class="CNI-value readonly-value" data-mese="8"></td>
+			<td class="fatturazione-tfo-value readonly-value" data-mese="8" data-campo="fatturazione_tfo"></td>
+			<td class="fatturazione-altro-value readonly-value" data-mese="8" data-campo="fatturazione_altro"></td>
+			<td class="incassi-value readonly-value" data-mese="8" data-campo="incassi"></td>
 			<td class="controllo-scarto" data-mese="8"></td>
-			<td class="controllo-percentuale" data-mese="8"></td>
+			{% comment %} <td class="controllo-percentuale" data-mese="8"></td> {% endcomment %}
+			<td class="commento-value" data-mese="8">
+				<input type="text" class="js-commento-input" placeholder="Aggiungi commento" style="width: 85%;" />
+				<button type="button" class="js-salva-commento" title="Salva" data-mese="8"><i class="fa fa-save" aria-hidden="true"></i></button>
+			</td>
 		</tr>
 		<tr>
 			<td>Settembre</td>
-			<td><input type="number" class="form-control table-input energy-input" data-mese="9" data-campo="energia_kwh"></td>
-			<td class="tfo-value" data-mese="9"></td>
-			<td class="pun-value" data-mese="9"></td>
-			<td><input type="number" class="form-control table-input" data-mese="9" data-campo="fatturazione_tfo"></td>
-			<td><input type="number" class="form-control table-input" data-mese="9" data-campo="fatturazione_altro"></td>
-			<td><input type="number" class="form-control table-input" data-mese="9" data-campo="incassi"></td>
+			<td class="energia-value readonly-value" data-mese="9" data-campo="energia_kwh"></td>
+			<td class="tfo-value readonly-value" data-mese="9"></td>
+			<td class="CNI-value readonly-value" data-mese="9"></td>
+			<td class="fatturazione-tfo-value readonly-value" data-mese="9" data-campo="fatturazione_tfo"></td>
+			<td class="fatturazione-altro-value readonly-value" data-mese="9" data-campo="fatturazione_altro"></td>
+			<td class="incassi-value readonly-value" data-mese="9" data-campo="incassi"></td>
 			<td class="controllo-scarto" data-mese="9"></td>
-			<td class="controllo-percentuale" data-mese="9"></td>
+			{% comment %} <td class="controllo-percentuale" data-mese="9"></td> {% endcomment %}
+			<td class="commento-value" data-mese="9">
+				<input type="text" class="js-commento-input" placeholder="Aggiungi commento" style="width: 85%;" />
+				<button type="button" class="js-salva-commento" title="Salva" data-mese="9"><i class="fa fa-save" aria-hidden="true"></i></button>
+			</td>
 		</tr>
 		<tr>
 			<td>Ottobre</td>
-			<td><input type="number" class="form-control table-input energy-input" data-mese="10" data-campo="energia_kwh"></td>
-			<td class="tfo-value" data-mese="10"></td>
-			<td class="pun-value" data-mese="10"></td>
-			<td><input type="number" class="form-control table-input" data-mese="10" data-campo="fatturazione_tfo"></td>
-			<td><input type="number" class="form-control table-input" data-mese="10" data-campo="fatturazione_altro"></td>
-			<td><input type="number" class="form-control table-input" data-mese="10" data-campo="incassi"></td>
+			<td class="energia-value readonly-value" data-mese="10" data-campo="energia_kwh"></td>
+			<td class="tfo-value readonly-value" data-mese="10"></td>
+			<td class="CNI-value readonly-value" data-mese="10"></td>
+			<td class="fatturazione-tfo-value readonly-value" data-mese="10" data-campo="fatturazione_tfo"></td>
+			<td class="fatturazione-altro-value readonly-value" data-mese="10" data-campo="fatturazione_altro"></td>
+			<td class="incassi-value readonly-value" data-mese="10" data-campo="incassi"></td>
 			<td class="controllo-scarto" data-mese="10"></td>
-			<td class="controllo-percentuale" data-mese="10"></td>
+			{% comment %} <td class="controllo-percentuale" data-mese="10"></td> {% endcomment %}
+			<td class="commento-value" data-mese="10">
+				<input type="text" class="js-commento-input" placeholder="Aggiungi commento" style="width: 85%;" />
+				<button type="button" class="js-salva-commento" title="Salva" data-mese="10"><i class="fa fa-save" aria-hidden="true"></i></button>
+			</td>
 		</tr>
 		<tr>
 			<td>Novembre</td>
-			<td><input type="number" class="form-control table-input energy-input" data-mese="11" data-campo="energia_kwh"></td>
-			<td class="tfo-value" data-mese="11"></td>
-			<td class="pun-value" data-mese="11"></td>
-			<td><input type="number" class="form-control table-input" data-mese="11" data-campo="fatturazione_tfo"></td>
-			<td><input type="number" class="form-control table-input" data-mese="11" data-campo="fatturazione_altro"></td>
-			<td><input type="number" class="form-control table-input" data-mese="11" data-campo="incassi"></td>
+			<td class="energia-value readonly-value" data-mese="11" data-campo="energia_kwh"></td>
+			<td class="tfo-value readonly-value" data-mese="11"></td>
+			<td class="CNI-value readonly-value" data-mese="11"></td>
+			<td class="fatturazione-tfo-value readonly-value" data-mese="11" data-campo="fatturazione_tfo"></td>
+			<td class="fatturazione-altro-value readonly-value" data-mese="11" data-campo="fatturazione_altro"></td>
+			<td class="incassi-value readonly-value" data-mese="11" data-campo="incassi"></td>
 			<td class="controllo-scarto" data-mese="11"></td>
-			<td class="controllo-percentuale" data-mese="11"></td>
-		</tr>
+			{% comment %} <td class="controllo-percentuale" data-mese="11"></td> {% endcomment %}
+			<td class="commento-value" data-mese="11">
+				<input type="text" class="js-commento-input" placeholder="Aggiungi commento" style="width: 85%;" />
+				<button type="button" class="js-salva-commento" title="Salva" data-mese="11"><i class="fa fa-save" aria-hidden="true"></i></button>
+			</td>
+			</tr>
 		<tr>
 			<td>Dicembre</td>
-			<td><input type="number" class="form-control table-input energy-input" data-mese="12" data-campo="energia_kwh"></td>
-			<td class="tfo-value" data-mese="12"></td>
-			<td class="pun-value" data-mese="12"></td>
-			<td><input type="number" class="form-control table-input" data-mese="12" data-campo="fatturazione_tfo"></td>
-			<td><input type="number" class="form-control table-input" data-mese="12" data-campo="fatturazione_altro"></td>
-			<td><input type="number" class="form-control table-input" data-mese="12" data-campo="incassi"></td>
+			<td class="energia-value readonly-value" data-mese="12" data-campo="energia_kwh"></td>
+			<td class="tfo-value readonly-value" data-mese="12"></td>
+			<td class="CNI-value readonly-value" data-mese="12"></td>
+			<td class="fatturazione-tfo-value readonly-value" data-mese="12" data-campo="fatturazione_tfo"></td>
+			<td class="fatturazione-altro-value readonly-value" data-mese="12" data-campo="fatturazione_altro"></td>
+			<td class="incassi-value readonly-value" data-mese="12" data-campo="incassi"></td>
 			<td class="controllo-scarto" data-mese="12"></td>
-			<td class="controllo-percentuale" data-mese="12"></td>
+			{% comment %} <td class="controllo-percentuale" data-mese="12"></td> {% endcomment %}
+			<td class="commento-value" data-mese="12">
+				<input type="text" class="js-commento-input" placeholder="Aggiungi commento" style="width: 85%;" />
+				<button type="button" class="js-salva-commento" title="Salva" data-mese="12"><i class="fa fa-save" aria-hidden="true"></i></button>
+			</td>
 		</tr>
 		<tr>
 			<td><b>Anno</b></td>
 			<td class="totale-energia"></td>
 			<td class="totale-corrispettivo-incentivo"></td>
-			<td class="totale-pun"></td>
+			<td class="totale-CNI"></td>
 			<td class="totale-fatturazione-tfo"></td>
 			<td class="totale-fatturazione-altro"></td>
 			<td class="totale-incassi"></td>
-			<td class="totale-controllo-scarto"></td>
+			{% comment %} <td class="totale-controllo-scarto"></td> {% endcomment %}
 			<td class="totale-controllo-percentuale"></td>
+			<td ></td>
 		</tr>
 	</tbody>
 	<tfoot>
@@ -249,16 +306,13 @@
 	</tfoot>
 </table>
 
-<div class="text-center mt-3">
-	<button id="save-table-data-{{ anno }}" class="btn btn-primary">Salva Dati</button>
-</div>
 
 <!-- Alert per messaggi di successo/errore specifici per anno -->
 <div id="success-alert-{{ anno }}" class="alert alert-success mt-3" style="display: none;" role="alert">
-	Dati salvati con successo!
+	Dati caricati con successo! (Modalità sola lettura)
 </div>
 <div id="error-alert-{{ anno }}" class="alert alert-danger mt-3" style="display: none;" role="alert">
-	Errore durante il salvataggio dei dati.
+	Errore durante il caricamento dei dati.
 </div>
 {% block extra_js %}
 <script src="{% static 'js/tabellacorrispettivi.js' %}"></script>

@@ -1,104 +1,109 @@
-// Grafico aggregato di tutte le centrali
+// Grafico e tabella basati su API annuali - SOMMA TUTTI GLI IMPIANTI
 document.addEventListener('DOMContentLoaded', function() {
-    // Nomi dei mesi in italiano
     const nomiMesi = [
         'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
         'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
     ];
 
-    // Funzione per caricare i dati e creare il grafico
-    function caricaDatiECreaGrafico(anno) {
-        console.log('Caricamento dati per anno:', anno);
-        
-        // Mostra lo spinner
-        document.getElementById('spinner').style.display = 'block';
-
-        // Chiamata API per ottenere i dati aggregati
-        fetch(`/corrispettivi/api/dati-aggregati/${anno}/`)
-            .then(response => response.json())
-            .then(data => {
-                console.log('Dati ricevuti:', data);
-                
-                if (data.success) {
-                    creaGrafico(data.dati, anno);
-                    aggiornaTabella(data.dati);
-                } else {
-                    console.error('Errore nei dati:', data.error);
-                    alert('Errore nel caricamento dei dati: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Errore nella chiamata API:', error);
-                alert('Errore nella comunicazione con il server');
-            })
-            .finally(() => {
-                // Nascondi lo spinner
-                document.getElementById('spinner').style.display = 'none';
-            });
+    function mostraSpinner(visibile) {
+        const spinner = document.getElementById('spinner');
+        if (spinner) spinner.style.display = visibile ? 'block' : 'none';
     }
 
-    // Funzione per creare il grafico con Highcharts
-    function creaGrafico(dati, anno) {
-        // Prepara i dati per Highcharts
+    async function fetchJson(url) {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status + ' su ' + url);
+        const json = await resp.json();
+        if (!json || json.success !== true) return { per_month: {} };
+        return json;
+    }
+
+    /**
+     * Carica i dati annuali per un singolo impianto usando gli endpoint annuali ottimizzati
+     */
+    async function caricaDatiImpiantoAnno(nickname, anno) {
+        const base = `/corrispettivi/api/annuale`;
+        
+        const [energiaRes, tfoRes, fattRes, incassiRes] = await Promise.all([
+            fetchJson(`${base}/energia-kwh/${encodeURIComponent(nickname)}/${anno}/`),
+            fetchJson(`${base}/dati-tfo/${encodeURIComponent(nickname)}/${anno}/`),
+            fetchJson(`${base}/dati-fatturazione-tfo/${encodeURIComponent(nickname)}/${anno}/`),
+            fetchJson(`${base}/dati-riepilogo-pagamenti/${encodeURIComponent(nickname)}/${anno}/`)
+        ]);
+
+        return {
+            energia_kwh: energiaRes.per_month || {},
+            corrispettivi_tfo: tfoRes.per_month || {},
+            fatturazione_tfo: fattRes.per_month || {},
+            incassi: incassiRes.per_month || {}
+        };
+    }
+
+    /**
+     * Carica e somma i dati di tutti gli impianti per l'anno specificato
+     */
+    async function caricaDatiAnno(impianti, anno) {
+        // Carica i dati per tutti gli impianti in parallelo
+        const datiImpianti = await Promise.all(
+            impianti.map(nickname => caricaDatiImpiantoAnno(nickname, anno))
+        );
+
+        // Inizializza struttura dati per 12 mesi
+        const datiSommati = Array.from({ length: 12 }, (_, i) => ({
+            mese: i + 1,
+            energia_kwh: 0,
+            corrispettivi_tfo: 0,
+            fatturazione_tfo: 0,
+            incassi: 0
+        }));
+
+        // Somma i dati di tutti gli impianti per ogni mese
+        datiImpianti.forEach(datiImpianto => {
+            for (let mese = 1; mese <= 12; mese++) {
+                datiSommati[mese - 1].energia_kwh += parseFloat(datiImpianto.energia_kwh[mese] || 0);
+                datiSommati[mese - 1].corrispettivi_tfo += parseFloat(datiImpianto.corrispettivi_tfo[mese] || 0);
+                datiSommati[mese - 1].fatturazione_tfo += parseFloat(datiImpianto.fatturazione_tfo[mese] || 0);
+                datiSommati[mese - 1].incassi += parseFloat(datiImpianto.incassi[mese] || 0);
+            }
+        });
+
+        return datiSommati;
+    }
+
+    function creaGrafico(dati, anno, impianti) {
         const categorie = dati.map(d => nomiMesi[d.mese - 1]);
         const energiaData = dati.map(d => Math.round(d.energia_kwh || 0));
         const corrispettiviData = dati.map(d => Math.round(d.corrispettivi_tfo || 0));
         const fatturazioneData = dati.map(d => Math.round(d.fatturazione_tfo || 0));
         const incassiData = dati.map(d => Math.round(d.incassi || 0));
 
-        // Crea il grafico
+        // Crea il titolo in base al numero di impianti
+        const titoloImpianti = impianti.length === 1 
+            ? impianti[0] 
+            : `${impianti.length} Impianti (Somma Totale)`;
+
         Highcharts.chart('chart', {
             chart: {
                 zoomType: 'xy',
                 backgroundColor: 'rgba(255,255,255,0.8)'
             },
             title: {
-                text: `Andamento Aggregato Parco Idroelettrici - Anno ${anno}`,
+                text: `Andamento ${titoloImpianti} - Anno ${anno}`.trim(),
                 align: 'center',
-                style: {
-                    fontSize: '18px',
-                    fontWeight: 'bold',
-                    color: '#4a3c54'
-                }
+                style: { fontSize: '18px', fontWeight: 'bold', color: '#4a3c54' }
             },
             subtitle: {
-                text: 'Energia incentivata, corrispettivi TFO, fatturazione e incassi',
+                text: 'Energia incentivata, corrispettivi TFO, fatturazione e incassi (dati sommati)',
                 align: 'center'
             },
-            xAxis: [{
-                categories: categorie,
-                crosshair: true
-            }],
+            xAxis: [{ categories: categorie, crosshair: true }],
             yAxis: [{
-                // Asse sinistro per l'energia
-                labels: {
-                    format: '{value} kWh',
-                    style: {
-                        color: Highcharts.getOptions().colors[0]
-                    }
-                },
-                title: {
-                    text: 'Energia (kWh)',
-                    style: {
-                        color: Highcharts.getOptions().colors[0]
-                    }
-                },
-                gridLineColor: '#e6e6e6',
-                gridLineWidth: 1
+                labels: { format: '{value} kWh', style: { color: Highcharts.getOptions().colors[0] } },
+                title: { text: 'Energia (kWh)', style: { color: Highcharts.getOptions().colors[0] } },
+                gridLineColor: '#e6e6e6', gridLineWidth: 1
             }, {
-                // Asse destro per i valori in euro
-                title: {
-                    text: 'Importi (€)',
-                    style: {
-                        color: '#FF6B6B'
-                    }
-                },
-                labels: {
-                    format: '{value} €',
-                    style: {
-                        color: '#FF6B6B'
-                    }
-                },
+                title: { text: 'Importi (€)', style: { color: '#FF6B6B' } },
+                labels: { format: '{value} €', style: { color: '#FF6B6B' } },
                 opposite: true
             }],
             tooltip: {
@@ -110,159 +115,119 @@ document.addEventListener('DOMContentLoaded', function() {
                 useHTML: true
             },
             plotOptions: {
-                column: {
-                    pointPadding: 0.2,
-                    borderWidth: 0,
-                    dataLabels: {
-                        enabled: false
-                    }
-                },
-                line: {
-                    dataLabels: {
-                        enabled: false
-                    },
-                    marker: {
-                        enabled: true,
-                        radius: 4
-                    }
-                }
+                column: { pointPadding: 0.2, borderWidth: 0, dataLabels: { enabled: false } },
+                line: { dataLabels: { enabled: false }, marker: { enabled: true, radius: 4 } }
             },
             series: [{
-                name: 'Energia Incentivata',
-                type: 'line',
-                yAxis: 0,
-                data: energiaData,
-                tooltip: {
-                    valueSuffix: ' kWh'
-                },
-                color: '#2E8B57', // Verde foresta
-                lineWidth: 3,
-                marker: {
-                    fillColor: '#2E8B57',
-                    lineWidth: 2,
-                    lineColor: '#1F5F3F'
-                }
+                name: 'Energia Incentivata', type: 'line', yAxis: 0, data: energiaData,
+                tooltip: { valueSuffix: ' kWh' }, color: '#ff7f0e', lineWidth: 3,
+                marker: { fillColor: '#ff7f0e', lineWidth: 2, lineColor: '#FFFFFF' }
             }, {
-                name: 'Corrispettivi TFO',
-                type: 'column',
-                yAxis: 1,
-                data: corrispettiviData,
-                tooltip: {
-                    valueSuffix: ' €'
-                },
-                color: '#4169E1' // Blu reale
+                name: 'Corrispettivi TFO', type: 'column', yAxis: 1, data: corrispettiviData,
+                tooltip: { valueSuffix: ' €' }, color: '#4169E1'
             }, {
-                name: 'Fatturazione TFO',
-                type: 'column',
-                yAxis: 1,
-                data: fatturazioneData,
-                tooltip: {
-                    valueSuffix: ' €'
-                },
-                color: '#FF6B6B' // Rosso corallo
+                name: 'Fatturazione TFO', type: 'column', yAxis: 1, data: fatturazioneData,
+                tooltip: { valueSuffix: ' €' }, color: '#FF6B6B'
             }, {
-                name: 'Incassi',
-                type: 'column',
-                yAxis: 1,
-                data: incassiData,
-                tooltip: {
-                    valueSuffix: ' €'
-                },
-                color: '#32CD32' // Verde lime
+                name: 'Incassi', type: 'column', yAxis: 1, data: incassiData,
+                tooltip: { valueSuffix: ' €' }, color: '#32CD32'
             }],
             legend: {
-                layout: 'horizontal',
-                align: 'center',
-                verticalAlign: 'bottom',
-                backgroundColor: 'rgba(255,255,255,0.9)',
-                borderColor: '#CCC',
-                borderWidth: 1,
-                shadow: false
+                layout: 'horizontal', align: 'center', verticalAlign: 'bottom',
+                backgroundColor: 'rgba(255,255,255,0.9)', borderColor: '#CCC', borderWidth: 1, shadow: false
             },
-            exporting: {
-                enabled: true,
-                buttons: {
-                    contextButton: {
-                        menuItems: [
-                            'viewFullscreen',
-                            'printChart',
-                            'separator',
-                            'downloadPNG',
-                            'downloadJPEG',
-                            'downloadPDF',
-                            'downloadSVG',
-                            'separator',
-                            'downloadCSV',
-                            'downloadXLS'
-                        ]
-                    }
-                }
-            },
-            credits: {
-                enabled: false
+            exporting: { enabled: true },
+            credits: { enabled: false }
+        });
+    }
+
+    function aggiornaTabella(dati) {
+        const tabella = document.getElementById('tabella_corrispettivi');
+        if (!tabella) return;
+
+        if ($.fn.DataTable.isDataTable(tabella)) {
+            $(tabella).DataTable().destroy();
+        }
+
+        const righeTabella = dati.map((d, index) => [
+            index + 1,
+            nomiMesi[d.mese - 1],
+            Math.round(d.energia_kwh || 0).toLocaleString(),
+            Math.round(d.corrispettivi_tfo || 0).toLocaleString(),
+            Math.round(d.fatturazione_tfo || 0).toLocaleString(),
+            Math.round(d.incassi || 0).toLocaleString()
+        ]);
+
+        const totaleEnergia = dati.reduce((sum, d) => sum + (d.energia_kwh || 0), 0);
+        const totaleCorrispettivi = dati.reduce((sum, d) => sum + (d.corrispettivi_tfo || 0), 0);
+        const totaleFatturazione = dati.reduce((sum, d) => sum + (d.fatturazione_tfo || 0), 0);
+        const totaleIncassi = dati.reduce((sum, d) => sum + (d.incassi || 0), 0);
+
+        $(tabella).DataTable({
+            data: righeTabella,
+            paging: false,
+            searching: false,
+            info: false,
+            ordering: false,
+            language: { emptyTable: 'Nessun dato disponibile' },
+            footerCallback: function() {
+                const api = this.api();
+                $(api.column(2).footer()).html(Math.round(totaleEnergia).toLocaleString());
+                $(api.column(3).footer()).html(Math.round(totaleCorrispettivi).toLocaleString());
+                $(api.column(4).footer()).html(Math.round(totaleFatturazione).toLocaleString());
+                $(api.column(5).footer()).html(Math.round(totaleIncassi).toLocaleString());
             }
         });
     }
 
-    // Funzione per aggiornare la tabella dei dati
-    function aggiornaTabella(dati) {
+    async function aggiornaAnnoSelezionato() {
+        const selettoreAnno = document.getElementById('selettore-anno');
+        const anno = selettoreAnno ? (selettoreAnno.value || new Date().getFullYear()) : new Date().getFullYear();
+
+        // Recupero lista impianti da attributo data-impianti (formato JSON array)
+        // Esempio: data-impianti='["ponte_giurino", "san_teodoro", "ionico_foresta"]'
+        // oppure data-impianti='["ponte_giurino"]' per singolo impianto
         const tabella = document.getElementById('tabella_corrispettivi');
+        let impianti = [];
         
-        if (tabella) {
-            // Distruggi la tabella esistente se esiste
-            if ($.fn.DataTable.isDataTable(tabella)) {
-                $(tabella).DataTable().destroy();
-            }
-
-            // Prepara i dati per la tabella
-            const righeTabella = dati.map((d, index) => [
-                index + 1, // numero
-                nomiMesi[d.mese - 1], // mese
-                Math.round(d.energia_kwh || 0).toLocaleString(), // energia
-                Math.round(d.corrispettivi_tfo || 0).toLocaleString(), // corrispettivi
-                Math.round(d.fatturazione_tfo || 0).toLocaleString(), // fatturazione
-                Math.round(d.incassi || 0).toLocaleString() // incassi
-            ]);
-
-            // Calcola i totali
-            const totaleEnergia = dati.reduce((sum, d) => sum + (d.energia_kwh || 0), 0);
-            const totaleCorrispettivi = dati.reduce((sum, d) => sum + (d.corrispettivi_tfo || 0), 0);
-            const totaleFatturazione = dati.reduce((sum, d) => sum + (d.fatturazione_tfo || 0), 0);
-            const totaleIncassi = dati.reduce((sum, d) => sum + (d.incassi || 0), 0);
-
-            // Inizializza la DataTable
-            $(tabella).DataTable({
-                data: righeTabella,
-                paging: false,
-                searching: false,
-                info: false,
-                ordering: false,
-                language: {
-                    emptyTable: "Nessun dato disponibile"
-                },
-                footerCallback: function(row, data, start, end, display) {
-                    const api = this.api();
-                    
-                    // Aggiorna il footer con i totali
-                    $(api.column(2).footer()).html(Math.round(totaleEnergia).toLocaleString());
-                    $(api.column(3).footer()).html(Math.round(totaleCorrispettivi).toLocaleString());
-                    $(api.column(4).footer()).html(Math.round(totaleFatturazione).toLocaleString());
-                    $(api.column(5).footer()).html(Math.round(totaleIncassi).toLocaleString());
+        if (tabella && tabella.dataset && tabella.dataset.impianti) {
+            try {
+                impianti = JSON.parse(tabella.dataset.impianti);
+                if (!Array.isArray(impianti) || impianti.length === 0) {
+                    throw new Error('data-impianti deve essere un array non vuoto');
                 }
-            });
+            } catch (e) {
+                console.error('Errore parsing data-impianti:', e);
+                alert('Errore: data-impianti non valido. Usa formato JSON array, es: ["ponte_giurino", "san_teodoro"]');
+                return;
+            }
+        } else if (tabella && tabella.dataset && tabella.dataset.nickname) {
+            // Fallback: supporta ancora data-nickname per retrocompatibilità
+            impianti = [tabella.dataset.nickname];
+        } else {
+            console.warn('Lista impianti non specificata. Imposta data-impianti o data-nickname su #tabella_corrispettivi.');
+            alert('Errore: specificare gli impianti tramite data-impianti="[...]" su #tabella_corrispettivi');
+            return;
+        }
+
+        try {
+            mostraSpinner(true);
+            const dati = await caricaDatiAnno(impianti, anno);
+            creaGrafico(dati, anno, impianti);
+            aggiornaTabella(dati);
+        } catch (e) {
+            console.error('Errore durante il caricamento dei dati:', e);
+            alert('Errore durante il caricamento dei dati. Controlla la console.');
+        } finally {
+            mostraSpinner(false);
         }
     }
 
-    // Event listener per il cambio anno
     const selettoreAnno = document.getElementById('selettore-anno');
     if (selettoreAnno) {
-        selettoreAnno.addEventListener('change', function() {
-            const annoSelezionato = this.value;
-            caricaDatiECreaGrafico(annoSelezionato);
-        });
-
-        // Carica i dati per l'anno di default al caricamento della pagina
-        const annoDefault = selettoreAnno.value || new Date().getFullYear();
-        caricaDatiECreaGrafico(annoDefault);
+        selettoreAnno.addEventListener('change', aggiornaAnnoSelezionato);
     }
+
+    // Caricamento iniziale
+    aggiornaAnnoSelezionato();
 });

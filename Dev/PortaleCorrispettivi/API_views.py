@@ -1,9 +1,4 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.renderers import JSONRenderer
-from rest_framework.permissions import IsAuthenticated
-from django.forms.models import model_to_dict
-from AutomazioneDati.models import LetturaContatore, regsegnanti, Contatore
+
 from MonitoraggioImpianti.models import Impianto
 import numpy as np
 import pandas as pd
@@ -11,1076 +6,1010 @@ from datetime import datetime,timedelta
 from django.db.models import Max, Min
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import DatiMensiliTabella
 import json
 from django.db import models
 from django.conf import settings
-from PortaleCorrispettivi.APIgme import scarica_dati_pun_mensili, GME_FTP_USERNAME, GME_FTP_PASSWORD
-import threading
-from django.utils import timezone
+from django.db import connection
 import os
 from PortaleCorrispettivi.models import Cashflow
-
+import pandas as pd
+import os
+from PortaleCorrispettivi.models import Cashflow
+import traceback
 import PortaleCorrispettivi.utils.functions as fn
 from .models import *
-
-
-# # FUNZIONE LETTURA DATI DIARI LETTURE
-# def load_diariletture(diari_letture, sheet_letture):
-# 	# CARICAMENTO DATI DIARI DELLE LETTURE
-# 	df = pd.concat([pd.read_excel(diario, sheet_letture, parse_dates=False) for diario in diari_letture])
-# 	# RIMOZIONE COLONNE VUOTE
-# 	df = df.dropna(axis=1, how='all')
-# 	# FORMATTAZIONE DATAFRAME IN NUMERI
-# 	df.iloc[:, 1:] = df.iloc[:, 1:].apply(pd.to_numeric, errors='coerce')
-# 	df = df.astype('float64', errors='ignore')
-
-# 	df.reset_index(drop=True, inplace=True)
-# 	df['mese'] = pd.to_datetime(df['mese'])
-# 	df.reset_index(drop=True, inplace=True)
-# 	return df
-
-
-# FUNZIONE LETTURA DATI FILE CASHFLOW
-def load_cashflow(diario_cashflow, sheet):
-	# CARICO FILE DI CASH-FLOW (contiene i dati di tutti gli anni)
-	df = pd.read_excel(diario_cashflow, sheet, index_col=None, header=[2, 3], na_values=[np.nan])
-	df = df.dropna(axis=1, how='all')
-	# NOME COLONNE NEL FILE EXCEL
-	x = ['Fatturazione TFO', 'Fatturazione Energia non incentivata', 'Riepilogo pagamenti']
-
-	# SISTEMAZIONE DATAFRAME IN BASE ALLA FORMATTAZIONE DELLA TABELLA EXCEL
-
-	# il dataframe df2 contiene 2 righe di headers:
-	# _____________________________________________________________________________________________________________________________________________________________________
-	# |Fatturazione TFO | Fatturazione TFO       | Fatturazione Energia non incentivata | Fatturazione Energia non incentivata | Riepilogo pagamenti | Riepilogo pagamenti |
-	# |Periodo          | Energia di competenza  | Periodo                              | Energia di competenza                | Periodo             | Incasso/pagamento   |
-	# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-	# LISTA DI LISTE BOOLEANE CHE INDICANO IN df2 LA POSIZIONE DELLE COLONNE DATE IN x
-	ll = [list(df.columns.get_level_values(0).str.contains(z)) for z in x]
-	# LISTA BOOLEANA CHE INDICA LA POSIZIONE DI TUTTE LE COLONNE DATE IN x
-	ll = list(map(any, zip(*ll)))
-
-	# FORMATTAZIONE IN DATETIME DELLA SOTTOCOLONNA 'Periodo' RELATIVA ALLE COLONNE IN x
-	df = df.loc[:, ll]
-	for s in x:
-		df[(s, 'Periodo')] = pd.to_datetime(df[(s, 'Periodo')], errors='coerce')
-	df = df.dropna(subset=[('Fatturazione TFO', 'Periodo')])
-	return df
-
-
-# def tabellaconsorzi_data(anno_nickname):
-# 	# DA URL ESTRAPOLO ANNO E NICKNAME DELLA REQUEST
-# 	anno = int(anno_nickname.split('_', 1)[0])
-# 	nickname = anno_nickname.split('_', 1)[1]
-
-# 	impianto = Impianto.objects.all().filter(nickname=nickname)[0]
-# 	dz_impianto = model_to_dict(impianto)
-
-# 	# EMPTY DATA PER IMPIANTI CHE NON SONO PONTE GIURINO
-# 	if nickname != 'ponte_giurino':
-# 		dict1 = {}
-# 		dict2 = {}
-
-# 		table_data = {
-# 			'anno': anno,
-# 			'table1': dict1,
-# 			'table2': dict2,
-# 			'info': dz_impianto,
-# 		}
-# 		return Response(table_data)
-
-# 	# MESI-INTERVALLO DI PONTE GIURINO
-# 	aprile = datetime(anno, 4, 1)
-# 	settembre = datetime(anno, 9, 1)
-# 	ottobre = datetime(anno - 1, 10, 1)
-
-# 	# PERCORSO DEL DIARIO DELLE LETTURE PER L'ANNO RICHIESTO
-# 	diari_letture = list(impianto.diarioletture_set.all())
-# 	diari_letture = [str(diario) for diario in diari_letture if diario.anno >= anno - 1]
-# 	letture_sheet = '07. Portale'
-
-# 	# PERCORSO FILE DI CASH FLOW
-# 	diario_cashflow = str(impianto.cashflow_set.all()[0])
-# 	cash_sheet = 'Incassi GSE'
-
-# 	try:
-# 		DF1 = load_diariletture(diari_letture, letture_sheet)
-# 		# CALCOLO ENERGIA INCENTIVATA DAL CORRISPETTIVO
-# 		DF1['E_incentivata'] = DF1['aspettata_inc'] / 0.21
-
-# 		DF2 = load_cashflow(diario_cashflow, cash_sheet)
-
-# 		# SELEZIONE ANNO RICHIESTO DATI CASH FLOW
-# 		DF2 = DF2[DF2[('Fatturazione TFO', 'Periodo')].dt.year >= anno - 1]
-# 		DF2.reset_index(drop=True, inplace=True)
-
-# 		# AGGIUNGO DATI DI CASH FLOW AL DATAFRAME PRINCIPALE
-# 		DF1['fatturazione_tfo'] = DF2[('Fatturazione TFO', 'Energia di competenza')]
-# 		DF1['fatturazione_non_inc'] = DF2[('Fatturazione Energia non incentivata', 'Energia di competenza')]
-# 		DF1['incassi'] = DF2[('Riepilogo pagamenti', 'Incasso/pagamento')]
-
-# 		DF1['canone'] = DF1['incassi'] * 0.11
-# 		DF1 = DF1[['mese', 'prodotta_def', 'incassi', 'canone']]
-# 		DF1_before = DF1[(DF1['mese'] < aprile) & (DF1['mese'] >= ottobre)].copy()
-# 		DF1_after = DF1[(DF1['mese'] >= aprile) & (DF1['mese'] <= settembre)].copy()
-# 		DF1_before.reset_index(drop=True, inplace=True)
-# 		DF1_after.reset_index(drop=True, inplace=True)
-
-# 		DF1_before['mese'] = DF1_before['mese'].dt.month_name(locale='it_IT.utf8') + '-' + DF1_before['mese'].dt.year.astype('string')
-# 		DF1_before.loc['total'] = DF1_before.sum(numeric_only=True,)
-# 		DF1_before.fillna({'mese':'Totale Periodo'},inplace=True)
-# 		DF1_before.fillna('',inplace=True)
-
-# 		DF1_after['mese'] = DF1_after['mese'].dt.month_name(locale='it_IT.utf8')  + '-' + DF1_after['mese'].dt.year.astype('string')
-# 		DF1_after.loc['total'] = DF1_after.sum(numeric_only=True,)
-# 		DF1_after.fillna({'mese':'Totale Periodo'},inplace=True)
-# 		DF1_after.fillna('', inplace=True)
-
-# 		dict1 = DF1_before.to_dict('records')
-# 		dict2 = DF1_after.to_dict('records')
-		
-
-# 	except Exception as error:
-# 		print(error)
-# 		dict1 = {}
-# 		dict2 = {}
-
-# 	table_data = {
-# 		'anno': anno,
-# 		'table1': dict1,
-# 		'table2': dict2,
-# 		'info': dz_impianto,
-# 	}
-
-# 	print(table_data)
-# 	return table_data
-
-
-def tabellacorrispettivi_data(anno_nickname):
-	# DA URL ESTRAPOLO ANNO E NICKNAME
-	anno = int(anno_nickname.split('_', 1)[0])
-	nickname = anno_nickname.split('_', 1)[1]
-
-	# print(f"DEBUG: Richiesta per anno={anno}, nickname={nickname}")
-
-	# MASSIMALI EURO E ENERGIE PER LA VISUALIZZAZIONE
-	max_corrispettivi = {'ionico_foresta': 40000, 'san_teodoro': 30000, 'ponte_giurino': 20000, 'petilia_bf_partitore': 20000}
-	max_energie = {'ionico_foresta': 157000, 'san_teodoro': 122000, 'ponte_giurino': 67000, 'petilia_bf_partitore': 37000}
-
-	# ESTRAPOLO DATI IMPIANTO DAL DATABASE
-	impianto = Impianto.objects.all().filter(nickname=nickname).first()
-	
-	if not impianto:
-		print(f"DEBUG: Impianto con nickname '{nickname}' non trovato.")
-		return {
-			'anno': anno,
-			'TableCorrispettivi': {},
-			'info': {},
-			'max_energia': 0,
-			'max_corrispettivi': 0
-		}
-
-	dz_impianto = model_to_dict(impianto)
-	print(f"DEBUG: Impianto trovato: {impianto.nome_impianto}")
-
-	# DEFINIZIONE MESE CORRENTE, PRECEDENTE E ANTECEDENTE
-	Now = datetime.now()
-	curr_mese = datetime(Now.year, Now.month, 1)
-	last_mese = curr_mese - timedelta(days=1)
-	last_mese = last_mese.replace(day=1)
-	last_last_mese = last_mese - timedelta(days=1)
-	last_last_mese = last_last_mese.replace(day=1)
-
-	# PERCORSO FILE DI CASH FLOW
-	cashflow_set = impianto.cashflow_set.all()
-	if not cashflow_set.exists():
-		print(f"DEBUG: Nessun cashflow associato all'impianto '{nickname}'.")
-		return {
-			'anno': anno,
-			'TableCorrispettivi': {},
-			'info': dz_impianto,
-			'max_energia': 0,
-			'max_corrispettivi': 0
-		}
-
-	diario_cashflow = str(cashflow_set[0])
-	cash_sheet = 'Incassi GSE'
-
-	if nickname == 'petilia_bf_partitore':
-		cash_sheet = 'Incassi GSE Partitore'
-
-	print(f"DEBUG: Diario cashflow: {diario_cashflow}, Sheet: {cash_sheet}")
-
-
-	# CODICE DI ELEABORAZIONE DEI DATI NEI DIARI DELLE LETTURE E CASH FLOW
-	try:
-		# OTTIENI DATI DAL MODELLO LetturaContatore INSTEAD DEL FILE EXCEL
-		letture = LetturaContatore.objects.filter(
-			contatore__impianto=impianto,
-			mese__year=anno
-		).order_by('mese')
-		
-		print(f"DEBUG: Query LetturaContatore eseguita. Trovate {letture.count()} letture.")
-		
-		# CREA DATAFRAME PANDAS DAI DATI DEL DATABASE
-		data = []
-		for i, lettura in enumerate(letture):
-			# Calcola energia incentivata usando la formula min(98% prod_campo, 100% imm_campo)
-			prod_campo_98 = lettura.prodotta_campo * 0.98
-			energia_incentivata = min(prod_campo_98, lettura.immessa_campo)
-			
-			# Verifico quale dei due valori è il minimo 
-			if prod_campo_98 <= lettura.immessa_campo:
-				# Se il minimo è prod_campo*0.98, confermiamo che stiamo usando il 98% dell'energia prodotta
-				energia_incentivata = prod_campo_98
-			else:
-				# Se il minimo è imm_campo, usiamo il valore dell'energia immessa
-				energia_incentivata = lettura.immessa_campo
-			
-			print(f"DEBUG: Mese {lettura.mese.strftime('%Y-%m')}: prodotta_campo={lettura.prodotta_campo}, immessa_campo={lettura.immessa_campo}, prod_campo_98={prod_campo_98}, energia_incentivata={energia_incentivata}")
-			
-			data.append({
-				'i': i,
-				'mese': lettura.mese,
-				'prodotta_campo': lettura.prodotta_campo,
-				'immessa_campo': lettura.immessa_campo,
-				'E_incentivata': energia_incentivata,
-				'aspettata_inc': lettura.aspettata_inc,
-				'aspettata_non_inc': lettura.aspettata_non_inc,
-				'aspettata_tot': lettura.aspettata_inc + lettura.aspettata_non_inc
-			})
-		
-		print(f"DEBUG: Lista 'data' creata con {len(data)} elementi.")
-		
-		df1 = pd.DataFrame(data)
-		
-		print(f"DEBUG: DataFrame df1 creato. Dimensioni: {df1.shape}")
-		# print(df1.head()) # Puoi anche stampare le prime righe per vedere i dati
-
-		# SE NON CI SONO DATI, CREA UN DATAFRAME VUOTO
-		if len(df1) == 0:
-			raise Exception("Nessun dato trovato per l'anno selezionato")
-
-		df2 = load_cashflow(diario_cashflow, cash_sheet)
-		print(f"DEBUG: DataFrame df2 (cashflow) creato. Dimensioni: {df2.shape}")
-		# print(df2.head()) # Puoi anche stampare le prime righe
-
-		# SELEZIONE ANNO RICHIESTO DATI CASH FLOW
-		if Now.year == anno:
-			df2 = df2[df2[('Fatturazione TFO', 'Periodo')].dt.year >= anno - 1]
-		else:
-			df2 = df2[df2[('Fatturazione TFO', 'Periodo')].dt.year == anno]
-		df2.reset_index(drop=True, inplace=True)
-		print(f"DEBUG: DataFrame df2 filtrato per anno. Dimensioni: {df2.shape}")
-
-		# AGGIUNGO DATI DI CASH FLOW AL DATAFRAME PRINCIPALE
-		# Assicurati che df1 e df2 abbiano lo stesso numero di righe o che l'allineamento per mese funzioni
-		# Questo passaggio potrebbe fallire se i mesi in df1 e df2 non corrispondono
-		try:
-			df1['fatturazione_tfo'] = df2[('Fatturazione TFO','Energia di competenza')]
-			df1['fatturazione_non_inc'] = df2[('Fatturazione Energia non incentivata', 'Energia di competenza')]
-			df1['incassi'] = df2[('Riepilogo pagamenti', 'Incasso/pagamento')]
-			print("DEBUG: Dati cashflow aggiunti a df1.")
-		except Exception as merge_error:
-			print(f"DEBUG: Errore durante l'aggiunta dati cashflow a df1: {type(merge_error).__name__} – {merge_error}")
-			print("DEBUG: df1 prima dell'unione:")
-			# print(df1[['mese', 'E_incentivata']].head()) # Stampa per debug
-			print("DEBUG: df2 prima dell'unione:")
-			# print(df2[[('Fatturazione TFO', 'Periodo'), ('Fatturazione TFO','Energia di competenza')]].head()) # Stampa per debug
-			# Potresti voler sollevare l'errore o gestire diversamente
-			raise merge_error
-
-		# CODICE DI CONTROLLO STIME-FATTURAZIONE - TABELLA 1
-		# CALCOLO VARIAZIONE TRA STIME E FATTURAZIONE EFFETTIVA, VISUALIZZAZIONE DELLE VARIAZIONI IN EURO (delta_eur) E PERCENTUALE (ratio_eur)
-		df1['comments'] = ''
-		# Assicurati che le colonne esistano prima di usarle
-		if 'fatturazione_tfo' in df1.columns and 'fatturazione_non_inc' in df1.columns and 'aspettata_tot' in df1.columns:
-			df1.loc[df1.fatturazione_tfo != 0, 'delta_eur'] = (df1['aspettata_tot'] - (df1['fatturazione_tfo'] + df1['fatturazione_non_inc']))
-			df1.loc[df1.fatturazione_tfo != 0, 'ratio_eur'] = (df1['aspettata_tot'] - (df1['fatturazione_tfo'] + df1['fatturazione_non_inc'])) / df1['aspettata_tot'] * 100
-			df1['ratio_eur'] = df1['ratio_eur'].replace([-np.inf, np.inf], 100)
-			print("DEBUG: Calcolo delta/ratio eseguito.")
-		else:
-			print("DEBUG: Colonne necessarie per calcolo delta/ratio non trovate in df1.")
-
-
-		# CONTROLLO FINALE SU INSERIMENTO FATTURE DEGLI ULTIMI DUE MESI
-		# Questo controllo si basa sugli indici iloc[0] che potrebbero fallire se il DataFrame è vuoto o ha meno di 2 righe
-		if anno == Now.year and not df1.empty and len(df1) >= 2:
-			try:
-				if df1[last_last_mese == df1['mese']].iloc[0]['fatturazione_tfo'] == 0:
-					index = df1[last_last_mese == df1['mese']].iloc[0]['i']
-					df1.loc[index, 'comments'] = 'fattura'
-					print(f"DEBUG: Commento 'fattura' aggiunto per {last_last_mese.strftime('%Y-%m')}")
-
-				# Questo controllo sembra problematico: df1[last_last_mese<df1['mese']].iloc[0]
-				# Se ci sono più mesi successivi a last_last_mese, .iloc[0] prende solo il primo.
-				# Forse intendevi controllare il mese corrente (curr_mese)?
-				# Se vuoi controllare il mese corrente:
-				# if not df1[curr_mese == df1['mese']].empty and df1[curr_mese == df1['mese']].iloc[0]['fatturazione_tfo'] == 0:
-				# 	index = df1[curr_mese == df1['mese']].iloc[0]['i']
-				# 	df1.loc[index, 'comments'] = 'fattura'
-				# 	print(f"DEBUG: Commento 'fattura' aggiunto per {curr_mese.strftime('%Y-%m')}")
-
-				# Se vuoi controllare l'ultimo mese presente nel DataFrame:
-				if not df1.empty:
-					ultimo_mese_df1 = df1['mese'].max()
-					if ultimo_mese_df1 > last_last_mese and df1[df1['mese'] == ultimo_mese_df1].iloc[0]['fatturazione_tfo'] == 0:
-						index = df1[df1['mese'] == ultimo_mese_df1].iloc[0]['i']
-						df1.loc[index, 'comments'] = 'fattura'
-						print(f"DEBUG: Commento 'fattura' aggiunto per l'ultimo mese nel df ({ultimo_mese_df1.strftime('%Y-%m')})")
-
-
-			except Exception as date_check_error:
-				print(f"DEBUG: Errore durante il controllo date/fatture: {type(date_check_error).__name__} – {date_check_error}")
-				# Continua l'esecuzione anche se questo controllo fallisce
-
-		df1['mese'] = df1['mese'].dt.month_name(locale='it_IT.utf8')
-
-		# df1.replace(0, np.nan, inplace=True)
-		df1 = df1.fillna('')
-
-		# Assicurati che tutte le colonne richieste esistano in df1 prima di convertirlo in dict
-		required_cols = ['i', 'mese', 'E_incentivata', 'aspettata_inc', 'aspettata_non_inc', 'fatturazione_tfo', 'fatturazione_non_inc', 'incassi', 'ratio_eur','delta_eur','comments']
-		missing_cols = [col for col in required_cols if col not in df1.columns]
-		if missing_cols:
-			print(f"DEBUG: Colonne mancanti in df1 prima della conversione in dict: {missing_cols}")
-			# Potresti voler aggiungere le colonne mancanti con valori di default (es. '')
-			for col in missing_cols:
-				df1[col] = '' # Aggiunge la colonna mancante con valori vuoti
-			print(f"DEBUG: Aggiunte colonne mancanti: {missing_cols}")
-
-
-		dict1 = df1[required_cols].to_dict('records')
-		print(f"DEBUG: dict1 creato con {len(dict1)} record.")
-
-
-	except Exception as error:
-		print(f'Errore elaborazione Tabella Corrispettivi', type(error).__name__, "–", error)
-		dict1 = {}
-		# Potresti voler restituire un indicatore di errore anche nel JSON di risposta
-		table_data = {
-			'anno': anno,
-			'TableCorrispettivi': dict1,
-			'info': dz_impianto,
-			'max_energia': max_energie.get(nickname, 0)*1.15,
-			'max_corrispettivi': max_corrispettivi.get(nickname, 0),
-			'error': f'Errore elaborazione dati: {type(error).__name__} – {error}'
-		}
-		print("DEBUG: Restituito dict vuoto a causa di un errore.")
-		return table_data
-
-	table_data = {
-		'anno': anno,
-		'TableCorrispettivi': dict1,
-		'info': dz_impianto,
-		'max_energia': max_energie.get(nickname, 0)*1.15,
-		'max_corrispettivi': max_corrispettivi.get(nickname, 0)
-	}
-	print("DEBUG: Dati finali preparati per la risposta.")
-	# print(table_data) # Puoi stampare l'intero dict finale se non è troppo grande
-	return table_data
-
-
-# 3. VIEW CHE GESTISCE LA VISIONE DEI DATI RELATIVI ALLA TABELLA "MISURE"
-class TableMisure(APIView):
-	renderer_classes = [JSONRenderer]
-	permission_classes = (IsAuthenticated,)
-
-	def get(self, request, anno_nickname, format=None):
-		table_data = tabellamisure_data(anno_nickname)
-		return Response(table_data)
-
-
-# class DatiReportImpianto(APIView):
-# 	renderer_classes = [JSONRenderer]
-# 	permission_classes = (IsAuthenticated,)
-
-# 	def get(self, request, nickname, format=None):
-# 		data = energievolumi_dati(nickname)
-# 		return Response(data)
-
-
-# Aggiungiamo una nuova funzione per ottenere gli anni disponibili per un impianto
-def get_available_years(nickname):
-    from AutomazioneDati.models import regsegnanti
-    from django.db.models import Q
+import re
+from AutomazioneDati.models import regsegnanti
+from django.db.models import Q
+from .models import commento_tabellacorrispettivi
+def filtroimpianto(nickname,anno,mese):
     
-    try:
-        # Recupero di TUTTI i contatori legati all'impianto (tramite relazione o nickname)
-        contatori_qs = Contatore.objects.filter(
-            Q(impianto__nickname=nickname) | Q(impianto_nickname=nickname)
-        )
+    return regsegnanti.objects.filter(
+        anno=anno,
+        mese=mese,
+        contatore__impianto_nickname=nickname
+    )
 
-        if contatori_qs.exists():
-            # Se esistono più contatori, recupero gli anni presenti in regsegnanti per TUTTI
-            anni = list(
-                regsegnanti.objects.filter(contatore__in=contatori_qs)
-                .values_list('anno', flat=True)
-                .distinct()
-                .order_by('anno')
-            )
+def energiakwh(request, nickname, anno, mese):
+
+    energia_kwh = filtroimpianto(nickname,anno,mese).values_list('prod_campo', flat=True)
+
+
+    energia_list = [float(v) if v is not None else None for v in list(energia_kwh)]
+    if not energia_list:
+        energia_list = [None]
+
+    return JsonResponse({
+        'success': True,
+        'data': energia_list,
+        'anno': anno,
+        'mese': mese,
+        'impianto': nickname
+    })
+    
+    
+def datiTFO(request, nickname, anno, mese):
+    # Recupera i dati di produzione e immissione per l'impianto, anno e mese specificati
+    dati_tfo = filtroimpianto(nickname,anno,mese).values_list('prod_campo', 'imm_campo')
+    
+    # Memorizza i valori di produzione e immissione in due variabili separate
+    prod_values = [record[0] for record in dati_tfo if record[0] is not None]
+    imm_values = [record[1] for record in dati_tfo if record[1] is not None]
+    
+    # Moltiplica i valori di produzione per 0,98 (coefficiente di correzione)
+    prod_values_corretti = [float(value) * 0.98 for value in prod_values]
+    
+    # Calcola il minimo tra produzione corretta e immissione per ogni record e moltiplica per 0.21
+    tfo_values = []
+    for i in range(min(len(prod_values_corretti), len(imm_values))):
+        valore_minimo = min(prod_values_corretti[i], imm_values[i])
+        tfo_values.append(float(valore_minimo) * 0.21)
+    if not tfo_values:
+        tfo_values = [None]
+    
+    
+     
+    # Restituisci la risposta in formato JSON
+    return JsonResponse({
+        'success': True,
+        'data': tfo_values,
+        'anno': anno,
+        'mese': mese,
+        'impianto': nickname
+    })
+    
+
+# //questa energia non è moltiplicata per 0,21 che sono soldi 
+    
+def datiNI(request, nickname, anno, mese):
+    # Recupera i queryset per energia prodotta e immissione
+    energia_prodotta = filtroimpianto(nickname,anno,mese).values_list('prod_campo', flat=True)
+    immissione = filtroimpianto(nickname,anno,mese).values_list('imm_campo', flat=True)
+   
+    # Converte i queryset in liste per poter operare sui dati
+    energia_prodotta_list = list(energia_prodotta)
+    immissione_list = list(immissione)
+    
+    
+    energia_non_incentivata = []
+    
+    # Itera attraverso entrambe le liste e sottrae i valori corrispondenti
+    for i in range(len(energia_prodotta_list)):
+        if i < len(immissione_list):
+            # Verifica che entrambi i valori non siano None prima di eseguire l'operazione
+            # Questo risolve l'errore "TypeError: unsupported operand type(s) for -: 'decimal.Decimal' and 'NoneType'"
+            if energia_prodotta_list[i] is not None and immissione_list[i] is not None:
+                # Sottrae immissione da energia prodotta per ogni elemento
+                differenza = energia_prodotta_list[i] - immissione_list[i]
+                energia_non_incentivata.append(differenza)
+            elif energia_prodotta_list[i] is not None and immissione_list[i] is None:
+                # Se l'immissione è None ma l'energia prodotta no, usa solo l'energia prodotta
+                energia_non_incentivata.append(energia_prodotta_list[i])
+            elif energia_prodotta_list[i] is None and immissione_list[i] is not None:
+                # Se l'energia prodotta è None ma l'immissione no, il risultato è negativo dell'immissione
+                energia_non_incentivata.append(-immissione_list[i])
+            else:
+                # Entrambi i valori sono None, aggiungi 0 o salta questo elemento
+                energia_non_incentivata.append(0)
         else:
-            # Fallback: nessun contatore trovato, provo comunque a filtrare i registri
-            anni = list(
-                regsegnanti.objects.filter(contatore__isnull=True)  # forza lista vuota se non troviamo corrispondenze
-                .values_list('anno', flat=True)
-                .distinct()
-                .order_by('anno')
-            )
-
-        if not anni:
-            print(f"Nessun anno trovato per l'impianto {nickname}")
-
-        return anni
-
-    except Exception as e:
-        print(f"Errore nel recupero degli anni disponibili per {nickname}: {str(e)}")
-        # In caso di errore, restituisco lista vuota per evitare crash lato client
-        return []
-
-# Aggiungiamo una nuova API view per esporre questi anni
-class AvailableYears(APIView):
-	renderer_classes = [JSONRenderer]
-	permission_classes = (IsAuthenticated,)
-	
-	def get(self, request, nickname, format=None):
-		years = get_available_years(nickname)
-		return Response({'years': years})
-
-
-def carica_dati_da_excel(impianto_obj, anno, mese):
-    """
-    Carica i dati dai file Excel per un determinato impianto, anno e mese.
-    Restituisce un dizionario con i dati caricati.
-    """
-    import pandas as pd
-    import os
-    from PortaleCorrispettivi.models import Cashflow
-    import traceback
+            # Se non c'è un valore di immissione corrispondente, usa solo l'energia prodotta se non è None
+            if energia_prodotta_list[i] is not None:
+                energia_non_incentivata.append(energia_prodotta_list[i])
+            else:
+                energia_non_incentivata.append(0)
+        
+    # print(f"[DEBUG] Energia non incentivata calcolata: {energia_non_incentivata}")
+    if not energia_non_incentivata:
+        return [None]
+    return energia_non_incentivata
+def datiCNI(request, nickname, anno, mese):
+ 
     
-    # Inizializza il dizionario dei risultati
-    risultati = {
-        'fatturazione_tfo': None,
-        'fatturazione_altro': None,
-        'incassi': None,
-        'debug_info': []  # Array per raccogliere info di debug
+    # Calcoliamo l'energia non incentivata meno l'immissione
+    # Otteniamo l'energia non incentivata come lista
+    ni  = datiNI(request, nickname, anno, mese)
+    
+   
+    
+    # Query corretta per filtrare i dati CNI dalla tabella "Prezzi medi mensili"
+    # usando le colonne timestamp e mean_CNIs per anno e mese specificati
+    with connection.cursor() as cursor: 
+        # print(f"[DEBUG] Esecuzione query CNI per anno {anno} e mese {mese}")
+        cursor.execute("""
+            SELECT strftime('%%Y', timestamp), strftime('%%m', timestamp), mean_puns
+            FROM "Prezzi medi mensili"
+            WHERE strftime('%%Y', timestamp) = %s
+                AND strftime('%%m', timestamp) = %s
+            ORDER BY timestamp
+        """, [str(anno), str(mese).zfill(2)])
+        rows = cursor.fetchall()
+        # print(f"[DEBUG] Query CNI eseguita, trovati {len(rows)} record")
+        
+        # Estraiamo solo i valori mean_CNIs (terza colonna, non seconda) che non sono NULL
+        # e convertiamo esplicitamente in float per evitare errori di tipo
+        data_CNI = []
+        for row in rows:
+            if row[2] is not None:  # row[2] è mean_CNIs (terza colonna)
+                try:
+                    # Converte esplicitamente in float il valore mean_CNIs
+                    CNI_value = float(row[2])
+                    data_CNI.append(CNI_value)
+                except (ValueError, TypeError) as e:
+                    print(f"[DEBUG] Errore conversione valore CNI {row[2]}: {e}")
+                    continue
+        # print(f"[DEBUG] Valori CNI filtrati e convertiti per mese {mese}: {data_CNI}")
+    
+    # Se abbiamo dati CNI, li moltiplichiamo per l'energia non incentivata
+    if data_CNI and ni:
+        # print(f"[DEBUG] Calcolo risultato CNI - data_CNI ha {len(data_CNI)} elementi")
+        # Se data_CNI è una lista di valori, prendiamo la media o il primo valore
+        # In questo caso prendiamo la media dei valori CNI del mese
+        media_CNI = sum(data_CNI) / len(data_CNI) if data_CNI else 0
+        # print(f"[DEBUG] Media CNI calcolata: {media_CNI}")
+        ni_iter = ni if hasattr(ni, '__iter__') else [ni]
+        ni_iter_filtrato = [float(x) for x in ni_iter if x is not None]
+        risultato_CNI = [float(ni_val) * media_CNI for ni_val in ni_iter_filtrato]
+        # print(f"[DEBUG] Risultato CNI prima della divisione per 1000: {risultato_CNI}")
+        # Dividiamo ogni valore del risultato per 1000
+        risultato_CNI = [valore / 1000 for valore in risultato_CNI]
+        # print(f"[DEBUG] Risultato CNI finale dopo divisione per 1000: {risultato_CNI}")
+    else:
+         risultato_CNI = []
+    if not risultato_CNI:
+        risultato_CNI = [None]
+    
+    media_CNI_finale = sum(data_CNI) / len(data_CNI) if data_CNI else 0
+    # print(f"[DEBUG] Preparazione risposta JSON con {len(risultato_CNI)} elementi nel risultato")
+    
+    return JsonResponse({
+        'success': True,
+        'data': risultato_CNI,
+        'anno': anno,
+        'mese': mese,
+        'impianto': nickname,
+        'media_CNI_mensile': media_CNI_finale,
+        'num_record_CNI': len(data_CNI)
+    })
+
+
+
+
+def datiFatturazioneTFO(request, nickname, anno, mese):
+    """
+    Questa funzione restituisce i dati di fatturazione TFO per un impianto specifico,
+    anno e mese. Il nickname viene passato come parametro URL e deve essere convertito
+    per corrispondere alla tabella corretta del database.
+    """
+    
+    # Stampa di debug per i parametri ricevuti
+    # print(f"[DEBUG] datiFatturazioneTFO chiamata con parametri: nickname={nickname}, anno={anno}, mese={mese}")
+    
+    # Mappa di conversione dai nickname ricevuti ai nomi delle tabelle nel database
+    # Il nickname ricevuto può essere diverso dal nome della tabella nel database
+    # IMPORTANTE: I nickname devono corrispondere esattamente a quelli inviati dal JavaScript
+    # Se arriva "ponte_giurino" dal frontend, deve essere mappato qui con lo stesso formato
+    nickname_to_table = {
+        "Partitore": "corrispettivi_energia_BA",
+        "partitore": "corrispettivi_energia_BA",  # Aggiunto in minuscolo per compatibilità
+        
+        "Ionico Foresta": "corrispettivi_energia_I1",
+        "ionico_foresta": "corrispettivi_energia_I1",  # Aggiunto con underscore per compatibilità
+        
+        "San Teodoro": "corrispettivi_energia_PE",
+        "san_teodoro": "corrispettivi_energia_PE",  # Aggiunto con underscore per compatibilità
+        
+        "Ponte Giurino": "corrispettivi_energia_PG",
+        "ponte_giurino": "corrispettivi_energia_PG",  # Aggiunto con underscore per compatibilità - questo risolve l'errore
+        
     }
     
-    try:
-        # Cerca i record di Cashflow per questo impianto
-        cashflow_records = Cashflow.objects.filter(impianto=impianto_obj)
-        debug_msg = f"Trovati {cashflow_records.count()} record Cashflow per l'impianto {impianto_obj.nome_impianto}"
-        print(debug_msg)
-        risultati['debug_info'].append(debug_msg)
+    # print(f"[DEBUG] Nickname supportati: {list(nickname_to_table.keys())}")
+    
+    # Verifica che il nickname sia valido e lo converte alla tabella corrispondente
+    # Ora la ricerca includerà anche le varianti con underscore e minuscole
+    if nickname not in nickname_to_table:
+        # print(f"[DEBUG] ERRORE: Nickname {nickname} non trovato nella mappa di conversione")
+        return JsonResponse({
+            'success': False,
+            'error': f'Nickname {nickname} non valido. Valori accettati: {list(nickname_to_table.keys())}'
+        })
+    
+    # Ottieni il nome della tabella corrispondente al nickname convertito
+    table_name = nickname_to_table[nickname]
+    # print(f"[DEBUG] Nickname '{nickname}' convertito alla tabella: {table_name}")
+    
+    # Esegui la query per la tabella specifica
+    with connection.cursor() as cursor:
+        query = f"""
+            SELECT 
+                CAST(strftime('%%Y', "Data di competenza") AS INTEGER) AS anno,
+                CAST(strftime('%%m', "Data di competenza") AS INTEGER) AS mese,
+                SUM("Omnicomprensiva") AS valore
+            FROM "{table_name}"
+            WHERE CAST(strftime('%%Y', "Data di competenza") AS INTEGER) = %s 
+                AND CAST(strftime('%%m', "Data di competenza") AS INTEGER) = %s
+            GROUP BY anno, mese
+            ORDER BY anno, mese;
+        """
+        # print(f"[DEBUG] Esecuzione query SQL: {query}")
+        # print(f"[DEBUG] Parametri query: anno={anno}, mese={mese}")
         
-        if not cashflow_records.exists():
-            debug_msg = f"Nessun file Cashflow trovato per l'impianto {impianto_obj.nome_impianto}"
-            print(debug_msg)
-            risultati['debug_info'].append(debug_msg)
-            return risultati
-            
-        for cashflow in cashflow_records:
-            # Costruisci il percorso completo del file
-            percorso_completo = os.path.join(cashflow.unit, cashflow.percorso)
-            debug_msg = f"Percorso file completo: {percorso_completo}"
-            print(debug_msg)
-            risultati['debug_info'].append(debug_msg)
-            
-            # Verifica se il file esiste
-            if not os.path.exists(percorso_completo):
-                debug_msg = f"File non trovato: {percorso_completo}"
-                print(debug_msg)
-                risultati['debug_info'].append(debug_msg)
-                continue
-                
-            try:
-                # Leggi il file Excel
-                debug_msg = f"Tentativo di lettura del file: {percorso_completo}"
-                print(debug_msg)
-                risultati['debug_info'].append(debug_msg)
-                
-                # Carica il file Excel con pandas
-                xls = pd.ExcelFile(percorso_completo)
-                
-                # Debug: mostra tutti i fogli disponibili
-                debug_msg = f"Fogli disponibili nel file: {', '.join(xls.sheet_names)}"
-                print(debug_msg)
-                risultati['debug_info'].append(debug_msg)
-                
-                # Identifica il formato del file e cerca i dati richiesti
-                # Prima verifica se è il formato con due livelli di intestazione
-                try:
-                    # Tenta di leggere con il formato Cashflow standard (header multilivello)
-                    debug_msg = "Tentativo lettura con formato cashflow standard (header multilivello)"
-                    print(debug_msg)
-                    risultati['debug_info'].append(debug_msg)
-                    
-                    # Leggi il foglio principale che potrebbe contenere tutti i dati
-                    sheet_name = 'Incassi GSE' if 'Incassi GSE' in xls.sheet_names else xls.sheet_names[0]
-                    df = pd.read_excel(xls, sheet_name, index_col=None, header=[2, 3], na_values=[pd.NA])
-                    df = df.dropna(axis=1, how='all')
-                    
-                    # Mostra le colonne trovate
-                    debug_msg = f"Colonne trovate nel foglio {sheet_name} (multilivello): {list(df.columns.values)}"
-                    print(debug_msg)
-                    risultati['debug_info'].append(debug_msg)
-                    
-                    # Cerca le colonne 'Fatturazione TFO', 'Fatturazione Energia non incentivata', 'Riepilogo pagamenti'
-                    headers = ['Fatturazione TFO', 'Fatturazione Energia non incentivata', 'Riepilogo pagamenti']
-                    
-                    # Lista di liste booleane che indicano la posizione delle colonne date in headers
-                    ll = [list(df.columns.get_level_values(0).str.contains(z)) for z in headers]
-                    
-                    # Lista booleana che indica la posizione di tutte le colonne date in headers
-                    ll = list(map(any, zip(*ll)))
-                    
-                    # Filtra le colonne pertinenti
-                    df_filtered = df.loc[:, ll]
-                    
-                    # Converti le date in formato datetime
-                    for s in headers:
-                        if (s, 'Periodo') in df_filtered.columns:
-                            df_filtered[(s, 'Periodo')] = pd.to_datetime(df_filtered[(s, 'Periodo')], errors='coerce')
-                    
-                    # Ora filtra per l'anno e il mese specifici
-                    # Assumiamo che la data sia nella colonna 'Periodo' di ogni header
-                    for s in headers:
-                        if (s, 'Periodo') in df_filtered.columns:
-                            mask = (df_filtered[(s, 'Periodo')].dt.year == anno) & (df_filtered[(s, 'Periodo')].dt.month == mese)
-                            df_periodo = df_filtered.loc[mask]
-                            
-                            debug_msg = f"Dati trovati per {s}, {anno}/{mese}: {len(df_periodo)} righe"
-                            print(debug_msg)
-                            risultati['debug_info'].append(debug_msg)
-                            
-                            # Estrai i dati specifici a seconda dell'intestazione
-                            if s == 'Fatturazione TFO' and (s, 'Energia di competenza') in df_periodo.columns:
-                                risultati['fatturazione_tfo'] = float(df_periodo[(s, 'Energia di competenza')].sum())
-                                debug_msg = f"Fatturazione TFO: {risultati['fatturazione_tfo']}"
-                                print(debug_msg)
-                                risultati['debug_info'].append(debug_msg)
-                                
-                            elif s == 'Fatturazione Energia non incentivata' and (s, 'Energia di competenza') in df_periodo.columns:
-                                risultati['fatturazione_altro'] = float(df_periodo[(s, 'Energia di competenza')].sum())
-                                debug_msg = f"Fatturazione altro: {risultati['fatturazione_altro']}"
-                                print(debug_msg)
-                                risultati['debug_info'].append(debug_msg)
-                                
-                            elif s == 'Riepilogo pagamenti' and (s, 'Incasso/pagamento') in df_periodo.columns:
-                                risultati['incassi'] = float(df_periodo[(s, 'Incasso/pagamento')].sum())
-                                debug_msg = f"Incassi: {risultati['incassi']}"
-                                print(debug_msg)
-                                risultati['debug_info'].append(debug_msg)
-                
-                except Exception as e:
-                    debug_msg = f"Errore nel formato multilivello: {str(e)}"
-                    print(debug_msg)
-                    risultati['debug_info'].append(debug_msg)
-                    traceback.print_exc()
-                    
-                    # Prova formato alternativo con fogli separati
-                    debug_msg = "Tentativo lettura con formato alternativo (fogli separati)"
-                    print(debug_msg)
-                    risultati['debug_info'].append(debug_msg)
-                    
-                    if 'Fatturazione' in xls.sheet_names:
-                        try:
-                            # Estrai i dati di fatturazione
-                            df_fatturazione = pd.read_excel(xls, 'Fatturazione')
-                            
-                            # Debug: mostra le colonne disponibili
-                            debug_msg = f"Colonne nel foglio Fatturazione: {list(df_fatturazione.columns)}"
-                            print(debug_msg)
-                            risultati['debug_info'].append(debug_msg)
-                            
-                            # Cerca dati per l'anno e mese specifici
-                            if 'Anno' in df_fatturazione.columns and 'Mese' in df_fatturazione.columns:
-                                maschera = (df_fatturazione['Anno'] == anno) & (df_fatturazione['Mese'] == mese)
-                                dati_periodo = df_fatturazione[maschera]
-                                
-                                debug_msg = f"Dati trovati in Fatturazione per {anno}/{mese}: {len(dati_periodo)} righe"
-                                print(debug_msg)
-                                risultati['debug_info'].append(debug_msg)
-                                
-                                if not dati_periodo.empty:
-                                    # Assumiamo che ci siano colonne per TFO e Non Incentivata
-                                    if 'Fatturazione TFO' in dati_periodo.columns:
-                                        risultati['fatturazione_tfo'] = float(dati_periodo['Fatturazione TFO'].sum())
-                                        debug_msg = f"Fatturazione TFO: {risultati['fatturazione_tfo']}"
-                                        print(debug_msg)
-                                        risultati['debug_info'].append(debug_msg)
-                                        
-                                    if 'Fatturazione Non Incentivata' in dati_periodo.columns:
-                                        risultati['fatturazione_altro'] = float(dati_periodo['Fatturazione Non Incentivata'].sum())
-                                        debug_msg = f"Fatturazione altro: {risultati['fatturazione_altro']}"
-                                        print(debug_msg)
-                                        risultati['debug_info'].append(debug_msg)
-                        except Exception as e_fatt:
-                            debug_msg = f"Errore nella lettura del foglio Fatturazione: {str(e_fatt)}"
-                            print(debug_msg)
-                            risultati['debug_info'].append(debug_msg)
-                            traceback.print_exc()
-                    
-                    if 'Incassi' in xls.sheet_names:
-                        try:
-                            # Estrai i dati degli incassi
-                            df_incassi = pd.read_excel(xls, 'Incassi')
-                            
-                            # Debug: mostra le colonne disponibili
-                            debug_msg = f"Colonne nel foglio Incassi: {list(df_incassi.columns)}"
-                            print(debug_msg)
-                            risultati['debug_info'].append(debug_msg)
-                            
-                            # Cerca dati per l'anno e mese specifici
-                            if 'Anno' in df_incassi.columns and 'Mese' in df_incassi.columns:
-                                maschera = (df_incassi['Anno'] == anno) & (df_incassi['Mese'] == mese)
-                                dati_incassi = df_incassi[maschera]
-                                
-                                debug_msg = f"Dati trovati in Incassi per {anno}/{mese}: {len(dati_incassi)} righe"
-                                print(debug_msg)
-                                risultati['debug_info'].append(debug_msg)
-                                
-                                if not dati_incassi.empty and 'Importo' in dati_incassi.columns:
-                                    risultati['incassi'] = float(dati_incassi['Importo'].sum())
-                                    debug_msg = f"Incassi: {risultati['incassi']}"
-                                    print(debug_msg)
-                                    risultati['debug_info'].append(debug_msg)
-                        except Exception as e_inc:
-                            debug_msg = f"Errore nella lettura del foglio Incassi: {str(e_inc)}"
-                            print(debug_msg)
-                            risultati['debug_info'].append(debug_msg)
-                            traceback.print_exc()
-                
-            except Exception as e:
-                debug_msg = f"Errore nella lettura del file Excel {percorso_completo}: {str(e)}"
-                print(debug_msg)
-                risultati['debug_info'].append(debug_msg)
-                traceback.print_exc()
-                continue
-                
-        return risultati
+        cursor.execute(query, [anno, mese])
+        rows = cursor.fetchall()
         
-    except Exception as e:
-        debug_msg = f"Errore generale nel caricamento dei dati Excel: {str(e)}"
-        print(debug_msg)
-        risultati['debug_info'].append(debug_msg)
-        traceback.print_exc()
-        return risultati
+        # print(f"[DEBUG] Query eseguita, trovati {len(rows)} record")
+        if rows:
+            pass
+
+    # Estrai solo i valori numerici per la risposta data (direttamente da rows)
+    data_values = [float(r[2]) if r[2] is not None else None for r in rows]
+    if not data_values:
+        data_values = [None]
+    # print(f"[DEBUG] Lista valori finali da restituire: {data_values}")
+    
+    return JsonResponse({
+        'success': True,
+        'data': data_values,  # Modificato per restituire solo i valori come le altre funzioni
+        'anno': anno,
+        'mese': mese,
+        'impianto': nickname
+    })
+    
+    
+
+def datiEnergiaNonIncentivata(request, nickname, anno, mese):
+   
+    # Stampa di debug per i parametri ricevuti
+    # print(f"[DEBUG] datiEnergiaNonIncentivata chiamata con parametri: nickname={nickname}, anno={anno}, mese={mese}")
+    
+   
+    nickname_to_table = {
+        "Partitore":    "corrispettivi_energia_BA",
+        "partitore": "corrispettivi_energia_BA",  # Aggiunto in minuscolo per compatibilità
+        
+        "Ionico Foresta": "corrispettivi_energia_I1",
+        "ionico_foresta": "corrispettivi_energia_I1",  # Aggiunto con underscore per compatibilità
+        
+        "San Teodoro": "corrispettivi_energia_PE",
+        "san_teodoro": "corrispettivi_energia_PE",  # Aggiunto con underscore per compatibilità
+        
+        "Ponte Giurino": "corrispettivi_energia_PG",
+        "ponte_giurino": "corrispettivi_energia_PG",  # Aggiunto con underscore per compatibilità - questo risolve l'errore
+        
+    }
+    
+    # print(f"[DEBUG] Nickname supportati: {list(nickname_to_table.keys())}")
+    
+    # Verifica che il nickname sia valido e lo converte alla tabella corrispondente
+    # Ora la ricerca includerà anche le varianti con underscore e minuscole
+    if nickname not in nickname_to_table:
+        # print(f"[DEBUG] ERRORE: Nickname {nickname} non trovato nella mappa di conversione")
+        return JsonResponse({
+            'success': False,
+            'error': f'Nickname {nickname} non valido. Valori accettati: {list(nickname_to_table.keys())}'
+        })
+    
+    # Ottieni il nome della tabella corrispondente al nickname convertito
+    table_name = nickname_to_table[nickname]
+    # print(f"[DEBUG] Nickname '{nickname}' convertito alla tabella: {table_name}")
+    
+    result = {}
+    # Esegui la query per la tabella specifica
+    with connection.cursor() as cursor:
+        query = f"""
+            SELECT 
+                CAST(strftime('%%Y', "Data di competenza") AS INTEGER) AS anno,
+                CAST(strftime('%%m', "Data di competenza") AS INTEGER) AS mese,
+                SUM("Non incentivata") AS valore
+            FROM "{table_name}"
+            WHERE CAST(strftime('%%Y', "Data di competenza") AS INTEGER) = %s 
+                AND CAST(strftime('%%m', "Data di competenza") AS INTEGER) = %s
+            GROUP BY anno, mese
+            ORDER BY anno, mese;
+        """
+        # print(f"[DEBUG] Esecuzione query SQL: {query}")
+        # print(f"[DEBUG] Parametri query: anno={anno}, mese={mese}")
+        
+        cursor.execute(query, [anno, mese])
+        rows = cursor.fetchall()
+        
+        # print(f"[DEBUG] Query eseguita, trovati {len(rows)} record")
+        if rows:
+            pass
+
+    # Estrai solo i valori numerici per la risposta data (direttamente da rows)
+    data_values = [float(r[2]) if r[2] is not None else None for r in rows]
+    if not data_values:
+        data_values = [None]
+    # print(f"[DEBUG] Lista valori finali da restituire: {data_values}")
+    
+    return JsonResponse({
+        'success': True,
+        'data': data_values,  # Modificato per restituire solo i valori come le altre funzioni
+        'anno': anno,
+        'mese': mese,
+        'impianto': nickname
+    })
+    
+    
+    
+    
+    
+
+def datiRiepilogoPagamenti(request, nickname, anno, mese):
+	"""
+	Apre il file Excel associato allo specifico impianto e restituisce i valori
+	del foglio 2 (indice 1) dalle colonne W (data) e X (valore), filtrati per
+	anno e mese richiesti. Per i file che terminano con "Ionico Energy Uno TF.xlsx"
+	utilizza le colonne Z (data) e AA (valore). Ritorna una lista di valori numerici.
+	
+	IMPORTANTE: I valori nelle tabelle Excel sono considerati due mesi avanti rispetto 
+	all'effettivo, quindi per visualizzare i dati del mese richiesto, cerchiamo i dati 
+	che sono registrati due mesi dopo nella tabella Excel.
+	"""
+	# print(f"[DEBUG] datiRiepilogoPagamenti - Richiesta per nickname: {nickname}, anno: {anno}, mese: {mese}")
+	
+	# Calcola il mese e anno da cercare nella tabella Excel (due mesi avanti)
+	# Se il mese richiesto è 11 (novembre), cerco gennaio dell'anno successivo
+	# Se il mese richiesto è 12 (dicembre), cerco febbraio dell'anno successivo
+	mese_excel = mese + 2
+	anno_excel = anno
+	
+	if mese_excel > 12:
+		# Se superiamo dicembre, passiamo all'anno successivo
+		mese_excel = mese_excel - 12
+		anno_excel = anno + 1
+	
+	# print(f"[DEBUG] Mese richiesto: {mese}/{anno}, cercherò nella tabella Excel: {mese_excel}/{anno_excel}")
+	
+	# Cerca i file cashflow collegati all'impianto tramite nickname (case-insensitive)
+	cashflow_qs = Cashflow.objects.filter(impianto__nickname__iexact=nickname)
+	# print(f"[DEBUG] Trovati {cashflow_qs.count()} file cashflow per l'impianto '{nickname}'")
+	
+	if not cashflow_qs.exists():
+		# print(f"[ERROR] Nessun file cashflow configurato per l'impianto '{nickname}'")
+		return JsonResponse({
+			'success': False,
+			'error': f"Nessun file cashflow configurato per l'impianto '{nickname}'"
+		})
+
+	valori = []
+	for i, cf in enumerate(cashflow_qs):
+		# print(f"[DEBUG] Elaborazione file {i+1}/{cashflow_qs.count()}: {cf.percorso}")
+		
+		# Costruisce il percorso completo: se 'percorso' è relativo, premette l'unit
+		percorso_completo = cf.percorso if os.path.isabs(cf.percorso) else os.path.join(cf.unit, cf.percorso)
+		# print(f"[DEBUG] Percorso completo file: {percorso_completo}")
+		
+		if not os.path.exists(percorso_completo):
+			# print(f"[WARNING] File non trovato: {percorso_completo}")
+			continue
+			
+		try:
+			# print(f"[DEBUG] Tentativo di lettura del file Excel...")
+			
+			# Determina le colonne da usare in base al nome del file
+			# Per file che finiscono con "Ionico Energy Uno TF.xlsx": colonne Z e AA (indici 25 e 26)
+			# Per tutti gli altri file: colonne W e X (indici 22 e 23)
+			if percorso_completo.endswith("Ionico Energy Uno TF.xlsx"):
+				colonne_da_leggere = [25, 26]  # Colonne Z e AA (0-based: Z=25, AA=26)
+				# print(f"[DEBUG] File 'Ionico Energy Uno TF.xlsx' rilevato, utilizzo colonne Z e AA")
+			else:
+				colonne_da_leggere = [22, 23]  # Colonne W e X (0-based: W=22, X=23)
+				# print(f"[DEBUG] File standard, utilizzo colonne W e X")
+			
+			# Foglio 2 -> indice 1
+			df = pd.read_excel(percorso_completo, sheet_name=1, usecols=colonne_da_leggere)
+			df.columns = ['data', 'valore']
+			# print(f"[DEBUG] Letto DataFrame con {len(df)} righe dal foglio 2")
+			
+			df = df.dropna(subset=['data', 'valore'])
+			# print(f"[DEBUG] Dopo rimozione righe vuote: {len(df)} righe")
+			
+			df['data'] = pd.to_datetime(df['data'], errors='coerce')
+			df = df.dropna(subset=['data'])
+			# print(f"[DEBUG] Dopo conversione date valide: {len(df)} righe")
+			
+			# Filtra per anno e mese calcolati (due mesi avanti rispetto alla richiesta)
+			df = df[(df['data'].dt.year == int(anno_excel)) & (df['data'].dt.month == int(mese_excel))]
+			# print(f"[DEBUG] Dopo filtro per anno {anno_excel} e mese {mese_excel}: {len(df)} righe")
+			
+			df['valore'] = pd.to_numeric(df['valore'], errors='coerce')
+			df = df.dropna(subset=['valore'])
+			# print(f"[DEBUG] Dopo conversione valori numerici: {len(df)} righe")
+			
+			valori_file = [float(v) for v in df['valore'].tolist()]
+			# print(f"[DEBUG] Valori estratti dal file: {valori_file}")
+			valori.extend(valori_file)
+			
+		except Exception as e:
+			# print(f"[ERROR] Errore durante la lettura del file {percorso_completo}: {str(e)}")
+			# Se un file non è leggibile, passa al successivo
+			continue
+	
+	# print(f"[DEBUG] Totale valori raccolti da tutti i file: {len(valori)} - {valori}")
+	
+	if not valori:
+		valori = [None]
+	return JsonResponse({
+		'success': True,
+		'data': valori,
+		'anno': anno,  # Restituiamo l'anno originariamente richiesto
+		'mese': mese,  # Restituiamo il mese originariamente richiesto
+		'impianto': nickname,
+		'anno_excel_consultato': anno_excel,  # Info aggiuntiva per debug
+		'mese_excel_consultato': mese_excel   # Info aggiuntiva per debug
+	})
+
+def percentualedicontrollo(request, nickname, anno, mese):
+    # print(f"[DEBUG] Inizio calcolo percentuale di controllo per impianto: {nickname}, anno: {anno}, mese: {mese}")
+   
+    # # Il totale corrispettivi è dato dalla somma dei dati TFO e dei dati CNI
+    # # Otteniamo i dati TFO (corrispettivi incentivo)
+    # print(f"[DEBUG] Recupero dati TFO...")
+    response_tfo = datiTFO(request, nickname, anno, mese)
+    tfo_data = response_tfo.content.decode('utf-8')
+    tfo_json = json.loads(tfo_data)
+    valori_tfo = tfo_json.get('data', [])
+    # print(f"[DEBUG] Dati TFO ottenuti: {valori_tfo}")
+    
+    # # Otteniamo i dati CNI
+    # print(f"[DEBUG] Recupero dati CNI...")
+    response_CNI = datiCNI(request, nickname, anno, mese)
+    CNI_data = response_CNI.content.decode('utf-8')
+    CNI_json = json.loads(CNI_data)
+    valori_CNI = CNI_json.get('data', [])
+    # print(f"[DEBUG] Dati CNI ottenuti: {valori_CNI}")
+    
+    # Calcoliamo la somma totale dei corrispettivi
+    somma_tfo = sum(valori_tfo) if valori_tfo else 0
+    somma_CNI = sum(valori_CNI) if valori_CNI else 0
+    totalecorrispettivi = somma_tfo + somma_CNI
+    # print(f"[DEBUG] Somma TFO: {somma_tfo}")
+    # print(f"[DEBUG] Somma CNI: {somma_CNI}")
+    # print(f"[DEBUG] Totale corrispettivi: {totalecorrispettivi}")
+    
+    
+    
+    # Otteniamo i dati di riepilogo pagamenti
+    # print(f"[DEBUG] Recupero dati riepilogo pagamenti...")
+    response_pagamenti = datiRiepilogoPagamenti(request, nickname, anno, mese)
+    pagamenti_data = response_pagamenti.content.decode('utf-8')
+    pagamenti_json = json.loads(pagamenti_data)
+    valori_pagamenti = pagamenti_json.get('data', [])
+    # print(f"[DEBUG] Dati pagamenti ottenuti: {valori_pagamenti}")
+    
+    # Calcoliamo la somma dei pagamenti
+    somma_pagamenti = sum(valori_pagamenti) if valori_pagamenti else 0
+    # print(f"[DEBUG] Somma pagamenti: {somma_pagamenti}")
+    
+    # Calcoliamo la percentuale: (datiRiepilogoPagamenti - totalecorrispettivi) / totalecorrispettivi * 100
+    # Per evitare divisione per zero, verifichiamo che totalecorrispettivi sia diverso da 0
+    if (not valori_tfo and not valori_CNI and not valori_pagamenti):
+        percentuale = None
+    elif totalecorrispettivi != 0:
+        percentuale = (somma_pagamenti - totalecorrispettivi)
+    else:
+        percentuale = None
+    
+    # print(f"[DEBUG] Percentuale finale calcolata: {percentuale}")
+    
+    return JsonResponse({
+        'success': True,
+        'data': percentuale,
+        'anno': anno,
+        'mese': mese,
+        'impianto': nickname
+    })
 
 
 @csrf_exempt
-def dati_mensili_tabella_api(request):
-    """API per gestire i dati mensili della tabella"""
-    
-    print(f"API chiamata: {request.method}, params: {request.GET if request.method == 'GET' else request.POST}")
-    
-    # GET: Ottieni i dati mensili
-    if request.method == 'GET':
-        nickname = request.GET.get('impianto')
-        anno_richiesto = request.GET.get('anno')
-        
-        print(f"Parametri ricevuti: impianto={nickname}, anno={anno_richiesto}")
-        
-        if not nickname or not anno_richiesto:
-            return JsonResponse({'success': False, 'error': 'Parametri mancanti'})
-        
-        try:
-            # Assicuriamoci di ottenere l'oggetto Impianto corretto
-            impianto_obj = Impianto.objects.filter(nickname=nickname).first()
-            if not impianto_obj:
-                print(f"Impianto non trovato: {nickname}")
-                return JsonResponse({'success': False, 'error': 'Impianto non trovato'})
-                
-            print(f"Impianto trovato: {impianto_obj.nome_impianto}, ID: {impianto_obj.id}")
-
-            # Recupera le credenziali FTP direttamente dal modulo APIgme
-            # Non c'è bisogno di cercare nelle impostazioni di Django
-            
-            # Recupero di TUTTI i contatori collegati all'impianto (potrebbero esserne presenti più di uno)
-            contatori_qs = Contatore.objects.filter(
-                models.Q(impianto=impianto_obj.id) |
-                models.Q(impianto_nickname=impianto_obj.nickname)
-            )
-
-            data_response = []  # Lista finale che verrà restituita
-
-            if not contatori_qs.exists():
-                print(f"Nessun contatore trovato per l'impianto {impianto_obj.nome_impianto}")
-                
-                # Cerca direttamente letture per questo impianto usando regsegnanti
-                try:
-                    # Usa direttamente regsegnanti come fallback
-                    dati_reg = regsegnanti.objects.filter(anno=int(anno_richiesto))
-
-                    # Se in passato esisteva il campo impianto_nickname, filtra anche per quello
-                    if hasattr(regsegnanti, 'impianto_nickname'):
-                        dati_reg = dati_reg.filter(impianto_nickname=impianto_obj.nickname)
-                    
-                    print(f"Dati trovati (fallback regsegnanti): {dati_reg.count()} record")
-                    
-                    # Aggregazione per mese del fallback
-                    monthly_tmp = {}
-                    for dato in dati_reg:
-                        mese_key = dato.mese
-
-                        # Calcola energia incentivata per la riga attuale
-                        if dato.prod_campo is not None:
-                            prod_campo_float = float(dato.prod_campo)
-                            prod_campo_98 = prod_campo_float * 0.98
-                            imm_campo_float = float(dato.imm_campo) if dato.imm_campo else 0
-                            energia_incentivata = min(prod_campo_98, imm_campo_float) if imm_campo_float else prod_campo_98
-                        else:
-                            prod_campo_float = 0
-                            imm_campo_float = 0
-                            energia_incentivata = 0
-
-                        if mese_key not in monthly_tmp:
-                            monthly_tmp[mese_key] = {
-                                'energia_kwh': 0,
-                                'prod_campo_originale': 0,
-                                'imm_campo': 0
-                            }
-
-                        monthly_tmp[mese_key]['energia_kwh'] += energia_incentivata
-                        monthly_tmp[mese_key]['prod_campo_originale'] += prod_campo_float
-                        monthly_tmp[mese_key]['imm_campo'] += imm_campo_float
-                    
-                    # Una volta aggregato, crea le righe di risposta definitive
-                    for mese, valori in monthly_tmp.items():
-                        media_pun_mensile = scarica_dati_pun_mensili(
-                            int(anno_richiesto),
-                            mese,
-                            GME_FTP_USERNAME,
-                            GME_FTP_PASSWORD,
-                            stampare_media_dettaglio=False,
-                        )
-
-                        dati_excel = carica_dati_da_excel(impianto_obj, int(anno_richiesto), mese)
-
-                        data_response.append({
-                            'mese': mese,
-                            'energia_kwh': valori['energia_kwh'],
-                            'corrispettivo_incentivo': None,
-                            'corrispettivo_altro': None,
-                            'fatturazione_tfo': dati_excel['fatturazione_tfo'],
-                            'fatturazione_altro': dati_excel['fatturazione_altro'],
-                            'incassi': dati_excel['incassi'],
-                            'controllo_scarto': None,
-                            'controllo_percentuale': None,
-                            'media_pun_mensile': media_pun_mensile,
-                            'prod_campo_originale': valori['prod_campo_originale'],
-                            'imm_campo': valori['imm_campo'],
-                            'debug_info': dati_excel.get('debug_info', []),
-                        })
-                    
-                    return JsonResponse({'success': True, 'data': data_response})
-                    
-                except Exception as inner_e:
-                    print(f"Errore nel tentativo di usare regsegnanti (fallback): {str(inner_e)}")
-                
-                return JsonResponse({'success': True, 'data': []}) # Risposta vuota se fallback fallisce
-            
-            # --- SE SONO PRESENTI UNO O PIÙ CONTATORI ---
-
-            dati_reg = regsegnanti.objects.filter(contatore__in=contatori_qs, anno=int(anno_richiesto))
-
-            print(f"Dati trovati (regsegnanti con contatore): {dati_reg.count()} record distribuiti su {contatori_qs.count()} contatori")
-
-            # Aggrego i dati per mese, sommando l'energia (e altri valori se necessario)
-            monthly_data = {}
-
-            for dato in dati_reg:
-                # Scarica direttamente i dati PUN dal server FTP
-                mese_key = dato.mese
-
-                # Calcolo dell'energia incentivata per la singola riga
-                if dato.prod_campo is not None:
-                    prod_campo_float = float(dato.prod_campo)
-                    prod_campo_98 = prod_campo_float * 0.98
-                    imm_campo_float = float(dato.imm_campo) if dato.imm_campo else 0
-                    energia_incentivata = min(prod_campo_98, imm_campo_float) if imm_campo_float else prod_campo_98
-                else:
-                    prod_campo_float = 0
-                    imm_campo_float = 0
-                    energia_incentivata = 0
-
-                if mese_key not in monthly_data:
-                    monthly_data[mese_key] = {
-                        'energia_kwh': 0,
-                        'prod_campo_originale': 0,
-                        'imm_campo': 0,
-                    }
-
-                monthly_data[mese_key]['energia_kwh'] += energia_incentivata
-                monthly_data[mese_key]['prod_campo_originale'] += prod_campo_float
-                monthly_data[mese_key]['imm_campo'] += imm_campo_float
-
-            # Dopo il ciclo, costruisco la risposta finale per ciascun mese
-            for mese, valori in monthly_data.items():
-                media_pun_mensile = scarica_dati_pun_mensili(
-                    int(anno_richiesto),
-                    mese,
-                    GME_FTP_USERNAME,
-                    GME_FTP_PASSWORD,
-                    stampare_media_dettaglio=False,
-                )
-
-                dati_excel = carica_dati_da_excel(impianto_obj, int(anno_richiesto), mese)
-
-                data_response.append({
-                    'mese': mese,
-                    'energia_kwh': valori['energia_kwh'],
-                    'corrispettivo_incentivo': None,
-                    'corrispettivo_altro': None,
-                    'fatturazione_tfo': dati_excel['fatturazione_tfo'],
-                    'fatturazione_altro': dati_excel['fatturazione_altro'],
-                    'incassi': dati_excel['incassi'],
-                    'controllo_scarto': None,
-                    'controllo_percentuale': None,
-                    'media_pun_mensile': media_pun_mensile,
-                    'prod_campo_originale': valori['prod_campo_originale'],
-                    'imm_campo': valori['imm_campo'],
-                    'debug_info': dati_excel.get('debug_info', []),
-                })
- 
-            return JsonResponse({'success': True, 'data': data_response})
-            
-        except Exception as e:
-            print(f"Errore: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            return JsonResponse({'success': False, 'error': str(e)})
-    
-    # POST: Salva o aggiorna i dati mensili
-    elif request.method == 'POST':
-        nickname = request.POST.get('impianto')
-        anno = request.POST.get('anno')
-        dati_json = request.POST.get('dati')
-        
-        print(f"POST Parametri ricevuti: impianto={nickname}, anno={anno}")
-        print(f"Dati JSON ricevuti: {dati_json[:100]}...")
-        
-        if not nickname or not anno or not dati_json:
-            print("Errore: parametri mancanti")
-            return JsonResponse({'success': False, 'error': 'Parametri mancanti'})
-        
-        try:
-            # Assicuriamoci di ottenere l'oggetto Impianto corretto
-            impianto_obj = Impianto.objects.filter(nickname=nickname).first()
-            if not impianto_obj:
-                print(f"Impianto non trovato: {nickname}")
-                return JsonResponse({'success': False, 'error': 'Impianto non trovato'})
-                
-            print(f"Impianto trovato: {impianto_obj.nome_impianto}, ID: {impianto_obj.id}")
-            
-            # Cerca contatore sia per impianto che per nickname
-            contatore_obj = Contatore.objects.filter(
-                models.Q(impianto=impianto_obj.id) | 
-                models.Q(impianto_nickname=impianto_obj.nickname)
-            ).first()
-            
-            if not contatore_obj:
-                print(f"Nessun contatore trovato per l'impianto {impianto_obj.nome_impianto}")
-                # Crea un nuovo contatore per questo impianto
-                contatore_obj = Contatore.objects.create(
-                    impianto=impianto_obj,
-                    impianto_nickname=impianto_obj.nickname,
-                    nome=f"Contatore {impianto_obj.nome_impianto}",
-                    pod="AUTO-GENERATO",
-                    tipologia="Produzione",
-                    k=1,
-                    marca="Kaifa",
-                    modello="AUTO-GENERATO",
-                    data_installazione=models.functions.Now()
-                )
-                print(f"Creato nuovo contatore: ID {contatore_obj.id}")
-            else:
-                print(f"Contatore trovato: ID {contatore_obj.id}")
-            
-            dati = json.loads(dati_json)
-            print(f"Dati JSON decodificati: {len(dati)} record")
-            
-            for dato in dati:
-                mese = dato.get('mese')
-                print(f"Elaborazione mese {mese}")
-                
-                # Salva i dati in regsegnanti invece che in DatiMensiliTabella
-                obj, created = regsegnanti.objects.update_or_create(
-                    contatore=contatore_obj,
-                    anno=int(anno),
-                    mese=mese,
-                    defaults={
-                        'prod_campo': dato.get('energia_kwh'),
-                        # Gli altri campi di regsegnanti (prod_ed, prod_gse, etc.) sono impostati a None
-                    }
-                )
-                print(f"Record {'creato' if created else 'aggiornato'} per il mese {mese}")
-            
-            print("Salvataggio dati completato con successo")
-            return JsonResponse({'success': True})
-            
-        except Exception as e:
-            print(f"Errore generico durante il salvataggio: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            return JsonResponse({'success': False, 'error': str(e)})
-    
-    return JsonResponse({'success': False, 'error': 'Metodo non supportato'})
-
-
-
-# Funzione per recuperare i dati delle misure
-def tabellamisure_data(anno_nickname):
-    parts = anno_nickname.split('_', 1)
-    
-    if len(parts) != 2:
-        return {"error": "Formato anno_nickname non valido"}
-        
-    anno = parts[0]
-    nickname = parts[1]
-    
+def salva_commento_tabella(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
     try:
-        # Ottieni l'impianto
-        impianto_obj = Impianto.objects.filter(nickname=nickname).first()
-        if not impianto_obj:
-            return {"error": "Impianto non trovato", "TableMisure": []}
-            
-        # Cerca tutti i contatori associati all'impianto
-        contatori_qs = Contatore.objects.filter(
-            models.Q(impianto=impianto_obj.id) |
-            models.Q(impianto_nickname=impianto_obj.nickname)
+        body = request.body.decode('utf-8') if request.body else '{}'
+        payload = json.loads(body)
+        nickname = payload.get('nickname')
+        anno = int(payload.get('anno')) if payload.get('anno') is not None else None
+        mese = int(payload.get('mese')) if payload.get('mese') is not None else None
+        testo = (payload.get('testo') or '').strip()
+        stato = (payload.get('stato') or '')
+
+        if not nickname or anno is None or mese is None:
+            return JsonResponse({'success': False, 'error': 'Parametri mancanti'}, status=400)
+
+        try:
+            impianto = Impianto.objects.get(nickname__iexact=nickname)
+        except Impianto.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Impianto non trovato'}, status=404)
+
+        obj, created = commento_tabellacorrispettivi.objects.update_or_create(
+            impianto=impianto,
+            anno=anno,
+            mese=mese,
+            defaults={'testo': testo, 'stato': stato}
         )
 
-        misure_data = []
-
-        # Se esistono contatori, recupera tutti i registri per tali contatori
-        if contatori_qs.exists():
-            dati_reg = regsegnanti.objects.filter(contatore__in=contatori_qs, anno=int(anno))
-        else:
-            # Fallback: cerca direttamente per impianto_nickname (compatibilità con vecchi dati)
-            dati_reg = regsegnanti.objects.filter(anno=int(anno))
-            if hasattr(regsegnanti, 'impianto_nickname'):
-                dati_reg = dati_reg.filter(impianto_nickname=impianto_obj.nickname)
-        
-        # Prepara i dati per ogni mese
-        for dato in dati_reg:
-            misure_data.append({
-                'mese': dato.mese,
-                'prod_campo': float(dato.prod_campo) if dato.prod_campo else None,
-                'imm_campo': float(dato.imm_campo) if dato.imm_campo else None,
-                'prel_campo': float(dato.prel_campo) if dato.prel_campo else None,
-                'prod_ed': float(dato.prod_ed) if dato.prod_ed else None,
-                'imm_ed': float(dato.imm_ed) if dato.imm_ed else None,
-                'prel_ed': float(dato.prel_ed) if dato.prel_ed else None,
-                'prod_gse': float(dato.prod_gse) if dato.prod_gse else None,
-                'imm_gse': float(dato.imm_gse) if dato.imm_gse else None
-            })
-        
-        return {"TableMisure": misure_data}
-        
+        return JsonResponse({'success': True, 'created': created, 'id': obj.id})
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return {"error": str(e), "TableMisure": []}
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
-class DatiAggregatiCentrali(APIView):
-	"""API per ottenere i dati aggregati di tutte le centrali per il grafico principale"""
-	renderer_classes = [JSONRenderer]
-	permission_classes = (IsAuthenticated,)
-	
-	def get(self, request, anno, format=None):
-		try:
-			anno = int(anno)
-			
-			# Ottieni tutti gli impianti
-			impianti = Impianto.objects.all()
-			
-			# Dizionario per aggregare i dati per mese
-			dati_aggregati = {}
-			
-			for mese in range(1, 13):  # Da gennaio a dicembre
-				dati_aggregati[mese] = {
-					'mese': mese,
-					'energia_kwh': 0,
-					'corrispettivi_tfo': 0,
-					'fatturazione_tfo': 0,
-					'incassi': 0
-				}
-			
-			# Per ogni impianto, aggrega i dati
-			for impianto in impianti:
-				print(f"Elaborando impianto: {impianto.nome_impianto}")
-				
-				# Cerca tutti i contatori associati all'impianto
-				contatori_qs = Contatore.objects.filter(
-					models.Q(impianto=impianto.id) |
-					models.Q(impianto_nickname=impianto.nickname)
-				)
-
-				if contatori_qs.exists():
-					# Ottieni i dati dal modello regsegnanti per tutti i contatori
-					dati_reg = regsegnanti.objects.filter(contatore__in=contatori_qs, anno=anno)
-				else:
-					# Fallback: cerca direttamente per impianto_nickname se il campo esiste
-					dati_reg = regsegnanti.objects.filter(anno=anno)
-					if hasattr(regsegnanti, 'impianto_nickname'):
-						dati_reg = dati_reg.filter(impianto_nickname=impianto.nickname)
-					else:
-						continue  # Salta questo impianto se non trovato
-				
-				# Carica dati dai file Excel per questo impianto
-				for dato_reg in dati_reg:
-					mese = dato_reg.mese
-					
-					# Calcola energia incentivata
-					if dato_reg.prod_campo is not None:
-						prod_campo_float = float(dato_reg.prod_campo)
-						prod_campo_98 = prod_campo_float * 0.98
-						
-						if dato_reg.imm_campo is not None:
-							imm_campo_float = float(dato_reg.imm_campo)
-							energia_incentivata = min(prod_campo_98, imm_campo_float)
-						else:
-							energia_incentivata = prod_campo_98
-					else:
-						energia_incentivata = 0
-					
-					# Carica dati dai file Excel per questo mese e impianto
-					dati_excel = carica_dati_da_excel(impianto, anno, mese)
-					
-					# Aggrega i dati
-					dati_aggregati[mese]['energia_kwh'] += energia_incentivata
-					
-					# Calcola corrispettivi TFO (assumo 0.21 €/kWh come nell'altro codice)
-					corrispettivi_incentivati = energia_incentivata * 0.21
-					dati_aggregati[mese]['corrispettivi_tfo'] += corrispettivi_incentivati
-					
-					# Aggiungi fatturazione e incassi se disponibili
-					if dati_excel['fatturazione_tfo'] is not None:
-						dati_aggregati[mese]['fatturazione_tfo'] += dati_excel['fatturazione_tfo']
-					
-					if dati_excel['incassi'] is not None:
-						dati_aggregati[mese]['incassi'] += dati_excel['incassi']
-			
-			# Converti il dizionario in lista ordinata per mese
-			dati_lista = [dati_aggregati[mese] for mese in range(1, 13)]
-			
-			return Response({
-				'success': True,
-				'anno': anno,
-				'dati': dati_lista
-			})
-			
-		except Exception as e:
-			print(f"Errore nell'elaborazione dati aggregati: {str(e)}")
-			import traceback
-			traceback.print_exc()
-			return Response({
-				'success': False,
-				'error': str(e)
-			})
+def get_commento_tabella(request, nickname, anno, mese):
+    try:
+        obj = commento_tabellacorrispettivi.objects.filter(
+            impianto__nickname__iexact=nickname,
+            anno=anno,
+            mese=mese
+        ).first()
+        if not obj:
+            return JsonResponse({'success': True, 'testo': '', 'stato': ''})
+        return JsonResponse({'success': True, 'testo': obj.testo, 'stato': obj.stato})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
+# # =========================
+# Endpoint ANNUALI (ottimizzazione performance)
+# =========================
+
+def _mesi_1_12():
+    return list(range(1, 13))
+
+
+def energiakwh_annuale(request, nickname, anno):
+    """
+    Restituisce la somma mensile (1..12) dell'energia prodotta (kWh) come mappa mese->valore.
+    { "per_month": {1: numero, 2: numero, ...} }
+    """
+    per_month = {m: 0 for m in _mesi_1_12()}
+    qs = regsegnanti.objects.filter(
+        anno=anno,
+        contatore__impianto_nickname=nickname,
+        mese__in=_mesi_1_12()
+    ).values('mese').annotate(total=models.Sum('prod_campo'))
+    for row in qs:
+        m = row.get('mese')
+        per_month[int(m)] = float(row.get('total') or 0)
+    return JsonResponse({'success': True, 'per_month': per_month, 'anno': anno, 'impianto': nickname})
+
+
+def datiTFO_annuale(request, nickname, anno):
+    """
+    Somma mensile di min(prod*0.98, imm) * 0.21
+    """
+    # print(f"[DEBUG] datiTFO_annuale - Richiesta per nickname: {nickname}, anno: {anno}")
+    
+    per_month = {m: 0.0 for m in _mesi_1_12()}
+    # print(f"[DEBUG] Inizializzato dizionario per_month: {per_month}")
+    
+    # Recupero tutti i record dell'anno e calcolo per mese
+    # Recupero i dati di produzione (prod_campo) per tutti i mesi dell'anno
+    records_prod = regsegnanti.objects.filter(
+        anno=anno,
+        contatore__impianto_nickname=nickname,
+        mese__in=_mesi_1_12()
+    ).values_list('mese', 'prod_campo')
+    
+    # Recupero i dati di immissione (imm_campo) per tutti i mesi dell'anno
+    records_imm = regsegnanti.objects.filter(
+        anno=anno,
+        contatore__impianto_nickname=nickname,
+        mese__in=_mesi_1_12()
+    ).values_list('mese', 'imm_campo')
+    
+    # print(f"[DEBUG] Trovati {len(records_prod)} record di produzione per l'anno {anno}")
+    # print(f"[DEBUG] Trovati {len(records_imm)} record di immissione per l'anno {anno}")
+    
+    # Creo dizionari per organizzare i dati per mese
+    prod_per_mese = {}
+    imm_per_mese = {}
+    
+    # Organizzo i dati di produzione per mese
+    for mese, prod in records_prod:
+        if mese not in prod_per_mese:
+            prod_per_mese[mese] = []
+        if prod is not None:
+            prod_per_mese[mese].append(float(prod))
+    
+    # Organizzo i dati di immissione per mese
+    for mese, imm in records_imm:
+        if mese not in imm_per_mese:
+            imm_per_mese[mese] = []
+        if imm is not None:
+            imm_per_mese[mese].append(float(imm))
+    
+    # Calcolo il valore TFO per ogni mese
+    for mese in _mesi_1_12():
+        # print(f"[DEBUG] Elaborazione mese {mese} -anno- {anno}")
+        
+        # Sommo tutti i valori di produzione per il mese
+        prod_totale = sum(prod_per_mese.get(mese, []))
+        # Sommo tutti i valori di immissione per il mese
+        imm_totale = sum(imm_per_mese.get(mese, []))
+        
+        # print(f"[DEBUG] Mese {mese}: prod_totale={prod_totale}, imm_totale={imm_totale}")
+        
+        if prod_totale > 0 and imm_totale > 0:
+            try:
+                prod_corr = prod_totale * 0.98
+                val = min(prod_corr, imm_totale) * 0.21
+                per_month[mese] = val
+                # print(f"[DEBUG] Calcolato per mese {mese} -anno- {anno}: prod_corr={prod_corr}, val={val}")
+            except (ValueError, TypeError) as e:
+                # print(f"[DEBUG] Errore conversione numerica per mese {mese}: {e}")
+                continue
+        else:
+            # print(f"[DEBUG] Mese {mese}: dati insufficienti (prod_totale={prod_totale}, imm_totale={imm_totale})")
+            pass
+    
+    # print(f"[DEBUG] Risultato finale per_month: {per_month}")
+    return JsonResponse({'success': True, 'per_month': per_month, 'anno': anno, 'impianto': nickname})
+
+
+def _map_nickname_to_table(nickname):
+    # stessa mappa usata negli endpoint mensili
+    nickname_to_table = {
+        "Partitore": "corrispettivi_energia_BA",
+        "partitore": "corrispettivi_energia_BA",
+        "Ionico Foresta": "corrispettivi_energia_I1",
+        "ionico_foresta": "corrispettivi_energia_I1",
+        "San Teodoro": "corrispettivi_energia_PE",
+        "san_teodoro": "corrispettivi_energia_PE",
+        "Ponte Giurino": "corrispettivi_energia_PG",
+        "ponte_giurino": "corrispettivi_energia_PG",
+    }
+    return nickname_to_table.get(nickname)
+
+
+def datiFatturazioneTFO_annuale(request, nickname, anno):
+    """
+    Funzione che recupera i dati di fatturazione TFO per un intero anno.
+    Questa funzione esegue una query SQL per sommare i valori della colonna "Omnicomprensiva"
+    raggruppati per mese per l'anno specificato.
+    """
+    # print(f"[DEBUG] datiFatturazioneTFO_annuale - Richiesta per nickname: {nickname}, anno: {anno}")
+    
+    # Ottieni il nome della tabella corrispondente al nickname
+    table_name = _map_nickname_to_table(nickname)
+    # print(f"[DEBUG] Nickname '{nickname}' mappato alla tabella: {table_name}")
+    
+    if not table_name:
+        # Se non esiste una tabella mappata per l'impianto, restituisci zeri per tutti i mesi
+        per_month = {m: 0.0 for m in _mesi_1_12()}
+        return JsonResponse({'success': True, 'per_month': per_month, 'anno': anno, 'impianto': nickname})
+    
+    # Inizializza il dizionario per i dati mensili (tutti i mesi da 1 a 12 con valore 0)
+    per_month = {m: 0.0 for m in _mesi_1_12()}
+    # print(f"[DEBUG] Inizializzato dizionario per_month: {per_month}")
+    
+    # Esegui la query per recuperare i dati annuali raggruppati per mese
+    with connection.cursor() as cursor:
+        query = f"""
+            SELECT 
+                CAST(strftime('%%m', "Data di competenza") AS INTEGER) AS mese,
+                SUM("Omnicomprensiva") AS valore
+            FROM "{table_name}"
+            WHERE CAST(strftime('%%Y', "Data di competenza") AS INTEGER) = %s
+            GROUP BY mese
+            ORDER BY mese;
+        """
+        # print(f"[DEBUG] Esecuzione query SQL: {query}")
+        # print(f"[DEBUG] Parametro query: anno={anno}")
+        
+        cursor.execute(query, [anno])
+        rows = cursor.fetchall()
+        
+        # print(f"[DEBUG] Query eseguita, trovati {len(rows)} record")
+        # print(f"[DEBUG] Risultati query: {rows}")
+        
+        # Popola il dizionario per_month con i valori trovati
+        for m, val in rows:
+            valore_convertito = float(val or 0)
+            per_month[int(m)] = valore_convertito
+            # print(f"[DEBUG] Mese {m}: valore {val} -> convertito a {valore_convertito}")
+    
+    # print(f"[DEBUG] Dizionario finale per_month: {per_month}")
+    
+    return JsonResponse({'success': True, 'per_month': per_month, 'anno': anno, 'impianto': nickname})
+
+def datiEnergiaNonIncentivata_annuale(request, nickname, anno):
+    table_name = _map_nickname_to_table(nickname)
+    if not table_name:
+        # Se non esiste una tabella mappata per l'impianto, restituisci zeri per tutti i mesi
+        per_month = {m: 0.0 for m in _mesi_1_12()}
+        return JsonResponse({'success': True, 'per_month': per_month, 'anno': anno, 'impianto': nickname})
+    per_month = {m: 0.0 for m in _mesi_1_12()}
+    with connection.cursor() as cursor:
+        query = f"""
+            SELECT 
+                CAST(strftime('%%m', "Data di competenza") AS INTEGER) AS mese,
+                SUM("Non incentivata") AS valore
+            FROM "{table_name}"
+            WHERE CAST(strftime('%%Y', "Data di competenza") AS INTEGER) = %s
+            GROUP BY mese
+            ORDER BY mese;
+        """
+        cursor.execute(query, [anno])
+        rows = cursor.fetchall()
+        for m, val in rows:
+            per_month[int(m)] = float(val or 0)
+    return JsonResponse({'success': True, 'per_month': per_month, 'anno': anno, 'impianto': nickname})
+
+
+def datiRiepilogoPagamenti_annuale(request, nickname, anno):
+    # Ricerca file cashflow come in versione mensile
+    # print(f"[DEBUG] datiRiepilogoPagamenti_annuale - Inizio per nickname: {nickname}, anno: {anno}")
+    
+    cashflow_qs = Cashflow.objects.filter(impianto__nickname__iexact=nickname)
+    # print(f"[DEBUG] Trovati {cashflow_qs.count()} file cashflow per l'impianto '{nickname}'")
+    
+    if not cashflow_qs.exists():
+        # print(f"[DEBUG] Nessun file cashflow trovato per l'impianto '{nickname}'")
+        return JsonResponse({'success': False, 'error': f"Nessun file cashflow configurato per l'impianto '{nickname}'"})
+
+    per_month = {m: 0.0 for m in _mesi_1_12()}
+    # print(f"[DEBUG] Inizializzato dizionario per_month: {per_month}")
+    
+    for cf in cashflow_qs:
+        percorso_completo = cf.percorso if os.path.isabs(cf.percorso) else os.path.join(cf.unit, cf.percorso)
+        # print(f"[DEBUG] Elaborazione file cashflow: {percorso_completo}")
+        
+        if not os.path.exists(percorso_completo):
+            # print(f"[DEBUG] File non trovato: {percorso_completo}")
+            continue
+            
+        try:
+            # Colonne dipendenti dal nome file
+            if percorso_completo.endswith("Ionico Energy Uno TF.xlsx"):
+                usecols = [25, 26]
+                # print(f"[DEBUG] File Ionico Energy Uno TF.xlsx - usando colonne: {usecols}")
+            else:
+                usecols = [22, 23]
+                # print(f"[DEBUG] File standard - usando colonne: {usecols}")
+                
+            df = pd.read_excel(percorso_completo, sheet_name=1, usecols=usecols)
+            # print(f"[DEBUG] Letto Excel con {len(df)} righe")
+            
+            df.columns = ['data', 'valore']
+            df = df.dropna(subset=['data', 'valore'])
+            # print(f"[DEBUG] Dopo rimozione righe vuote: {len(df)} righe")
+            
+            df['data'] = pd.to_datetime(df['data'], errors='coerce')
+            df = df.dropna(subset=['data'])
+            # print(f"[DEBUG] Dopo conversione date: {len(df)} righe")
+            
+            df['valore'] = pd.to_numeric(df['valore'], errors='coerce')
+            df = df.dropna(subset=['valore'])
+            # print(f"[DEBUG] Dopo conversione valori numerici: {len(df)} righe")
+
+            # Pre-calcolo anno/mese del file
+            df['anno'] = df['data'].dt.year.astype(int)
+            df['mese'] = df['data'].dt.month.astype(int)
+            # print(f"[DEBUG] Aggiunto anno e mese al DataFrame")
+
+            # Per ogni mese richiesto, cercare due mesi avanti
+            for mese in _mesi_1_12():
+                mese_excel = mese + 2
+                anno_excel = anno
+                if mese_excel > 12:
+                    mese_excel -= 12
+                    anno_excel = anno + 1
+                    
+                # print(f"[DEBUG] Mese {mese}: cercando nel file anno {anno_excel}, mese {mese_excel}")
+                
+                mask = (df['anno'] == int(anno_excel)) & (df['mese'] == int(mese_excel))
+                righe_trovate = mask.sum()
+                
+                if mask.any():
+                    valore_somma = float(df.loc[mask, 'valore'].sum())
+                    per_month[mese] += valore_somma
+                    # print(f"[DEBUG] Mese {mese}: trovate {righe_trovate} righe, somma: {valore_somma}, totale mese: {per_month[mese]}")
+                else:
+                    print(f"[DEBUG] Mese {mese}: nessuna riga trovata per anno {anno_excel}, mese {mese_excel}")
+                    
+        except Exception as e:
+            # print(f"[DEBUG] Errore durante elaborazione file {percorso_completo}: {str(e)}")
+            continue
+
+    # print(f"[DEBUG] Dizionario finale per_month: {per_month}")
+    return JsonResponse({'success': True, 'per_month': per_month, 'anno': anno, 'impianto': nickname})
+
+
+def datiCNI_annuale(request, nickname, anno):
+    """
+    Calcolo mensile del CNI: somma_i( (prod-imm, con gestione None) * media_PUN_mensile / 1000 )
+    """
+    # Preleva tutti i record dell'anno
+    records = regsegnanti.objects.filter(
+        anno=anno,
+        contatore__impianto_nickname=nickname,
+        mese__in=_mesi_1_12()
+    ).values_list('mese', 'prod_campo', 'imm_campo')
+
+    # Calcolo energia non incentivata per mese (somma delle differenze gestendo None come in datiNI)
+    ni_per_month_list = {m: [] for m in _mesi_1_12()}
+    for mese, prod, imm in records:
+        mese = int(mese)
+        if prod is not None and imm is not None:
+            ni_val = float(prod) - float(imm)
+        elif prod is not None and imm is None:
+            ni_val = float(prod)
+        elif prod is None and imm is not None:
+            ni_val = -float(imm)
+        else:
+            ni_val = 0.0
+        ni_per_month_list[mese].append(ni_val)
+
+    # Preleva media_puns per ciascun mese dell'anno richiesto
+    media_pun_per_month = {m: 0.0 for m in _mesi_1_12()}
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT CAST(strftime('%%m', timestamp) AS INTEGER) AS mese, mean_puns
+            FROM "Prezzi medi mensili"
+            WHERE strftime('%%Y', timestamp) = %s
+            ORDER BY timestamp
+            """,
+            [str(anno)]
+        )
+        rows = cursor.fetchall()
+        # possono esserci più righe per mese, calcoliamo media per sicurezza
+        temp = {}
+        for mese, val in rows:
+            mese = int(mese)
+            try:
+                v = float(val)
+            except (TypeError, ValueError):
+                continue
+            temp.setdefault(mese, []).append(v)
+        for m, vals in temp.items():
+            media_pun_per_month[m] = sum(vals) / len(vals) if vals else 0.0
+
+    # Calcolo finale per mese
+    per_month = {m: 0.0 for m in _mesi_1_12()}
+    for m in _mesi_1_12():
+        media = media_pun_per_month.get(m, 0.0) or 0.0
+        totale = sum(ni_val * media / 1000.0 for ni_val in ni_per_month_list[m])
+        per_month[m] = float(totale)
+
+    return JsonResponse({'success': True, 'per_month': per_month, 'anno': anno, 'impianto': nickname})
+
+
+def percentualedicontrollo_annuale(request, nickname, anno):
+    """
+    Differenza mensile: incassi - (TFO + CNI). Restituisce mappa mese->valore.
+    """
+    # Riutilizzo funzioni annuali interne per evitare I/O multiplo
+    tfo = json.loads(datiTFO_annuale(request, nickname, anno).content.decode('utf-8')).get('per_month', {})
+    cni = json.loads(datiCNI_annuale(request, nickname, anno).content.decode('utf-8')).get('per_month', {})
+    inc = json.loads(datiRiepilogoPagamenti_annuale(request, nickname, anno).content.decode('utf-8')).get('per_month', {})
+
+    per_month = {m: 0.0 for m in _mesi_1_12()}
+    for m in _mesi_1_12():
+        somma_corr = float(tfo.get(str(m), tfo.get(m, 0))) + float(cni.get(str(m), cni.get(m, 0)))
+        somma_inc = float(inc.get(str(m), inc.get(m, 0)))
+        per_month[m] = somma_inc - somma_corr
+
+    return JsonResponse({'success': True, 'per_month': per_month, 'anno': anno, 'impianto': nickname})
+
+
+def get_commenti_annuali(request, nickname, anno):
+    """
+    Restituisce tutti i commenti per l'anno: { mese: {testo, stato} }
+    Se la tabella dei commenti non esiste ancora, restituisce struttura vuota.
+    """
+    comments = {m: {'testo': '', 'stato': ''} for m in _mesi_1_12()}
+    try:
+        items = commento_tabellacorrispettivi.objects.filter(
+            impianto__nickname__iexact=nickname,
+            anno=anno
+        )
+        for it in items:
+            try:
+                comments[int(it.mese)] = {'testo': it.testo or '', 'stato': it.stato or ''}
+            except Exception:
+                continue
+    except Exception:
+        # Tabella mancante o altro errore DB: ritorna struttura vuota per non interrompere il frontend
+        pass
+    return JsonResponse({'success': True, 'comments_by_month': comments, 'anno': anno, 'impianto': nickname})
+
+
+
+
+
+# tabella misure 
+def table_misure(request, anno_nickname):
+	"""
+	Endpoint: /corrispettivi/api/misure/<anno>_<nickname>/
+	Restituisce i dati mensili (1..12) aggregati per impianto come array "TableMisure".
+	Ogni elemento contiene: mese, prod_campo, imm_campo, prel_campo, prod_ed, imm_ed, prel_ed, prod_gse, imm_gse
+	"""
+	try:
+		sep_idx = anno_nickname.find('_')
+		if sep_idx == -1:
+			return JsonResponse({'success': False, 'error': "Formato non valido. Usa '<anno>_<nickname>'"}, status=400)
+		anno_str = anno_nickname[:sep_idx]
+		nickname = anno_nickname[sep_idx + 1:]
+		anno = int(anno_str)
+	except Exception:
+		return JsonResponse({'success': False, 'error': 'Parametri non validi'}, status=400)
+
+	mesi = list(range(1, 13))
+
+	# Struttura base con zeri
+	per_mese = {
+		m: {
+			'mese': m,
+			'prod_campo': 0.0,
+			'imm_campo': 0.0,
+			'prel_campo': 0.0,
+			'prod_ed': 0.0,
+			'imm_ed': 0.0,
+			'prel_ed': 0.0,
+			'prod_gse': 0.0,
+			'imm_gse': 0.0,
+		}
+		for m in mesi
+	}
+
+	# Aggregazione per mese su tutti i contatori dell'impianto
+	qs = (
+		regsegnanti.objects
+			.filter(anno=anno, contatore__impianto_nickname=nickname, mese__in=mesi)
+			.values('mese')
+			.annotate(
+				prod_campo=models.Sum('prod_campo'),
+				imm_campo=models.Sum('imm_campo'),
+				prel_campo=models.Sum('prel_campo'),
+				prod_ed=models.Sum('prod_ed'),
+				imm_ed=models.Sum('imm_ed'),
+				prel_ed=models.Sum('prel_ed'),
+				prod_gse=models.Sum('prod_gse'),
+				imm_gse=models.Sum('imm_gse'),
+			)
+	)
+
+	for row in qs:
+		m = int(row.get('mese'))
+		if m in per_mese:
+			per_mese[m]['prod_campo'] = float(row.get('prod_campo') or 0)
+			per_mese[m]['imm_campo'] = float(row.get('imm_campo') or 0)
+			per_mese[m]['prel_campo'] = float(row.get('prel_campo') or 0)
+			per_mese[m]['prod_ed'] = float(row.get('prod_ed') or 0)
+			per_mese[m]['imm_ed'] = float(row.get('imm_ed') or 0)
+			per_mese[m]['prel_ed'] = float(row.get('prel_ed') or 0)
+			per_mese[m]['prod_gse'] = float(row.get('prod_gse') or 0)
+			per_mese[m]['imm_gse'] = float(row.get('imm_gse') or 0)
+
+	# Ordina per mese 1..12
+	items = [per_mese[m] for m in mesi]
+	return JsonResponse({'success': True, 'TableMisure': items, 'anno': anno, 'impianto': nickname})
+
+
+
+
+
+# tabelle corispettivi

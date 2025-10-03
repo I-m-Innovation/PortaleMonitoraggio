@@ -37,37 +37,7 @@
 				</div>
 			</div>
 				</div>
-				<div class="col">
-					<div class="addcommento-card position-fixed">
-					<div class="container">
-						<h3>Inserisci commento</h3>
-						<form action="{% url 'dettaglio-corrispettivi' nickname %}" method="post">
-							{% csrf_token %}
-								{% for field in form %}
-									{% if field.errors %}
-									<div class="alert alert-danger" style="padding: 5px"><small>{{ field.errors.as_text }}</small><br/></div>
-									{% endif %}
-								{% endfor %}
-							
-								<p> {{ form.testo.label_tag }} <br> {{ form.testo }} </p>
-								<small class="form-text text-muted">{{ form.delete.label }}: </small>{{ form.delete }}
-								<p> {{ form.date_input.label_tag }} <br> {{ form.date_input }}
-									<style>#id_date_input_day {display: none;visibility: hidden;}</style>
-	{#								<br> <small class="form-text text-muted">Entrata in esercizio: {{ form.initial.date_input }} </small>#}
-								<p>
-								<p> {{ form.stato.label_tag }} <br> {{ form.stato }} </p>
-								<p> {{ form.impianto.label_tag }}  {{ form.impianto.as_hidden }} {{ impianto.nome_impianto }} </p>
-								<input type="submit" value="Salva" class="btn btn-dark" />
-						</form>
-						{% for message in messages %}
-							<div class="container-fluid my-2">
-								<div class="alert alert-{{ message.tags }}" role="alert" style="padding: 5px">
-									{{ message }}
-								</div>
-							</div>
-						{% endfor %}
-					</div>
-				</div>
+
 				</div>
 			</div>
 		</div>
@@ -77,6 +47,7 @@
 
 {% block extra_scripts %}
 <script src="{% static 'js/tabellamisure.js' %}"></script>
+<script src="{% static 'js/tabellacorrispettivi.js' %}"></script>
 <script>
     // Chiama la funzione per caricare i dati della tabella quando la pagina è pronta
     document.addEventListener('DOMContentLoaded', function() {
