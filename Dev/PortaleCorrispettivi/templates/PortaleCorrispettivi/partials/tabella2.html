@@ -41,6 +41,10 @@
 	  text-align: center;
 	  min-width: 80px; /* Larghezza minima standard per le celle */
 	  height: 40px; /* Altezza predefinita per le celle */
+	  /* Stile per celle readonly - non modificabili */
+	  background-color: #f8f9fa;
+	  color: #6c757d;
+	  cursor: not-allowed;
 	}
 	
 	#table2_{{ anno }} td:first-child {
@@ -67,6 +71,10 @@
 	#table2_{{ anno }} tfoot td {
 	  padding: 8px;
 	  border: 1px solid #e0e0e0;
+	  /* Stile per celle readonly nel footer */
+	  background-color: #e9ecef;
+	  color: #495057;
+	  cursor: not-allowed;
 	}
 	
 	#table2_{{ anno }} i.fa {
@@ -119,45 +127,45 @@
     {% for mese in '12345678910111213'|make_list|slice:':12' %}
     <tr>
      
-      <td class="mese" data-mese="{{ forloop.counter }}"></td>
-      <td class="prod-campo" data-mese="{{ forloop.counter }}"></td>
-      <td class="imm-campo" data-mese="{{ forloop.counter }}"></td>
-      <td class="prel-campo" data-mese="{{ forloop.counter }}"></td>
-      <td class="prod-ed" data-mese="{{ forloop.counter }}"></td>
-      <td class="imm-ed" data-mese="{{ forloop.counter }}"></td>
-      <td class="prel-ed" data-mese="{{ forloop.counter }}"></td>
-      <td class="prod-gse" data-mese="{{ forloop.counter }}"></td>
-      <td class="imm-gse" data-mese="{{ forloop.counter }}"></td>
-      <td class="controllo" data-mese="{{ forloop.counter }}"></td>
-      <td></td>
+      <td class="mese" data-mese="{{ forloop.counter }}" readonly></td>
+      <td class="prod-campo" data-mese="{{ forloop.counter }}" readonly></td>
+      <td class="imm-campo" data-mese="{{ forloop.counter }}" readonly></td>
+      <td class="prel-campo" data-mese="{{ forloop.counter }}" readonly></td>
+      <td class="prod-ed" data-mese="{{ forloop.counter }}" readonly></td>
+      <td class="imm-ed" data-mese="{{ forloop.counter }}" readonly></td>
+      <td class="prel-ed" data-mese="{{ forloop.counter }}" readonly></td>
+      <td class="prod-gse" data-mese="{{ forloop.counter }}" readonly></td>
+      <td class="imm-gse" data-mese="{{ forloop.counter }}" readonly></td>
+      <td class="controllo" data-mese="{{ forloop.counter }}" readonly></td>
+      <td readonly></td>
     </tr>
     {% endfor %}
   </tbody>
   <tfoot>
     <tr>
       
-      <td><b>Anno</b></td>
-      <td class="totale-prod-campo"></td>
-      <td class="totale-imm-campo"></td>
-      <td class="totale-prel-campo"></td>
-      <td class="totale-prod-ed"></td>
-      <td class="totale-imm-ed"></td>
-      <td class="totale-prel-ed"></td>
-      <td class="totale-prod-gse"></td>
-      <td class="totale-imm-gse"></td>
-	  <td></td>
-	  <td></td>
+      <td readonly><b>Anno</b></td>
+      <td class="totale-prod-campo" readonly></td>
+      <td class="totale-imm-campo" readonly></td>
+      <td class="totale-prel-campo" readonly></td>
+      <td class="totale-prod-ed" readonly></td>
+      <td class="totale-imm-ed" readonly></td>
+      <td class="totale-prel-ed" readonly></td>
+      <td class="totale-prod-gse" readonly></td>
+      <td class="totale-imm-gse" readonly></td>
+	  <td readonly></td>
+	  <td readonly></td>
 
     </tr>
     <tr>
       
-      <td colspan="3"><sup>*</sup><i class="fa fa-bolt" aria-hidden="true"></i>&nbsp;<i>Delta percentuale di produzione</i></td>
-      <td></td>
-      <td colspan="3"><sup>*</sup><i class="fa fa-share" aria-hidden="true" ></i>&nbsp;<i>Delta percentuale di immissione</i></td>
-      <td></td>
-      <td></td>
-      <td></td>
-	  <td></td>
+      <td colspan="3" readonly><sup>*</sup><i class="fa fa-bolt" aria-hidden="true"></i>&nbsp;<i>Delta percentuale di produzione</i></td>
+      <td readonly></td>
+      <td colspan="3" readonly><sup>*</sup><i class="fa fa-share" aria-hidden="true" ></i>&nbsp;<i>Delta percentuale di immissione</i></td>
+      <td readonly></td>
+      <td readonly></td>
+      <td readonly></td>
+	  <td readonly></td>
      
     </tr>
   </tfoot>
