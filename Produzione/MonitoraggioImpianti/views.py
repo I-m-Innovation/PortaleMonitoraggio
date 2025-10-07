@@ -162,8 +162,8 @@ def impianto(request, nickname):
 
 	# DATI IMPIANTO
 	impianto = Impianto.objects.filter(nickname=nickname)[0]
-	if nickname == 'petilia_bf_canaletta':
-		return redirect('monitoraggio-home')
+	# if nickname == 'petilia_bf_canaletta':
+	# 	return redirect('monitoraggio-home')
 
 	# SE IMPIANTI FOTOVOLTAICI
 	if impianto.tipo == 'Fotovoltaico':

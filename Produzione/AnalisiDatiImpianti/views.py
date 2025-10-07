@@ -48,8 +48,8 @@ def impianto(request, nickname):
 	link_corrispettivi = linkportale.objects.filter(tag='portale-corrispettivi')[0].link
 
 	# RETURN HOME PER CANALETTA
-	if nickname == 'petilia_bf_canaletta':
-		return redirect('analisi-home')
+	# if nickname == 'petilia_bf_canaletta':
+	# 	return redirect('analisi-home')
 
 	# RECUPERO DATI IMPIANTO E (IMPIANTI PER SIDEBAR)
 	impianti = Impianto.objects.filter(tipo='Idroelettrico').values()
