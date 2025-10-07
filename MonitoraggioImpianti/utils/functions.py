@@ -92,6 +92,3 @@ def Gauges(impianto):
 	dict_gauge = dfGauge.to_dict()
 	dict_gauge.update({'colors': colors, 'leds': leds})
 	return dict_gauge
-
-
-

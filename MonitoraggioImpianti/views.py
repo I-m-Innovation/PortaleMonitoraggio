@@ -1,8 +1,7 @@
 import pandas as pd
 from datetime import datetime,timedelta
-
 from django.shortcuts import render, redirect
-
+import math
 from .models import *
 from MonitoraggioImpianti.utils import functions as fn
 from .API_OpenMeteo import get_OpenMeteoData, get_WeatherIcon
@@ -39,6 +38,7 @@ def home(request):
 								dtype='object',
 								columns=['Name', 'last_power', 'last_eta', 'state', 'Energy', 'tipo', 'potenza_installata'],
 								index=nicks)
+	
 	# VALORI DI DEFAULT PER TUTTI GLI IMPIANTI CON ETA = 0 E LED GRIGIO (Off)
 	leds = {'O': 'led-green', 'A': 'led-red', 'W': 'led-yellow', 'OK': 'led-green'}
 	df_monitoraggio['last_eta'] = 0
@@ -69,6 +69,7 @@ def home(request):
 				df_monitoraggio.loc[impianto.nickname] = DF_lastDATA_impianti.loc[tag]
 				# APPLICO IL LED RELATIVO ALLO STATO DELL'IMPIANTO
 				df_monitoraggio.loc[impianto.nickname, 'state'] = leds[df_monitoraggio.loc[impianto.nickname, 'state']]
+				# print(f'{tag} - {df_monitoraggio.loc[impianto.nickname, 'state']}')
 
 			# INFO VARIE
 			df_monitoraggio.loc[impianto.nickname, 'Name'] = impianto.nome_impianto
@@ -100,8 +101,10 @@ def home(request):
 	df_monitoraggio.loc['zilio_gr', 'Energy'] = df_monitoraggio.loc['zilio_gr', 'Energy']/1000
 
 	# ORDINAMENTO DEL DATAFRAME IN BASE A LED E POI IN BASE A RENDIMENTO
+	
 	df_monitoraggio['state'] = pd.Categorical(df_monitoraggio['state'],
 											  ['led-red', 'led-yellow', 'led-gray', 'led-green'])
+	
 	df_monitoraggio = df_monitoraggio.sort_values(by=['state', 'last_eta'])
 
 	# DATI MONITORAGGIO
@@ -109,11 +112,19 @@ def home(request):
 
 	# CALCOLO INFO GENERALI, POSIZIONATE SULLA SIDEBAR
 	# TOTALE ENERGIE DEGLI IMPIANTI CHE CI SONO SU "PORTALE IMPIANTI HP.CSV"
-	tot_energy_idro = sum([dz_monitoraggio[key]['Energy'] for key in dz_monitoraggio.keys() if
-						   dz_monitoraggio[key]['Energy'] and dz_monitoraggio[key]['tipo'] == 'Idroelettrico'])
+	tot_energy_idro = sum([
+    dz_monitoraggio[key]['Energy'] if dz_monitoraggio[key]['Energy'] and not math.isnan(dz_monitoraggio[key]['Energy']) else 0
+    for key in dz_monitoraggio.keys()
+    if dz_monitoraggio[key]['tipo'] == 'Idroelettrico'
+])
+	# tot_energy_idro = sum([dz_monitoraggio[key]['Energy'] for key in dz_monitoraggio.keys() if
+	# 					   dz_monitoraggio[key]['Energy'] and dz_monitoraggio[key]['tipo'] == 'Idroelettrico'])
+	
 	tot_energy_pv = sum([dz_monitoraggio[key]['Energy'] for key in dz_monitoraggio.keys() if
 						 dz_monitoraggio[key]['Energy'] and dz_monitoraggio[key]['tipo'] == 'Fotovoltaico'])
+	print("tot_energy_idro:", tot_energy_idro, " - tot_energy_pv:", tot_energy_pv)
 	tot_energy = tot_energy_pv + tot_energy_idro
+	
 	co2_kg = tot_energy * 0.457
 	# TEMPO TRASCORSO DALLA MEZZANOTTE
 	tdelta = Now - datetime(Now.year, Now.month, Now.day, 0, 0, 0)
@@ -159,8 +170,8 @@ def impianto(request, nickname):
 
 	# DATI IMPIANTO
 	impianto = Impianto.objects.filter(nickname=nickname)[0]
-	if nickname == 'petilia_bf_canaletta':
-		return redirect('monitoraggio-home')
+	# if nickname == 'petilia_bf_canaletta':
+	# 	return redirect('monitoraggio-home')
 
 	# SE IMPIANTI FOTOVOLTAICI
 	if impianto.tipo == 'Fotovoltaico':

@@ -46,16 +46,16 @@ def home(request):
 def impianto(request, nickname):
 	# LINK PORTALE CORRISPETTIVI (NELLA NAV-BAR)
 	link_corrispettivi = linkportale.objects.filter(tag='portale-corrispettivi')[0].link
-
+	# print(link_corrispettivi)
 	# RETURN HOME PER CANALETTA
-	if nickname == 'petilia_bf_canaletta':
-		return redirect('analisi-home')
+	# if nickname == 'petilia_bf_canaletta':
+	# 	return redirect('analisi-home')
 
 	# RECUPERO DATI IMPIANTO E (IMPIANTI PER SIDEBAR)
 	impianti = Impianto.objects.filter(tipo='Idroelettrico').values()
 	dz_impianti = {v['nickname']: v for v in impianti}
 	impianto = Impianto.objects.filter(nickname=nickname)[0]
-
+	print(impianto)
 	Now = datetime.now()
 	# POST METHOD PER GENERARE IL REPORT DI ANALISI DELL'IMPIANTO
 	if request.method == 'POST':
@@ -130,6 +130,8 @@ def impianto(request, nickname):
 	StatALL = {stat.variabile: stat.valore for stat in list(impianto.infostat_set.all())}
 	impianto = impianto.__dict__
 	impianto.update(StatALL)
+ 
+	print(dz_impianti)
 
 	context = {
 		# NAV-BAR
