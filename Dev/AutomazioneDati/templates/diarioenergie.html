@@ -74,10 +74,11 @@
                                 {% if contatore_scambio_attivo %}
                                     <col style="width: 10%;">
                                     <col style="width: 10%;">
+                                    <col style="width: 10%;">
+                                    <col style="width: 10%;">
+                                    <col style="width: 10%;">
                                     
-                                    <col style="width: 10%;">
-                                    <col style="width: 10%;">
-                                    <col style="width: 10%;">
+                                    
                                 {% endif %}
                                 {% if contatore_scambio_sostituito %}
                                     <col style="width: 10%;"> <!-- Autoconsumata Campo kWh -->
@@ -142,12 +143,16 @@
                                         <th colspan="2">Prelevata Sostituita</th>
                                     {% endif %}
                                     {% if contatore_scambio_attivo %}
-                                        <th colspan="2">Prelevata </th>
+                                        {% comment %} <th colspan="2">Prelevata </th>
+                                        <th colspan="3">Immessa </th> {% endcomment %}
                                         <th colspan="3">Immessa </th>
+                                        <th colspan="2">Prelevata </th>
                                     {% endif %}
                                     {% if contatore_scambio_sostituito %}
-                                        <th colspan="2">Prelevata Sostituita</th>
+                                        {% comment %} <th colspan="2">Prelevata Sostituita</th>
+                                        <th colspan="3">Immessa Sostituita</th> {% endcomment %}
                                         <th colspan="3">Immessa Sostituita</th>
+                                        <th colspan="2">Prelevata Sostituita</th>
                                     {% endif %}
                                     {% if contatore_ausiliare_attivo %}
                                         <th colspan="3">Ausiliare</th>
@@ -166,12 +171,13 @@
                                         <th>Campo kWh</th><th>e-D</th>
                                     {% endif %}
                                     {% if contatore_scambio_attivo %}
-                                        <th>Campo kWh</th><th>e-D</th>
                                         <th>Campo kWh</th><th>e-D</th><th>G.S.E</th>
+                                        <th>Campo kWh</th><th>e-D</th>
+                                        
                                     {% endif %}
                                     {% if contatore_scambio_sostituito %}
-                                        <th>Campo kWh</th><th>e-D</th><th>
                                         <th>Campo kWh</th><th>e-D</th><th>G.S.E</th>
+                                        <th>Campo kWh</th><th>e-D</th>
                                     {% endif %}
                                     {% if contatore_ausiliare_attivo %}
                                         <th>Campo kWh</th><th>e-D</th><th>G.S.E</th>
@@ -206,12 +212,15 @@
 
                                     {# Dati Scambio (Attivo) #}
                                     {% if contatore_scambio_attivo %}
-                                        <td data-field="autocons_campo" contenteditable="true" data-type="number">{{ dato_mese.autocons_campo|default_if_none:"" }}</td>
-                                        <td data-field="autocons_ed" contenteditable="true" data-type="number">{{ dato_mese.autocons_ed|default_if_none:"" }}</td>
+
+                                    <td data-field="imm_campo" contenteditable="true" data-type="number">{{ dato_mese.imm_campo|default_if_none:"" }}</td>
+                                    <td data-field="imm_ed" contenteditable="true" data-type="number">{{ dato_mese.imm_ed|default_if_none:"" }}</td>
+                                    <td data-field="imm_gse" contenteditable="true" data-type="number">{{ dato_mese.imm_gse|default_if_none:"" }}</td>
+
+                                    <td data-field="autocons_campo" contenteditable="true" data-type="number">{{ dato_mese.autocons_campo|default_if_none:"" }}</td>
+                                    <td data-field="autocons_ed" contenteditable="true" data-type="number">{{ dato_mese.autocons_ed|default_if_none:"" }}</td>
                                         
-                                        <td data-field="imm_campo" contenteditable="true" data-type="number">{{ dato_mese.imm_campo|default_if_none:"" }}</td>
-                                        <td data-field="imm_ed" contenteditable="true" data-type="number">{{ dato_mese.imm_ed|default_if_none:"" }}</td>
-                                        <td data-field="imm_gse" contenteditable="true" data-type="number">{{ dato_mese.imm_gse|default_if_none:"" }}</td>
+                                      
                                     {% endif %}
                                     {# Dati Scambio (Sostituito) #}
                                     {% if contatore_scambio_sostituito %}

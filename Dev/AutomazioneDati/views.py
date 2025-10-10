@@ -203,15 +203,22 @@ def diarioenergie(request, nickname):
                         val_successivo_prod = float(lettura_successiva.totale_180n or 0)
                     else: # Fallback
                         val_corrente_prod = val_successivo_prod = 0
-                    
-                    calcolato = round((val_successivo_prod - val_corrente_prod) * k_factor, 3)
-                    valore_campo_principale = calcolato if calcolato >= 0 else ""
+                    # Se entrambe le letture sono 0, consideriamo il valore come non ancora calcolato -> cella vuota
+                    if val_corrente_prod == 0 and val_successivo_prod == 0:
+                        valore_campo_principale = ""
+                    else:
+                        calcolato = round((val_successivo_prod - val_corrente_prod) * k_factor, 3)
+                        valore_campo_principale = calcolato if calcolato >= 0 else ""
 
                     # Prelevata (Campo kWh)
                     val_corrente_prel = float(lettura_corrente.totale_pos or 0)
                     val_successivo_prel = float(lettura_successiva.totale_pos or 0)
-                    calcolato_prel = round((val_successivo_prel - val_corrente_prel) * k_factor, 3)
-                    valore_campo_secondario = calcolato_prel if calcolato_prel >= 0 else ""
+                    # Anche qui: se entrambe le letture sono 0, cella vuota
+                    if val_corrente_prel == 0 and val_successivo_prel == 0:
+                        valore_campo_secondario = ""
+                    else:
+                        calcolato_prel = round((val_successivo_prel - val_corrente_prel) * k_factor, 3)
+                        valore_campo_secondario = calcolato_prel if calcolato_prel >= 0 else ""
 
                 elif counter_obj.tipologia == "Scambio":
                     if tipologia_fascio == "trifascio":
@@ -226,15 +233,20 @@ def diarioenergie(request, nickname):
                     calcolato = round((val_successivo_autocons - val_corrente_autocons) * k_factor, 3)
                     valore_campo_principale = calcolato if calcolato >= 0 else ""
 
-                    # Immessa (Campo kWh - totale_280n)
-                    if tipologia_fascio == "trifascio":
-                        val_corrente_imm = float(lettura_corrente.totale_pos or 0)
-                        val_successivo_imm = float(lettura_successiva.totale_pos or 0)
-                    elif tipologia_fascio == "monofascio":
-                        val_corrente_imm = float(lettura_corrente.totale_180n or 0)
-                        val_successivo_imm = float(lettura_successiva.totale_180n or 0)
-                    else: # Fallback
-                        val_corrente_imm = val_successivo_imm = 0
+                    # Immessa (Campo kWh) - usa 2.8.0 se disponibile, altrimenti fallback precedente
+                    if (getattr(lettura_corrente, 'totale_280n', None) is not None 
+                        and getattr(lettura_successiva, 'totale_280n', None) is not None):
+                        val_corrente_imm = float(lettura_corrente.totale_280n or 0)
+                        val_successivo_imm = float(lettura_successiva.totale_280n or 0)
+                    else:
+                        if tipologia_fascio == "trifascio":
+                            val_corrente_imm = float(lettura_corrente.totale_pos or 0)
+                            val_successivo_imm = float(lettura_successiva.totale_pos or 0)
+                        elif tipologia_fascio == "monofascio":
+                            val_corrente_imm = float(lettura_corrente.totale_180n or 0)
+                            val_successivo_imm = float(lettura_successiva.totale_180n or 0)
+                        else: # Fallback
+                            val_corrente_imm = val_successivo_imm = 0
 
                     calcolato_imm = round((val_successivo_imm - val_corrente_imm) * k_factor, 3)
                     valore_campo_secondario = calcolato_imm if calcolato_imm >= 0 else ""
@@ -406,14 +418,29 @@ def salva_diario_energie(request):
         ).order_by('data_installazione')
 
         # Mappa per memorizzare i contatori attivi e sostituiti per tipologia
+        # Allineata alla logica della vista GET: 
+        # - attivo = data_dismissione is null
+        # - sostituito = ultimo contatore dismesso (data_dismissione non null) per tipologia
         counters_by_type_status = {}
-        for c in all_counters_for_impianto:
-            if c.data_dismissione and c.data_dismissione.year == anno:
-                # Questo contatore è stato sostituito nell'anno corrente
-                counters_by_type_status[f"{c.tipologia}_sostituito"] = c
-            elif c.data_dismissione is None:
-                # Questo è il contatore attivo
-                counters_by_type_status[f"{c.tipologia}_attivo"] = c
+        for tipologia in ["Produzione", "Scambio", "Ausiliare"]:
+            # Contatore attivo per tipologia
+            attivo = next((c for c in all_counters_for_impianto if c.tipologia == tipologia and c.data_dismissione is None), None)
+            if attivo:
+                counters_by_type_status[f"{tipologia}_attivo"] = attivo
+
+            # Ultimo contatore dismesso per tipologia (se presente nell'intervallo considerato)
+            dismessi = [c for c in all_counters_for_impianto if c.tipologia == tipologia and c.data_dismissione is not None]
+            if dismessi:
+                dismessi.sort(key=lambda x: x.data_dismissione, reverse=True)
+                counters_by_type_status[f"{tipologia}_sostituito"] = dismessi[0]
+
+        # Debug: riepilogo mappatura contatori attivi/sostituiti
+        try:
+            print("DEBUG salva_diario_energie - counters_by_type_status:")
+            for k, v in counters_by_type_status.items():
+                print(f"  {k}: ID={v.id}, Nome={v.nome}, Dismissione={v.data_dismissione}")
+        except Exception:
+            pass
 
         # Definisci la mappatura dai nomi dei campi del frontend ai nomi dei campi del modello e all'oggetto contatore di destinazione
         field_mapping = {
@@ -475,6 +502,9 @@ def salva_diario_energie(request):
                 model_field_name, target_counter = field_mapping.get(field_name, (None, None))
 
                 if not target_counter:
+                    # Log utile se il campo fa riferimento ad un contatore sostituito ma non presente
+                    if field_name.endswith('_sostituito'):
+                        print(f"DEBUG salva_diario_energie - Nessun contatore sostituito trovato per campo '{field_name}' nel {anno}.")
                     continue # Nessun contatore valido trovato per questo campo in base ai contatori attivi/sostituiti correnti
 
                 # Ottieni o crea l'oggetto regsegnanti per questo contatore specifico, anno, mese

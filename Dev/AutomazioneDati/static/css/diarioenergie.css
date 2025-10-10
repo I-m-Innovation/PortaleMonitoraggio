@@ -117,19 +117,21 @@ thead tr:nth-child(2) th:nth-child(2){
 
 /* Gruppo "Prelevata" */
 thead tr:nth-child(2) th:nth-child(4),
+
 thead tr:nth-child(2) th:nth-child(5){
     background-color: #f2dede; /* Rosso chiaro */
 }
 /* Gruppo "Prelevata" */
 thead tr:nth-child(3) th:nth-child(4),
 thead tr:nth-child(3) th:nth-child(5),
-thead tr:nth-child(3) th:nth-child(8),
+/* thead tr:nth-child(3) th:nth-child(8), */
 thead tr:nth-child(3) th:nth-child(9),
 thead tr:nth-child(3) th:nth-child(10){
     background-color: #f2dede; /* Rosso chiaro */
 }
 
-thead tr:nth-child(3) th:nth-child(6) {
+thead tr:nth-child(3) th:nth-child(6),
+thead tr:nth-child(3) th:nth-child(8) {
 background-color: #dff0d8; /* Verde chiaro */
 }
 
@@ -282,13 +284,14 @@ thead tr:nth-child(3) th:nth-child(7)
 }
 
 #diarioenergie table tbody tr td:nth-child(7),
-#diarioenergie table tbody tr td:nth-child(8){
+#diarioenergie table tbody tr td:nth-child(8),
+#diarioenergie table tbody tr td:nth-child(9){
     background-color: #dff0d8; /* Verde chiaro */
 }
 
 /* Colonne "Immessa" (colonne 8, 9, 10) */
 
-#diarioenergie table tbody tr td:nth-child(9),
+
 #diarioenergie table tbody tr td:nth-child(10) {
     background-color: #f2dede; /* Verde chiaro - Immessa */
 }

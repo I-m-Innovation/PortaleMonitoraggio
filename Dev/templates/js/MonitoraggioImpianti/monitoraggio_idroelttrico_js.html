@@ -59,6 +59,33 @@
 								let gauge_pres = gauges.Var3;
 								let gauge_eta = gauges.Eta;
 								
+								/* CONVERSIONE TIMESTAMPS IN FORMATO DATETIME PER ECHARTS */
+								let today = new Date();
+								let dateStr = today.toISOString().split('T')[0];
+								let timestampsDate = timestamps.map(t => t ? dateStr + ' ' + t : null);
+								
+								/* IDENTIFICAZIONE GAP TEMPORALI (> 15 MINUTI) */
+								/* Analizza i timestamp consecutivi per trovare interruzioni nei dati */
+								/* Se l'intervallo supera 15 minuti, crea un'area di errore da visualizzare */
+								let gaps = [];
+								const GAP_THRESHOLD = 15 * 60 * 1000; // 15 minuti in millisecondi
+								
+								for (let i = 0; i < timestampsDate.length - 1; i++) {
+										if (timestampsDate[i] && timestampsDate[i+1]) {
+												let currentTime = new Date(timestampsDate[i]).getTime();
+												let nextTime = new Date(timestampsDate[i+1]).getTime();
+												let timeDiff = nextTime - currentTime;
+												
+												if (timeDiff > GAP_THRESHOLD) {
+														// Gap trovato: aggiungi l'area da evidenziare
+														gaps.push([
+																{xAxis: timestampsDate[i], name: 'Gap dati'},
+																{xAxis: timestampsDate[i+1]}
+														]);
+												}
+										}
+								}
+								
 								/* AGGIORNAMENTO LED IMPIANTO */
 								document.getElementById("ledcolor").className = data.led;
 								/* AGGIORNAMENTO LED GAUGES */
@@ -79,7 +106,14 @@
                         }
 							      },
 	                  dataZoom: [{type: 'inside',show: true, realtime: true, start: 0, end: 100, xAxisIndex: [0,1],height: 60}],
-	                  xAxis: [{ data: timestamps }],
+	                  xAxis: [{ 
+	                      type: 'time',
+	                      min: dateStr + ' 00:00',
+	                      max: dateStr + ' 23:59',
+	                      axisLabel: {
+	                          formatter: '{HH}:{mm}'
+	                      }
+	                  }],
                     yAxis: [
                         {
                             type: 'value', name: 'Potenza',
@@ -104,17 +138,46 @@
 	                   }],
                     series: [
                         {
-                            name: 'Potenza', type: 'line', data: potenza,
+                            name: 'Potenza', type: 'line', 
+                            data: timestampsDate.map((t, i) => [t, potenza[i]]),
 	                          areaStyle: {
 			                          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
 					                          {offset: 0, color: warmpalette[7]},
 					                          {offset: 1, color: warmpalette[6]}
 			                          ])
 	                          },tooltip: {valueFormatter: value => toLocale(value,2) + ' kW'},
-	                          xAxisIndex: 0, yAxisIndex: 0, lineStyle: {width: 1,},showSymbol: false
+	                          xAxisIndex: 0, yAxisIndex: 0, lineStyle: {width: 1,},showSymbol: false,
+	                          markArea: {
+			                          silent: false,
+			                          itemStyle: {
+					                          color: 'rgba(255, 88, 88, 0.15)', // Rosso trasparente per evidenziare i gap
+					                          borderWidth: 1,
+					                          borderColor: 'rgba(255, 88, 88, 0.5)',
+					                          borderType: 'dashed'
+			                          },
+			                          label: {
+					                          show: true,
+					                          position: 'top',
+					                          color: '#ff5858',
+					                          fontSize: 11,
+					                          formatter: function(params) {
+							                          let start = new Date(params.data[0].xAxis);
+							                          let end = new Date(params.data[1].xAxis);
+							                          let durationMin = Math.round((end - start) / 60000);
+							                          return 'GAP: ' + durationMin + ' min';
+					                          }
+			                          },
+			                          data: gaps,
+			                          emphasis: {
+					                          itemStyle: {
+							                          color: 'rgba(255, 88, 88, 0.25)'
+					                          }
+			                          }
+	                          }
                         },
                         {
-                            name: 'Portata', type: 'line', xAxisIndex: 0, yAxisIndex: 1, data: portata,
+                            name: 'Portata', type: 'line', xAxisIndex: 0, yAxisIndex: 1, 
+                            data: timestampsDate.map((t, i) => [t, portata[i]]),
 	                          tooltip: {valueFormatter: value => toLocale(value,2) + ' {{ impianto.unita_misura }}'},
 	                          lineStyle: {width: 2,}, emphasis: {focus: 'series'}, showSymbol: false,
 	                          markLine: {data: [

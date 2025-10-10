@@ -39,57 +39,77 @@ class DayChartData(APIView):
 	renderer_classes = [JSONRenderer]
 
 	def get(self, request, nickname, format=None):
+		print(f"DEBUG: Starting DayChartData.get for nickname: {nickname}")
 		impianto = Impianto.objects.filter(nickname=nickname)[0]
+		print(f"DEBUG: Found impianto: {impianto.nome_impianto}")
 		Now = datetime.now()
+		print(f"DEBUG: Current time: {Now}")
 		# ---------------------------------------- FTP ---------------------------------------------------
 		if impianto.lettura_dati == 'ftp':
+			print("DEBUG: Using FTP data reading method")
 			# NOME FILE "last24hTL"
 			time_series_day_file = impianto.filemonitoraggio_set.filter(tipo='last24hTL')[0]
+			print(f"DEBUG: Time series file: {time_series_day_file}")
 
 			# PRIMO PASSAGGIO: LETTURA DATI DAI FILE CSV
 			try:
+				print("DEBUG: Starting CSV data reading")
 				df_time_series = fn.read_DATA(time_series_day_file.cartella, str(time_series_day_file), nickname)
+				print(f"DEBUG: Read {len(df_time_series)} rows from CSV")
 
 				# COMPLETO LA TimeSeries CON VALORI VUOTI FINO A MEZZANOTTE,
 				# CON INTERVALLI DI 15 MIN (CON LA LIBRERIA DA FRONT-END NON RIESCO)
 				df_time_series, k_last, t_last, delta = fn.fillTL(df_time_series, '15min')
+				print(f"DEBUG: After fillTL - k_last: {k_last}, t_last: {t_last}, delta: {delta}")
 
 				# TRASFORMO IN "ORE:MINUTI"
 				df_time_series['t'] = df_time_series['t'].dt.strftime('%H:%M')
+				print("DEBUG: Converted timestamps to HH:MM format")
 
 				# RENDIMENTO
 				df_time_series['Eta'] = df_time_series['Eta'] * 100
+				print("DEBUG: Converted efficiency to percentage")
 				# PORTATA
 				if impianto.unita_misura == 'l/s':
 					df_time_series['Q'] = df_time_series['Q'] * 1000
+					print("DEBUG: Converted flow rate from l/s to ml/s")
 
 			except Exception as error:
+				print(f"DEBUG: Exception in CSV processing: {type(error).__name__} - {error}")
 				df_time_series = pd.DataFrame({'t': [], 'P': [], 'Q': []})
 				k_last = t_last = delta = None
 				print(f'Errore elaborazione {time_series_day_file}', type(error).__name__, "–", error)
 
 			# SECONDO PASSAGGIO: DATI RELATIVI AI GAUGE (ultimo valore, media e deviazione standard)
 			try:
+				print("DEBUG: Starting gauge data processing")
 				# LETTURA DATI DEI GAUGE
 				dict_gauge = fn.Gauges(impianto)
+				print(f"DEBUG: Gauge data processed: {dict_gauge.keys()}")
 
 			except Exception as error:
+				print(f"DEBUG: Exception in gauge processing: {type(error).__name__} - {error}")
 				dict_gauge = {'Power': [], 'Eta': [], 'colors': [], 'Var2': [], 'Var3': [], 'leds': []}
 				print(f'Errore elaborazione dati Gauge {impianto.nome_impianto}', type(error).__name__, "–", error)
 
 			# TERZO PASSAGGIO LETTURA STATO CENTRALE
 			try:
+				print("DEBUG: Starting alarm state reading")
 				# DIZIONARIO LEDS MONITORAGGIO
 				leds = {'O': 'led-green', 'A': 'led-red', 'W': 'led-yellow', 'OK': 'led-green'}
 				dfAlarms = fn.read_DATA('Database_Produzione', 'AlarmStatesBeta.csv', 'Database_Produzione')
+				print(f"DEBUG: Read alarm states, tag: {impianto.tag}")
 				# LED IN BASE ALLO STATO
 				led = leds[dfAlarms[impianto.tag][0]]
+				print(f"DEBUG: LED status: {led}")
 			except Exception as error:
+				print(f"DEBUG: Exception in alarm state reading: {type(error).__name__} - {error}")
 				led = 'led-gray'
 				print(f'Errore lettura stato {impianto.nome_impianto}', type(error).__name__, "–", error)
 
 			# fillna sulle celle vuote
 			df_time_series[['t', 'P', 'Q']] = df_time_series[['t', 'P', 'Q']].fillna('')
+			print("DEBUG: Filled NaN values in dataframe")
 
 			chart_data = {
 				'timestamps': df_time_series.t,
@@ -100,6 +120,7 @@ class DayChartData(APIView):
 				'gauges': dict_gauge,
 				'led': led
 			}
+			print(f"DEBUG: Prepared chart_data with {len(df_time_series)} data points")
 			return Response(chart_data)
 
 		# ---------------------------------------- ISolarCloud ---------------------------------------------------
