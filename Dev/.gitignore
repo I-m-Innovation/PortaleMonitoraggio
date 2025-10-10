@@ -48,4 +48,4 @@ media/
 *.pyo
 *.pyd
 
-chart.js
+Dev/chart.js
