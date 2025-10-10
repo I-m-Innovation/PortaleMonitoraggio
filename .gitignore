@@ -1,0 +1,50 @@
+# File e directory Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Ambienti virtuali
+.venv/
+venv/
+ENV/
+env/
+
+# Database
+*.sqlite3
+*.db
+.cache.sqlite
+
+# File temporanei
+temporary/
+*.csv
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Django
+*.log
+local_settings.py
+staticfiles/
+media/
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Compiled files
+*.pyc
+*.pyo
+*.pyd
+
