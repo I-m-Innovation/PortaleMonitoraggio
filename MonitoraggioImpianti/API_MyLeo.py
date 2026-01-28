@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import time
 import pandas as pd
 from functools import reduce
+import os 
 
 
 def login_LEO():
@@ -14,8 +15,8 @@ def login_LEO():
 	}
 
 	param = {
-		'username': 'tecnico@zilioservice.com',
-		'password': '6j0LdUmjI2'
+		'username': os.getenv('MYLEO_USERNAME'),
+		'password': os.getenv('MYLEO_PASSWORD')
 	}
 
 	param = json.dumps(param)

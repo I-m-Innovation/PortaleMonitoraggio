@@ -1,10 +1,10 @@
-import time
-
-import requests
+import os 
 import json
-from datetime import datetime,timedelta
+import time
+import requests
 import pandas as pd
 from functools import reduce
+from datetime import datetime,timedelta
 
 
 plant_keys = {
@@ -37,8 +37,8 @@ inv_keys = {
 	'Sibat Tomarchio': ['5483816_1_2_1', '5483816_1_1_1', '5483816_1_3_1'],
 	'RCT': ['5488121_1_1_5', '5488121_1_2_5'],
 	'CFFT': ['5646781_1_2_1', '5646781_1_11_1', '5646781_1_9_1', '5646781_1_5_1', '5646781_1_14_1',
-			 '5646781_1_10_1', '5646781_1_16_1', '5646781_1_3_1', '5646781_1_12_1', '5646781_1_6_1', '5646781_1_15_1',
-			 '5646781_1_8_1', '5646781_1_4_1', '5646781_1_13_1', '5646781_1_7_1']
+				'5646781_1_10_1', '5646781_1_16_1', '5646781_1_3_1', '5646781_1_12_1', '5646781_1_6_1', '5646781_1_15_1',
+				'5646781_1_8_1', '5646781_1_4_1', '5646781_1_13_1', '5646781_1_7_1']
 }
 
 
@@ -46,16 +46,16 @@ def login_ISC():
 
 	headers = {
 		"accept": "application/json",
-		"x-access-key": 'dpiixeb8cnn34widwp7ihg5nzfb8eybw',
-		"sys_code": '901',
+		"x-access-key": os.getenv('ISC_X_ACCESS_KEY'),
+		"sys_code": os.getenv('ISC_SYS_CODE'),
 		"Content-Type": "application/json"
 	}
 
 	param = {
-		"appkey": 'AAA324AF620903ED6ECCDDEA0B6BC866',
-		"user_account": 'tecnico@zilioservice.com',
-		"user_password": "monitorinG_eesco22",
-		"lang": "_it_IT"
+		"appkey": os.getenv('ISC_APPKEY'),
+		"user_account": os.getenv('ISC_USER_ACCOUNT'),
+		"user_password": os.getenv('ISC_USER_PASSWORD'),
+		"lang": os.getenv('ISC_LANG')
 	}
 
 	param = json.dumps(param)
@@ -71,8 +71,8 @@ def login_ISC():
 def getPlantList(token):
 	headers = {
 		"accept": "application/json",
-		"x-access-key": 'dpiixeb8cnn34widwp7ihg5nzfb8eybw',
-		"sys_code": '901',
+		"x-access-key": os.getenv('ISC_X_ACCESS_KEY'),
+		"sys_code": os.getenv('ISC_SYS_CODE'),
 		"Content-Type": "application/json"
 	}
 

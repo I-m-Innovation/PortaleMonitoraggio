@@ -6,7 +6,7 @@ import requests
 import json
 import pandas as pd
 import pytz
-
+import os
 
 def getLogData(token,plant):
     headers = {
@@ -55,8 +55,8 @@ def getLogData(token,plant):
 
 def authenticateHigeco():
     params = {
-        "username": "Zilio group",
-        "password": "he9gieLi"
+        "username": os.getenv("HIGECO_USERNAME"),
+        "password": os.getenv("HIGECO_PASSWORD")
     }
     URL = 'https://hsi.higeco.com/api/v1/authenticate'
     responseApi = requests.post(URL, data=json.dumps(params))

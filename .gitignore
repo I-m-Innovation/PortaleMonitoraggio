@@ -1,0 +1,33 @@
+# Virtual env
+venv
+
+# Env secrets
+.env
+.env.*
+
+# Local DB/cache
+.cache.sqlite
+db.sqlite3
+*.sqlite3
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE config
+.idea/
+
+# Logs
+*.log
+
+# Test artifacts
+coverage/
+.coverage
+.pytest_cache/
+
+# Packaging builds
+*.egg-info/
+dist/
+build/
