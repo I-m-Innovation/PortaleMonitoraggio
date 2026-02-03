@@ -159,8 +159,13 @@
 							console.log('Valori negativi potenza:', negativiPotenza);
 							console.log('Valori negativi portata:', negativiPortata);
 														/* AGGIORNAMENTO LED IMPIANTO */
-							document.getElementById("ledcolor").className = data.led;
-							console.log('Aggiornato LED impianto con classe:', data.led);
+							const ledImpiantoEl = document.getElementById("ledcolor");
+							if (ledImpiantoEl) {
+								ledImpiantoEl.className = data.led;
+								console.log('Aggiornato LED impianto con classe:', data.led);
+							} else {
+								console.warn('Elemento LED impianto non trovato (#ledcolor)');
+							}
 							/* AGGIORNAMENTO LED GAUGES */
 							const gaugeLeds = (gauges && gauges.leds && typeof gauges.leds === 'object') ? gauges.leds : {};
 							if (!gaugeLeds.Var2 || !gaugeLeds.Var3) {
@@ -170,14 +175,34 @@
 							const ledGaugePortata = gaugeLeds.Var2 || 'led-gray';
 							const ledGaugePressione = gaugeLeds.Var3 || 'led-gray';
 							const ledGaugeRendimento = gaugeLeds.Eta || 'led-gray';
-							document.getElementById("ledcolor_gauge-potenza").className = ledGaugePotenza;
-							console.log('Aggiornato LED gauge potenza:', ledGaugePotenza);
-							document.getElementById("ledcolor_gauge-portata").className = ledGaugePortata;
-							console.log('Aggiornato LED gauge portata:', ledGaugePortata);
-							document.getElementById("ledcolor_gauge-pressione").className = ledGaugePressione;
-							console.log('Aggiornato LED gauge pressione:', ledGaugePressione);
-							document.getElementById("ledcolor_gauge-rendimento").className = ledGaugeRendimento;
-							console.log('Aggiornato LED gauge rendimento:', ledGaugeRendimento);
+							const ledGaugePotenzaEl = document.getElementById("ledcolor_gauge-potenza");
+							if (ledGaugePotenzaEl) {
+								ledGaugePotenzaEl.className = ledGaugePotenza;
+								console.log('Aggiornato LED gauge potenza:', ledGaugePotenza);
+							} else {
+								console.warn('Elemento LED gauge potenza non trovato (#ledcolor_gauge-potenza)');
+							}
+							const ledGaugePortataEl = document.getElementById("ledcolor_gauge-portata");
+							if (ledGaugePortataEl) {
+								ledGaugePortataEl.className = ledGaugePortata;
+								console.log('Aggiornato LED gauge portata:', ledGaugePortata);
+							} else {
+								console.warn('Elemento LED gauge portata non trovato (#ledcolor_gauge-portata)');
+							}
+							const ledGaugePressioneEl = document.getElementById("ledcolor_gauge-pressione");
+							if (ledGaugePressioneEl) {
+								ledGaugePressioneEl.className = ledGaugePressione;
+								console.log('Aggiornato LED gauge pressione:', ledGaugePressione);
+							} else {
+								console.warn('Elemento LED gauge pressione non trovato (#ledcolor_gauge-pressione)');
+							}
+							const ledGaugeRendimentoEl = document.getElementById("ledcolor_gauge-rendimento");
+							if (ledGaugeRendimentoEl) {
+								ledGaugeRendimentoEl.className = ledGaugeRendimento;
+								console.log('Aggiornato LED gauge rendimento:', ledGaugeRendimento);
+							} else {
+								console.warn('Elemento LED gauge rendimento non trovato (#ledcolor_gauge-rendimento)');
+							}
 							
 							console.log('Configurazione gauges:', {
 									potenza: gauge_pot,
