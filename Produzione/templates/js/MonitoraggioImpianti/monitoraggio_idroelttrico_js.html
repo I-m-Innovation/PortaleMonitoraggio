@@ -162,14 +162,22 @@
 							document.getElementById("ledcolor").className = data.led;
 							console.log('Aggiornato LED impianto con classe:', data.led);
 							/* AGGIORNAMENTO LED GAUGES */
-							document.getElementById("ledcolor_gauge-potenza").className = gauges.leds.Power;
-							console.log('Aggiornato LED gauge potenza:', gauges.leds.Power);
-							document.getElementById("ledcolor_gauge-portata").className = gauges.leds.Var2;
-							console.log('Aggiornato LED gauge portata:', gauges.leds.Var2);
-							document.getElementById("ledcolor_gauge-pressione").className = gauges.leds.Var3;
-							console.log('Aggiornato LED gauge pressione:', gauges.leds.Var3);
-							document.getElementById("ledcolor_gauge-rendimento").className = gauges.leds.Eta;
-							console.log('Aggiornato LED gauge rendimento:', gauges.leds.Eta);
+							const gaugeLeds = (gauges && gauges.leds && typeof gauges.leds === 'object') ? gauges.leds : {};
+							if (!gaugeLeds.Var2 || !gaugeLeds.Var3) {
+								console.warn('LED gauge keys mancanti', {keys: Object.keys(gaugeLeds), gauges});
+							}
+							const ledGaugePotenza = gaugeLeds.Power || 'led-gray';
+							const ledGaugePortata = gaugeLeds.Var2 || 'led-gray';
+							const ledGaugePressione = gaugeLeds.Var3 || 'led-gray';
+							const ledGaugeRendimento = gaugeLeds.Eta || 'led-gray';
+							document.getElementById("ledcolor_gauge-potenza").className = ledGaugePotenza;
+							console.log('Aggiornato LED gauge potenza:', ledGaugePotenza);
+							document.getElementById("ledcolor_gauge-portata").className = ledGaugePortata;
+							console.log('Aggiornato LED gauge portata:', ledGaugePortata);
+							document.getElementById("ledcolor_gauge-pressione").className = ledGaugePressione;
+							console.log('Aggiornato LED gauge pressione:', ledGaugePressione);
+							document.getElementById("ledcolor_gauge-rendimento").className = ledGaugeRendimento;
+							console.log('Aggiornato LED gauge rendimento:', ledGaugeRendimento);
 							
 							console.log('Configurazione gauges:', {
 									potenza: gauge_pot,
