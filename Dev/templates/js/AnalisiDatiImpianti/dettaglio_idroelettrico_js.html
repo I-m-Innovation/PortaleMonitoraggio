@@ -166,14 +166,14 @@
                 yAxis: [
                     {
                         gridIndex: 0, type: 'value', name: 'Potenza (kW)', nameLocation: 'middle', nameGap: 32,
-                        axisLine: {show: true, lineStyle: {color: warmpalette[7],}}, min: 0, max: {{ impianto.potenza_installata|stringformat:".2f" }},
+					axisLine: {show: true, lineStyle: {color: warmpalette[7],}}, min: 0, max: {{ impianto.potenza_installata|default_if_none:"0"|default:"0"|stringformat:".2f" }},
                         axisLabel: {
                               formatter: val => val === 0 ? '': val
                         },axisTick: {show: true}
                     },
                     {
 	                      gridIndex: 0, type: 'value', name: 'Portata ({{ impianto.unita_misura }})', nameLocation: 'middle', nameGap: 30,
-	                      axisLine: {show: true, lineStyle: {color: coolpalette[7],}}, min: 0, max: {{ impianto.Var2_max|stringformat:".2f" }},
+					  axisLine: {show: true, lineStyle: {color: coolpalette[7],}}, min: 0, max: {{ impianto.Var2_max|default_if_none:"0"|default:"0"|stringformat:".2f" }},
 	                      axisLabel: {
                               formatter: val => val === 0 ? '': val
                         },axisTick: {show: true}
@@ -190,14 +190,14 @@
 	                      nameLocation: 'middle', nameGap: 30, axisLine: {show: true, lineStyle: {color: coolpalette[7]} },
 	                      axisLabel: {
                               formatter: val => val === 0 ? '': val
-                        },axisTick: {show: true}, min: 0, max: {{ impianto.Var2_max|stringformat:".2f" }}*1.5,
+					},axisTick: {show: true}, min: 0, max: {{ impianto.Var2_max|default_if_none:"0"|default:"0"|stringformat:".2f" }}*1.5,
                     },
                     {
                         gridIndex: 1, type: 'value', position:'right',name: 'Pressione (BarG)', 
 	                      nameLocation: 'middle', nameGap: 30, axisLine: {show: true, lineStyle: {color: coolpalette[4]}},
 	                      axisLabel: {
                               formatter: val => val === 0 ? '': val
-                        },axisTick: {show: true},  min: 0, max: {{ impianto.Var3_max|stringformat:".2f" }}*2,
+					},axisTick: {show: true},  min: 0, max: {{ impianto.Var3_max|default_if_none:"0"|default:"0"|stringformat:".2f" }}*2,
                     },
                 ],
 								/* DATI - LINEE */
