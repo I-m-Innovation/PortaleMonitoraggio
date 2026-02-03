@@ -98,7 +98,7 @@ def home(request):
 			df_monitoraggio.loc[impianto.nickname, 'curr_icona'] = '-'
 
 	# LED ROSSO PER SA3 MISURA IN WATT FOTVOLTAICO ZILIO_GR
-	df_monitoraggio.loc['ionico_SA3', 'state'] = 'led-red'
+	# df_monitoraggio.loc['ionico_SA3', 'state'] = 'led-red'  # COMMENTATO: ora gestito dinamicamente
 	df_monitoraggio.loc['zilio_gr', 'Energy'] = df_monitoraggio.loc['zilio_gr', 'Energy']/1000
 
 	# ORDINAMENTO DEL DATAFRAME IN BASE A LED E POI IN BASE A RENDIMENTO
