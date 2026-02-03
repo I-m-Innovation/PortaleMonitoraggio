@@ -1,0 +1,136 @@
+@import url("https://fonts.googleapis.com/css?family=Montserrat:400,400i,700");
+
+/*
+
+Battery indicator - HTML & CSS only. Fully scalable.
+To change, edit only "--width" parametr in class ==> ".battery-icon_wrapper".
+
+*/
+
+/** {*/
+/*  box-sizing: border-box;*/
+/*  margin: 0;*/
+/*  padding: 0;*/
+/*}*/
+/*body {*/
+/*  display: flex;*/
+/*  flex-direction: column;*/
+/*  gap: 10px;*/
+/*  justify-content: center;*/
+/*  align-items: center;*/
+/*  height: 100vh;*/
+/*  font-family: Montserrat, sans-serif;*/
+/*  background: #e0e0e0;*/
+/*  padding: 10px;*/
+/*}*/
+.graphic-wrapper {
+    padding-top: 20px;
+    display: flex;
+    gap: 20px 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.text-wrapper {
+    text-align: center;
+    text-transform: uppercase;
+    margin-bottom: 50px;
+}
+
+/* ==== START ==== */
+.battery-icon_wrapper {
+    --bg-color: hotpink;
+    --width: 90px; /* <==== change to scale all  */
+    --gap: calc(var(--width) / 25);
+    --border-r: calc(var(--width) / 10);
+
+    width: var(--width);
+    aspect-ratio: 0.55;
+    border: var(--gap) solid #575757;
+    border-radius: var(--border-r);
+    padding: var(--gap);
+    display: grid;
+    grid-template-row: repeat(5, 1fr);
+    gap: var(--gap);
+    position: relative;
+}
+.battery-icon_wrapper:before {
+    content: "";
+    position: absolute;
+    background: gray;
+    border-radius: var(--border-r);
+    width: calc(var(--width) / 3.5);
+    aspect-ratio: 3;
+    top: calc((var(--width) / 6) * -1);
+    left: 50%;
+    transform: translateX(-50%);
+}
+.battery-icon_ind {
+    background: transparent;
+    border-radius: 5px;
+}
+.lvl1 {
+    --bg-color: #df0012;
+}
+.lvl2 {
+    --bg-color: #fb6100;
+}
+.lvl3 {
+    --bg-color: #fbb103;
+}
+.lvl4 {
+    --bg-color: #8ac419;
+}
+.lvl5 {
+    --bg-color: #51af27;
+}
+
+.battery-icon_wrapper.lvl0 .battery-icon_ind:nth-child(n + 5) {
+    background: rgba(255, 255, 255, 0);
+}
+
+.battery-icon_wrapper.lvl1 .battery-icon_ind:nth-child(n + 5) {
+    background: var(--bg-color);
+}
+.battery-icon_wrapper.lvl2 .battery-icon_ind:nth-child(n + 4) {
+    background: var(--bg-color);
+}
+.battery-icon_wrapper.lvl3 .battery-icon_ind:nth-child(n + 3) {
+    background: var(--bg-color);
+}
+.battery-icon_wrapper.lvl4 .battery-icon_ind:nth-child(n + 2) {
+    background: var(--bg-color);
+}
+.battery-icon_wrapper.lvl5 .battery-icon_ind:nth-child(n + 1) {
+    background: var(--bg-color);
+
+}
+
+/* ==== END ==== */
+
+.procent-wrapper {
+    margin-top: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+}
+
+.procent-wrapper p {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+p:before {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    left: -15px;
+}
+p.lvl1:before,
+p.lvl2:before,
+p.lvl3:before,
+p.lvl4:before,
+p.lvl5:before {
+    background: var(--bg-color);
+}

@@ -1,0 +1,525 @@
+@import url('https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap');
+
+/* Stili globali per la pagina */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: Arial, sans-serif;
+}
+
+
+.tabelladiarioenergie{
+   
+    padding: 15px;
+    width: 100%;
+}
+
+.lista_contatori{
+    padding: 15px;
+    width: 100%;
+   
+}
+
+.tabelle-container {
+   margin-left: 50px;
+}
+
+/* Contenitore per centrare la tabella */
+.table-container {
+    margin: 20px auto;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+
+.table {
+    width: 100%;
+    font-size: 0.9rem;
+    table-layout: fixed; 
+    border: 1px solid #000000;
+  
+    
+}
+
+/* Regola di default per i th */
+.table th {
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+ 
+}
+
+/* Regola di default per i td */
+.table td {
+    text-align: center;
+    vertical-align: middle;
+    transition: background-color 0.3s ease-in-out;
+}
+
+/* Stile per celle con valori monetari */
+td:nth-child(14),
+td:nth-child(15),
+td:nth-child(16),
+td:nth-child(17),
+td:nth-child(18),
+td:nth-child(19) {
+    text-align: right;
+}
+
+/* La prima cella "Mese" */
+thead tr:first-child th:nth-child(1) {
+    background-color: #d9edf7; /* Blu chiaro */
+}
+
+
+thead tr:first-child th:nth-child(2) {
+    background-color: #fcf8e3; /* Giallo chiaro per "Prodotta" */
+}
+thead tr:first-child th:nth-child(3) {
+    background-color: #f2dede; /* Rosso chiaro per "Prelevata" */
+}
+thead tr:first-child th:nth-child(4) {
+    background-color: #dff0d8; /* Verde chiaro per "Immessa" */
+}
+
+/* Seconda riga dell'intestazione (<thead>) */
+/* Poiché la cella "Mese" ha rowspan, la seconda riga contiene 9 celle:
+   le prime 3 per "Prodotta", le successive 3 per "Prelevata" e le ultime 3 per "Immessa".
+*/
+
+/* Gruppo "Prodotta" */
+thead tr:nth-child(2) th:nth-child(1) {
+    background-color: #fcf8e3;
+}
+
+
+thead tr:nth-child(3) th:nth-child(1), 
+thead tr:nth-child(3) th:nth-child(2), 
+thead tr:nth-child(3) th:nth-child(3){ 
+    background-color: #fcf8e3;
+}
+ 
+thead tr:nth-child(3) th:nth-child(11), 
+thead tr:nth-child(3) th:nth-child(12){ 
+    background-color: #f0e4d8;
+}
+
+thead tr:nth-child(2) th:nth-child(3) {
+    background-color: #dff0d8; /* Giallo chiaro */
+}
+
+thead tr:nth-child(2) th:nth-child(2){
+    background-color:#f2dede;
+
+}
+
+
+/* Gruppo "Prelevata" */
+thead tr:nth-child(2) th:nth-child(4),
+
+thead tr:nth-child(2) th:nth-child(5){
+    background-color: #f2dede; /* Rosso chiaro */
+}
+/* Gruppo "Prelevata" */
+thead tr:nth-child(3) th:nth-child(4),
+thead tr:nth-child(3) th:nth-child(5),
+/* thead tr:nth-child(3) th:nth-child(8), */
+thead tr:nth-child(3) th:nth-child(9),
+thead tr:nth-child(3) th:nth-child(10){
+    background-color: #f2dede; /* Rosso chiaro */
+}
+
+thead tr:nth-child(3) th:nth-child(6),
+thead tr:nth-child(3) th:nth-child(8) {
+background-color: #dff0d8; /* Verde chiaro */
+}
+
+
+
+/* Gruppo "Immessa" */
+thead tr:nth-child(3) th:nth-child(7)
+ {
+    background-color: #dff0d8; /* Verde chiaro */
+}
+
+
+/* Per dispositivi mobili, fissa la colonna dei mesi */
+@media (max-width: 768px) {
+    .table-container {
+        position: relative;
+    }
+    
+    .table td:first-child,
+    .table th:first-child {
+        position: sticky;
+        left: 0;
+        background-color: white;
+        z-index: 1;
+        border-right: 2px solid #dee2e6;
+    }
+}
+
+
+/* Stile per il nuovo riquadro contenitore */
+.riquadro-container {
+    width: 100%;            /* Largo quanto la larghezza del contenitore padre (in questo caso la tabella) */
+    height: 35px;           /* Altezza fissa di 35px */
+    border: 1px solid #dee2e6;  /* Bordo sottile */
+    background-color: #f0f0f0;  /* Sfondo chiaro per differenziare il riquadro */
+    display: flex;          /* Utilizza flexbox per allineare gli elementi internamente */
+    align-items: center;    /* Centra verticalmente il contenuto */
+    padding: 0 10px;        /* Spazio orizzontale interno */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Leggera ombra per dare profondità */
+}
+
+/* Stile per il container del dropdown */
+.dropdown-container {
+    display: flex;
+    align-items: center;
+}
+
+.dropdown-container label {
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 24px;
+    align-items: center;
+}
+
+/* Stile per il menu a tendina personalizzato */
+.custom-select {
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    width: 100px;
+    font-size: 14px;
+    appearance: menulist; /* Mostra la freccia standard del browser */
+}
+
+.custom-select:focus {
+    outline: none;
+    border-color: #666;
+}
+
+/* Stile per la barra principale */
+.header-bar {
+    margin-top: 20px;
+    width: 100%;
+    min-height: 75px;
+    background-color: #2196F3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    color: white;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    flex-wrap: wrap;
+}
+
+/* Stile per il titolo */
+.header-title {
+    font-size: 2.2rem;
+    font-weight: bold;
+}
+
+/* Stile per una card personalizzata */
+.custom-card {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    max-width: 400px;  /* Puoi regolare la larghezza massima desiderata */
+    margin: 20px auto; /* Centra la card nella pagina */
+}
+
+.custom-card .card-header {
+    background-color: #f0f0f0;
+    padding: 10px;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: bold;
+    text-align: center;
+}
+
+.custom-card .card-body {
+    padding: 10px;
+    text-align: center;
+}
+
+
+  /* Stili per il wrapper che contiene le tabelle e le icone di navigazione */
+  .table-switcher-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+/* Opzionale: Stile per le icone delle frecce, se desideri ulteriori aggiustamenti */
+.nav-arrow {
+    cursor: pointer;
+    font-size: 2em; /* Puoi modificare la dimensione in base alle tue esigenze */
+    padding: 0 15px;    
+    user-select: none;
+}
+
+/* Assicura che le celle <td> della prima tabella abbiano gli stessi colori delle <th> */
+
+/* Colonna "Mese" */
+#diarioenergie table tbody tr td:nth-child(1) {
+    background-color: #d9edf7;  /* Blu chiaro - Mese */
+}
+
+/* Colonne "Prodotta" (colonne 2, 3, 4) */
+#diarioenergie table tbody tr td:nth-child(2),
+#diarioenergie table tbody tr td:nth-child(3),
+#diarioenergie table tbody tr td:nth-child(4) {
+    background-color: #fcf8e3;  /* Giallo chiaro - Prodotta */
+}
+
+/* Colonne "Prelevata" (colonne 5, 6, 7) */
+#diarioenergie table tbody tr td:nth-child(5),
+#diarioenergie table tbody tr td:nth-child(6){
+    background-color: #f2dede;  /* Rosso chiaro - Prelevata */
+}
+
+#diarioenergie table tbody tr td:nth-child(7),
+#diarioenergie table tbody tr td:nth-child(8),
+#diarioenergie table tbody tr td:nth-child(9){
+    background-color: #dff0d8; /* Verde chiaro */
+}
+
+/* Colonne "Immessa" (colonne 8, 9, 10) */
+
+
+#diarioenergie table tbody tr td:nth-child(10) {
+    background-color: #f2dede; /* Verde chiaro - Immessa */
+}
+
+#diarioenergie table tbody tr td:nth-child(11),
+#diarioenergie table tbody tr td:nth-child(12),
+#diarioenergie table tbody tr td:nth-child(13) {
+    background-color: #f2dede;  /* Verde chiaro - Immessa */
+}
+
+
+/* Evidenzia la cella attualmente in editing */
+table td.editing {
+    background-color: #ffffcc;  /* Giallo chiaro */
+}
+
+/* Evidenzia la cella modificata rispetto al valore originale */
+table td.modified {
+    background-color: #ffefc5;  /* Colore per evidenziare la modifica */
+}
+
+/* Container per il pulsante di salvataggio, posizionato in basso a destra */
+.save-button-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1050; /* Aumentato per essere sopra altri elementi */
+}
+
+/* Stile per il pulsante "Salva" */
+#save-button {
+    background-color: #28a745; /* Verde Bootstrap */
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1rem;
+    border-radius: 50px; /* Pulsante rotondo */
+    cursor: pointer;
+    box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+#save-button:hover {
+    background-color: #218838; /* Verde più scuro al passaggio del mouse */
+    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.4);
+    transform: translateY(-2px);
+}
+
+#save-button:active {
+    transform: translateY(1px);
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+/* Adattamento per schermi piccoli */
+@media (max-width: 767.98px) {
+    .save-button-container {
+        bottom: 15px;
+        right: 15px;
+    }
+    
+    #save-button {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Stile migliorato per la lista contatori */
+.lista_contatori .card-header {
+    font-weight: bold;
+}
+
+.lista_contatori .list-group-item {
+    transition: background-color 0.2s ease;
+    padding: 12px 15px;
+}
+
+.lista_contatori .list-group-item:hover {
+    background-color: #f8f9fa;
+    cursor: pointer;
+}
+
+.contatore-link {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: #333;
+    width: 100%;
+}
+
+.contatore-link:hover {
+    color: #007bff;
+}
+
+.contatore-tipo {
+    font-size: 0.8em;
+    color: #6c757d;
+    margin-top: 2px;
+}
+
+/* Media query per dispositivi piccoli */
+@media (max-width: 767.98px) {
+    .header-bar {
+        flex-direction: column;
+        padding: 15px;
+        text-align: center;
+    }
+    
+    .header-title {
+        margin-bottom: 10px;
+        font-size: 1.8rem;
+    }
+    
+    .dropdown-container {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+}
+
+/* Stili per il salvataggio delle celle */
+.saving {
+    background-color: #f0f8ff !important; /* Azzurro chiaro */
+    transition: background-color 0.3s;
+}
+
+.save-success {
+    background-color: #d4edda !important; /* Verde chiaro */
+    transition: background-color 0.3s;
+}
+
+.save-error {
+    background-color: #f8d7da !important; /* Rosso chiaro */
+    transition: background-color 0.3s;
+}
+/* 
+Stili specifici per il registro segnanti */
+
+/* Migliora la gestione della tabella per adattarsi a più colonne */
+ .tabelladiarioenergie .table-container {
+    overflow-x: auto;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+/* Assicura che la tabella si estenda quanto necessario */
+ .tabelladiarioenergie table {
+     width: 100%;
+    min-width: 1200px;
+    table-layout: fixed; 
+}  
+
+/* Migliora la gestione del testo nelle celle */
+.tabelladiarioenergie table th, 
+.tabelladiarioenergie table td {
+    white-space: normal; /* Permette al testo di andare a capo */
+    overflow: visible;   /* Rimuove il taglio del testo */
+    text-overflow: clip; /* Rimuove i puntini di sospensione */
+    padding: 5px;        
+    font-size: 0.9rem;   
+    min-width: 100px;    /* Imposta una larghezza minima */
+} 
+
+/* Consenti alle celle modificabili di mostrare tutto il testo durante l'editing */
+ .tabelladiarioenergie table td.editing {
+    white-space: normal;
+    overflow: visible;
+} 
+
+/* Stile per il pulsante di salvataggio fisso */
+.save-button-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+} 
+
+#diarioenergie_save {
+    background-color: #28a745;
+    color: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    padding: 8px 15px;
+} 
+
+#diarioenergie_save:hover {
+    background-color: #218838;
+} 
+
+/* Stili per la barra di intestazione */
+ .header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap; 
+    gap: 10px; 
+}
+
+/* Stile per il titolo che si adatta */
+.header-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    flex: 1;
+    min-width: 200px; 
+}
+
+@media (max-width: 768px) {
+    .header-bar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .dropdown-container,
+    .import-container {
+        margin-top: 10px;
+    }
+}
+
+/* Stile specifico per l'importazione dati */
+.import-container {
+    margin-left: 10px;
+}
+
+/* Stile per la barra laterale con l'elenco dei contatori */
+.lista_contatori {
+    position: sticky;
+    top: 20px;
+} 
