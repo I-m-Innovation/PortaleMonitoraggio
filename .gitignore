@@ -1,0 +1,31 @@
+
+# File temporanei e di ambiente
+.env
+.cache.sqlite
+venv/
+db.sqlite3
+
+# File di sistema e IDE
+.vscode/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Static e media
+staticfiles/
+
+# Migrazioni Django
+migrations/
+*/migrations/
+*/__pycache__/
+
+# File temporanei comuni
+*.log
+*.bak
+*.tmp
+
+# File specifici del progetto
+problems.txt
+TODO
+

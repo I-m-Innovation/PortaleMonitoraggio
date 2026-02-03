@@ -146,11 +146,13 @@
 									}
 							}
 							
-							console.log('Dati modificati con gap:', {
-									gapIndices: Array.from(gapIndices),
-									potenzaDataLength: potenzaData.length,
-									portataDataLength: portataData.length
-							});
+							    console.log('Dati modificati con gap:', {
+								    gapIndices: Array.from(gapIndices),
+								    potenzaDataLength: potenzaData.length,
+								    portataDataLength: portataData.length
+							    });
+							    console.log('Serie potenza finale:', potenzaData);
+							    console.log('Serie portata finale:', portataData);
 							
 							/* AGGIORNAMENTO LED IMPIANTO */
 							document.getElementById("ledcolor").className = data.led;
