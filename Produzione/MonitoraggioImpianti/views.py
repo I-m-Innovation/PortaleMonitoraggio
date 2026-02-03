@@ -69,8 +69,9 @@ def home(request):
 			# AGGIUNTA DATI DAL FILE "Portale impianti HP", PER GLI IMPIANTI CHE CI SONO NEL FILE
 			if impianto.tipo == 'Idroelettrico':
 				df_monitoraggio.loc[impianto.nickname] = DF_lastDATA_impianti.loc[tag]
-				# APPLICO IL LED RELATIVO ALLO STATO DELL'IMPIANTO
-				df_monitoraggio.loc[impianto.nickname, 'state'] = leds[df_monitoraggio.loc[impianto.nickname, 'state']]
+				# APPLICO IL LED RELATIVO ALLO STATO DELL'IMPIANTO (fallback a grigio per codici ignoti)
+				state_code = df_monitoraggio.loc[impianto.nickname, 'state']
+				df_monitoraggio.loc[impianto.nickname, 'state'] = leds.get(state_code, 'led-gray')
 
 			# INFO VARIE
 			df_monitoraggio.loc[impianto.nickname, 'Name'] = impianto.nome_impianto
@@ -82,6 +83,8 @@ def home(request):
 			df_monitoraggio.loc[impianto.nickname, 'Name'] = impianto.nome_impianto
 			df_monitoraggio.loc[impianto.nickname, 'tipo'] = impianto.tipo
 			df_monitoraggio.loc[impianto.nickname, 'potenza_installata'] = impianto.potenza_installata
+			if not df_monitoraggio.loc[impianto.nickname, 'state']:
+				df_monitoraggio.loc[impianto.nickname, 'state'] = 'led-gray'
 
 		# API DATI METEO DA OPEN METEO
 		try:
