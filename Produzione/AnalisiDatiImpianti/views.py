@@ -129,6 +129,16 @@ def impianto(request, nickname):
 	StatALL = {stat.variabile: stat.valore for stat in list(impianto.infostat_set.all())}
 	impianto = impianto.__dict__
 	impianto.update(StatALL)
+	def _to_number_or_default(value, default=0):
+		if value is None or value == '':
+			return default
+		try:
+			return float(str(value).replace(',', '.'))
+		except Exception:
+			return default
+	impianto['Var2_max'] = _to_number_or_default(impianto.get('Var2_max'))
+	impianto['Var3_max'] = _to_number_or_default(impianto.get('Var3_max'))
+	impianto['potenza_installata'] = _to_number_or_default(impianto.get('potenza_installata'))
 
 	context = {
 		# NAV-BAR
