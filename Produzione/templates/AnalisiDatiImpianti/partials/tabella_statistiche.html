@@ -1,0 +1,66 @@
+<table class="table" style="width: 95%">
+	<thead>
+	<tr>
+		<th></th><th>Oggi</th><th>{{ curr_mese }}</th><th> 01/01/{{ curr_anno }} - oggi </th>
+	</tr>
+	</thead>
+	<tbody class="table-group-divider">
+	<tr>
+		<th scope="row">Energia prodotta</th>
+		<td>{{ daystat.Energy| floatformat:"2g" }} kWh</td>
+		<td>{{ monthstat.Energy| floatformat:"2g" }} kWh</td>
+		<td>{{ yearstat.Energy| floatformat:"2g" }} kWh</td>
+	</tr>
+	<tr>
+		<th scope="row">Potenza m.</th>
+		<td>{{ daystat.PMean| floatformat:"2g" }} kW</td>
+		<td>{{ monthstat.PMean| floatformat:"2g" }} kW</td>
+		<td>{{ yearstat.PMean| floatformat:"2g" }} kW</td>
+	</tr>
+	<tr>
+		<th scope="row">Portata m.</th>
+		<td>{{ daystat.QMean| floatformat:"2g" }} {{ unita_misura }}</td>
+		<td>{{ monthstat.QMean| floatformat:"2g" }} {{ unita_misura }}</td>
+		<td>{{ yearstat.QMean| floatformat:"2g" }} {{ unita_misura }}</td>
+	</tr>
+	<tr>
+		<th scope="row">Pressione m.</th>
+		<td>{{ daystat.BarMean| floatformat:"2g" }} BarG</td>
+		<td>{{ monthstat.BarMean| floatformat:"2g" }} BarG</td>
+		<td>{{ yearstat.BarMean| floatformat:"2g" }} BarG</td>
+	</tr>
+	<tr>
+		<th scope="row">Rendimento m.</th>
+		<td>{% widthratio daystat.etaMean 1 100 %} %</td>
+		<td>{% widthratio monthstat.etaMean 1 100 %} %</td>
+		<td>{% widthratio yearstat.etaMean 1 100 %} %</td>
+	</tr>
+	<tr>
+		<th scope="row">Disponibilità </th>
+		<td>{% widthratio daystat.Availability 1 100 %} %</td>
+		<td>{% widthratio monthstat.Availability 1 100 %} %</td>
+		<td>{% widthratio yearstat.Availability 1 100 %} %</td>
+	</tr>
+	<tr>
+		<th scope="row">Potenza max</th>
+		<td id="today_max"></td>
+		<td id="month_max"></td>
+		<td id="year_max"></td>
+	</tr>
+	</tbody>
+  <tfoot>
+  <tr>
+    <td colspan="4" style="text-align: center; padding: 0"> <i>Stime</i> </td>
+  </tr>
+  <tr>
+		<th scope="row">Volume derivato</th><td>{{ daystat.Vol_deriv| floatformat:"0g" }} mc</td>
+    <td>{{ monthstat.Vol_deriv| floatformat:"0g" }} mc</td>
+    <td>{{ yearstat.Vol_deriv| floatformat:"0g" }} mc</td>
+	</tr>
+	<tr>
+		<th scope="row">Prospetto</th><td>{{ daystat.Resa| floatformat:"0g" }} €</td>
+		<td>{{ monthstat.Resa| floatformat:"0g" }} €</td>
+		<td>{{ yearstat.Resa| floatformat:"0g" }} €</td>
+	</tr>
+  </tfoot>
+</table>

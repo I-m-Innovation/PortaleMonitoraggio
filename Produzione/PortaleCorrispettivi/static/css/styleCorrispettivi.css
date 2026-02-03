@@ -1,0 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap');
+
+html {
+    font-family: "Roboto", sans-serif;
+}
+
+html, body {
+    margin: 0;
+    padding:0;
+    height: 100vh;
+    background-color: #f1f1e6;
+}
+
+body {
+    background-image: url(corrispettivi-sfondo.png);
+    background-repeat: repeat;
+    background-attachment: fixed;
+    background-size: auto;
+}
+
+
+/* IMPOSTAZIONE LAYOUT BASE DELLE VARIE PAGINE*/
+.home-container {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    grid-template-rows: 100vh;
+    grid-template-areas:
+            "sidebar main";
+}
+
+/* CELLA PRINCIPALE */
+.item-b {
+    grid-area: main;
+    padding: 0;
+}
+
+ /* SIDE-BAR LAYOUT */
+.item-c {
+    grid-area: sidebar;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: auto;
+}
+
+.boldRow {
+    font-weight: bold;
+    box-shadow: inset 0 0 0 9999px #88a7ce !important;
+}
+
+/* COLONNA CHE CONTIENE LE SCHEDE DI MONITORAGGIO */
+.corrispettivi-card {
+    /*background-color: #ffffff;*/
+    border-radius: 8px;
+    overflow: hidden;
+    /*border-radius: 8px;*/
+    /*box-shadow: rgba(50, 50, 93, 0.25) 0 2px 5px -1px, rgba(0, 0, 0, 0.3) 0 1px 3px -1px;*/
+    /* From https://css.glass */
+    background: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    /*border: 1px solid rgba(255, 255, 255, 0.32);*/
+}
+
+
+
+.scheda-corrispettivi {
+    border-left: 4px solid #518ffa;
+    /*border-top: 1px solid #518ffa;*/
+    background-color: #f5f8ff;
+    border-top: 0.5px solid lightgrey;
+    border-bottom: 0.5px solid lightgrey;
+    border-right: 0.5px solid lightgrey;
+    /*font-weight: bolder;*/
+}
+
+.anchor-scheda-corrispettivi {
+    background-color: rgb(255, 255, 255);
+    box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
+}
+
+.anchor-scheda-corrispettivi:hover{
+    cursor: pointer;
+    color: #ffffff;
+    background-color: #d3c9e8;
+}
+
+.report-link{
+    text-align: right;
+    position: absolute;
+    top: 80px;
+    right: 5%;
+    display: flex;
+}
+
+.fa{
+    color: #414141;
+}
+
+.fa:hover {
+    cursor: pointer;
+    color: #705884;
+}
+
+.list-group-mine .list-group-item {
+    background-color: rgb(234, 234, 234);
+    border: 1px solid rgb(234, 234, 234);
+    box-shadow: rgba(0, 0, 0, 0.15) 0 3px 3px 0;
+}
+
+.list-group-mine .list-group-item-bis {
+    background-color: rgb(250, 250, 250);
+    border: 1px solid rgb(250, 250, 250);
+    box-shadow: rgba(0, 0, 0, 0.15) 0 3px 3px 0;
+}
+
+.list-group-mine .list-group-item:hover {
+    background-color: #e5f1ff;
+}
+
+.list-group-mine .list-group-item-bis:hover {
+    background-color: #e5f1ff;
+}
+
+.sfondo-idroelettrico {
+    height: 100px;
+    width: 105%;
+    overflow: hidden;
+    margin: -20px -20px;
+    padding: 0;
+    object-fit: cover;
+    -webkit-mask-image: -webkit-gradient(linear, left top, left bottom, from(rgba(0,0,0,1)), to(rgba(0,0,0,0)));
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,0));
+}
+
+/* SPINNER */
+.loading {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  border: 3px solid #eaeaea;
+  border-top-color: #f88a28;
+  animation: loading 1s linear infinite;
+}
+@keyframes loading {
+  to {
+    transform: rotate(360deg);
+  }
+}

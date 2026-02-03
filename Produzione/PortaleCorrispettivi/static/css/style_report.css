@@ -1,0 +1,76 @@
+.report-page {
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    grid-template-rows: [row1-start] 1fr [row1-end] 10fr [row2-end] 10fr [row3-end];
+    grid-template-areas:
+            "header header"
+            "grafici tabelle"
+            "grafico grafico";
+    gap: 5px 5px;
+    align-items: stretch;
+}
+
+.report-item-a {
+    grid-area: header;
+    background-color: #4088d4;
+    padding-left: 20px;
+}
+
+.report-grafici {
+    grid-area: grafici;
+    background-color: white;
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    grid-template-areas:
+            "grafico1 grafico2";
+    align-items: stretch;
+}
+
+.report-item-b {
+    grid-area: grafico1;
+}
+
+.report-item-c {
+    grid-area: grafico2;
+}
+
+.report-item-d {
+    grid-area: tabelle;
+    background-color: white;
+}
+
+.report-item-e {
+    grid-area: grafico;
+    background-color: white;
+}
+
+.table-report {
+    border-collapse: separate;
+    border-spacing: 5px;
+}
+
+.table-report tr td {
+    background-color: #f1f1f1;
+    margin: auto 5px;
+    padding: 3px 10px;
+
+}
+
+.table-report tr td:last-child{
+    text-shadow: 0.5px 0.5px 1px;
+}
+
+.report-title-text {
+    padding: 1px 10px; color: white; font-size: 18px; font-weight: bold; border-radius: 3px; background-color: #4088d4
+}
+
+.report-link {
+    text-align: right;
+    position: absolute;
+    overflow: hidden;
+    bottom: 90px;
+    right: 10px;
+    display: flex;
+    align-items: center;
+}

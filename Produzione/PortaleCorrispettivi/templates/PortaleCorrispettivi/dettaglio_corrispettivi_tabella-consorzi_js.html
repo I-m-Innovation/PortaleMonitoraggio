@@ -1,0 +1,182 @@
+<script>
+		$(document).ready(function(){
+				// Costruisce l'URL del nuovo endpoint API per i consorzi
+				// Formato: /corrispettivi/api/consorzi/<anno>/<nickname>/
+				// Nota: l'anno nell'URL non viene più usato dal backend (accetta qualsiasi valore)
+				var url_consorzi = '{% url 'api-dati-tabella-consorzi' 9999 'nickname_placeholder' %}'
+						.replace('9999', {{ curr_anno }})  // Usiamo curr_anno ma il backend lo ignora
+						.replace('nickname_placeholder', '{{ nickname }}');
+				
+				console.log('[DEBUG] URL consorzi:', url_consorzi);
+				
+				// Effettua la chiamata AJAX al nuovo endpoint
+				$.ajax({
+						'url': url_consorzi, 
+						'method': "GET", 
+						'cache': false, 
+						'contentType': 'application/json'
+				}).done(function(data) {
+						console.log('[DEBUG] Dati ricevuti dall\'API:', data);
+						
+						// Verifica che la risposta sia valida
+						if (!data.success) {
+								console.error('[ERROR] Errore nella risposta API:', data.error || 'Errore sconosciuto');
+								return;
+						}
+						
+						// La risposta contiene i dati per TUTTI gli anni (2021-2025)
+						// Struttura: data.data_per_anno = { '2021': {...}, '2022': {...}, ... }
+						var data_per_anno = data.data_per_anno;
+						var anni_disponibili = data.anni_disponibili;
+						var curr_anno = {{ curr_anno }};
+						
+						console.log('[DEBUG] Anni disponibili dall\'API:', anni_disponibili);
+						console.log('[DEBUG] Anno corrente:', curr_anno);
+						
+						// ===== INIZIALIZZA LE TABELLE PER TUTTI GLI ANNI =====
+						anni_disponibili.forEach(function(anno) {
+								console.log('[DEBUG] Inizializzazione tabelle per anno:', anno);
+								
+								// Verifica che esistano i dati per questo anno
+								if (!data_per_anno[anno]) {
+										console.warn('[WARNING] Dati non disponibili per l\'anno', anno);
+										return;  // Skip questo anno e continua con il prossimo
+								}
+								
+								// Estrae le due tabelle per questo anno specifico
+								// Table1: Ottobre-Dicembre (anno precedente) + Gennaio-Marzo (anno corrente)
+								// Table2: Aprile-Settembre (anno corrente)
+								var T1 = data_per_anno[anno].table1;
+								var T2 = data_per_anno[anno].table2;
+								
+								console.log('[DEBUG] Anno ' + anno + ' - Table1 (Ott-Mar):', T1);
+								console.log('[DEBUG] Anno ' + anno + ' - Table2 (Apr-Set):', T2);
+								
+								// Aggiorna sempre i totali per la fatturazione (per ogni anno)
+								// Trova la riga del totale per il periodo ottobre-marzo (Table1)
+								var last_row1 = T1.filter(function (el) {
+										return el.mese === 'Totale Periodo';
+								});
+								
+								// Aggiorna gli elementi HTML con i totali del periodo ottobre-marzo
+								if (last_row1.length > 0) {
+										var elem_imp1 = document.getElementById("imponibile1_" + anno);
+										var elem_iva1 = document.getElementById("iva1_" + anno);
+										var elem_tot1 = document.getElementById("totale1_" + anno);
+										
+										if (elem_imp1) elem_imp1.innerHTML = toLocaleEUR(last_row1[0].canone, 2);
+										if (elem_iva1) elem_iva1.innerHTML = toLocaleEUR(last_row1[0].canone * 0.22, 2);
+										if (elem_tot1) elem_tot1.innerHTML = toLocaleEUR(last_row1[0].canone + last_row1[0].canone * 0.22, 2);
+								}
+								
+								// Trova la riga del totale per il periodo aprile-settembre (Table2)
+								var last_row2 = T2.filter(function (el) {
+										return el.mese === 'Totale Periodo';
+								});
+								
+								// Aggiorna gli elementi HTML con i totali del periodo aprile-settembre
+								if (last_row2.length > 0) {
+										var elem_imp2 = document.getElementById("imponibile2_" + anno);
+										var elem_iva2 = document.getElementById("iva2_" + anno);
+										var elem_tot2 = document.getElementById("totale2_" + anno);
+										
+										if (elem_imp2) elem_imp2.innerHTML = toLocaleEUR(last_row2[0].canone, 2);
+										if (elem_iva2) elem_iva2.innerHTML = toLocaleEUR(last_row2[0].canone * 0.22, 2);
+										if (elem_tot2) elem_tot2.innerHTML = toLocaleEUR(last_row2[0].canone + last_row2[0].canone * 0.22, 2);
+								}
+								
+								// Inizializza DataTable per il periodo ottobre-marzo (table3_<anno>)
+								// Include: Ott, Nov, Dic (anno precedente) + Gen, Feb, Mar (anno corrente)
+								$('#table3_' + anno).dataTable({
+										destroy: true,           // Distrugge la tabella esistente se presente
+										searching: false,        // Disabilita la ricerca
+										paging: false,          // Disabilita la paginazione
+										info: false,            // Nasconde le informazioni
+										ordering: false,        // IMPORTANTE: Disabilita l'ordinamento per mantenere l'ordine originale
+										data: T1,               // Dati periodo ottobre-marzo (anno fiscale)
+										columns: [
+												{ data: "i" },              // Indice (nascosto)
+												{ data: "mese" },           // Nome del mese con anno (es: "Ottobre 2023")
+												{ data: "incassi" },        // Incassi mensili (€)
+												{ data: "canone" },         // Canone: 11% degli incassi (€)
+												{ data: "prodotta_def" },   // Energia prodotta (kWh)
+										], 
+										// Applica classe CSS alla riga totale
+										createdRow: function(row, data, dataIndex) {
+												if (data['mese'] === 'Totale Periodo') {
+														$(row).addClass('boldRow');
+												}
+										}, 
+										columnDefs: [
+												{ defaultContent: "-", targets: "_all" },  // Valore predefinito per celle vuote
+												{ targets: [2, 3, 4], className: 'text-center' },  // Centra le colonne numeriche
+												{ target: 0, visible: false },  // Nasconde la colonna indice
+												// Formattazione per incassi e canone (€)
+												{
+														target: [2, 3], 
+														render: function (data, type, row, meta) {
+																return data === '' || data === 0 ? '-' : DataTable.render.number(null, null, 2, '', ' €').display(data);
+														}
+												}, 
+												// Formattazione per energia prodotta (kWh)
+												{
+														targets: [4],
+														render: function (data, type, row, meta) {
+																return data === '' || data === 0 ? '-' : DataTable.render.number(null, null, 2, '', ' kWh').display(data);
+														}
+												},
+										],
+								});
+								
+								// Inizializza DataTable per il periodo aprile-settembre (table4_<anno>)
+								// Include: Apr, Mag, Giu, Lug, Ago, Set (anno corrente)
+								$('#table4_' + anno).dataTable({
+										destroy: true,
+										searching: false,
+										paging: false,
+										info: false,
+										ordering: false,        // IMPORTANTE: Disabilita l'ordinamento per mantenere l'ordine originale
+										data: T2,  // Dati periodo aprile-settembre (anno corrente)
+										columns: [
+												{ data: "i" },              // Indice (nascosto)
+												{ data: "mese" },           // Nome del mese con anno (es: "Aprile 2024")
+												{ data: "incassi" },        // Incassi mensili (€)
+												{ data: "canone" },         // Canone: 11% degli incassi (€)
+												{ data: "prodotta_def" },   // Energia prodotta (kWh)
+										], 
+										createdRow: function(row, data, dataIndex) {
+												if (data['mese'] === 'Totale Periodo') {
+														$(row).addClass('boldRow');
+												}
+										}, 
+										columnDefs: [
+												{ defaultContent: "-", targets: "_all" }, 
+												{ targets: [2, 3, 4], className: 'text-center' }, 
+												{ target: 0, visible: false }, 
+												{
+														target: [2, 3], 
+														render: function (data, type, row, meta) {
+																return data === '' || data === 0 ? '-' : DataTable.render.number(null, null, 2, '', ' €').display(data);
+														}
+												}, 
+												{
+														targets: [4], 
+														render: function (data, type, row, meta) {
+																return data === '' || data === 0 ? '-' : DataTable.render.number(null, null, 2, '', ' kWh').display(data);
+														}
+												}, 
+										],
+								});
+								
+								console.log('[DEBUG] Tabelle inizializzate per anno ' + anno);
+						
+						});  // Fine forEach anni_disponibili
+						
+						console.log('[DEBUG] Tutte le tabelle inizializzate con successo');
+						
+				}).fail(function(jqXHR, textStatus, errorThrown) {
+						console.error('[ERROR] Errore nella chiamata AJAX:', textStatus, errorThrown);
+						console.error('[ERROR] Dettagli risposta:', jqXHR.responseText);
+				});
+		});
+</script>

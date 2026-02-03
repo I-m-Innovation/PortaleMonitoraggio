@@ -1,0 +1,93 @@
+{% extends 'base_layout.html' %}
+{% load static %}
+
+<!-- REFRESH PAGINA -->
+{% block refresh %}
+	<meta http-equiv="refresh" content="{{ refresh }}">
+{% endblock %}
+
+<!-- TITOLO PAGINA -->
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+	<div class="container-fluid p-2">
+	<div class="col p-0 m-0 rounded-3 monitoraggio-card " style="background-color: whitesmoke">
+		<!-- BARRA COLORATA SOPRA COME SFONDO -->
+		<div class="row py-1 backgroundBar-idro align-items-end">
+			<!-- LED IMPIANTO -->
+			<div class="col-1 px-3">
+				<div class="led-box"><div id="ledcolor" class="led-class"></div></div>
+				<small style="color: #606060">stato</small>
+			</div>
+			<div class="col pb-3 pe-4" style="max-width: 35px">
+				<div id="spinner" class="loading"></div>
+			</div>
+			<!-- NOME -->
+			<div class="col pb-2">
+				<small style="color: #606060">impianto</small>
+				<h1 style="display: inline; color: #534a7a">{{ impianto.nome_impianto }}</h1>
+			</div>
+			<!-- LINK A ANALISI DATI -->
+			<div class="col-3 pb-2">
+				<div>
+					<small style="color: #606060">vedi su</small>
+					<a style="text-align: end; color: #6c4d79; font-weight: bolder " href="{% url 'analisi-impianto' nickname %}" >Visione dati - {{ curr_anno }}</a>
+				</div>
+			</div>
+		</div>
+		
+		<!-- GRAFICO PORTATA-POTENZA -->
+		<div class="row px-3 pt-3" style="min-height: 53vh">
+			<div id="chart"></div>
+		</div>
+		
+		<!-- GAUGES -->
+		<div class="row px-3 py-1 justify-content-center">
+			<!-- POTENZA -->
+			<div class="col justify-content-center" style="padding: 0;">
+				<div class="row">
+					<div id='gauge-potenza' style="height: 250px;"></div>
+				</div>
+				<div class="row justify-content-center">
+					<div class="led-box"><div id="ledcolor_gauge-potenza" class="led-class"></div></div>
+				</div>
+			</div>
+			<!-- PORTATA -->
+			<div class="col justify-content-center" style="padding: 0;">
+				<div class="row">
+					<div id='gauge-portata' style="height: 250px;"></div>
+				</div>
+				<div class="row justify-content-center">
+					<div class="led-box"><div id="ledcolor_gauge-portata" class="led-class"></div></div>
+				</div>
+			</div>
+			<!-- PRESSIONE -->
+			<div class="col justify-content-center" style="padding: 0;">
+				<div class="row">
+					<div id='gauge-pressione' style="height: 250px;"></div>
+				</div>
+				<div class="row justify-content-center">
+					<div class="led-box" style="margin: 5px 38%"><div id="ledcolor_gauge-pressione" class="led-class"></div></div>
+				</div>
+			</div>
+			<!-- RENDIMENTO -->
+			<div class="col justify-content-center" style="padding: 0;">
+				<div class="row">
+					<div id='gauge-rendimento' style="height: 250px;"></div>
+				</div>
+				<div class="row justify-content-center">
+					<div class="led-box" style="margin: 5px 38%"><div id="ledcolor_gauge-rendimento" class="led-class"></div></div>
+				</div>
+			</div>
+		</div>
+		
+		<!-- LED RELATIVI AI GAUGES -->
+	</div>
+	</div>
+	
+	<!-- CODICE JAVASCRIPT PER AGGIORNAMENTO GRAFICO E GAUGE -->
+	{% include 'js/MonitoraggioImpianti/monitoraggio_idroelttrico_js.html' %}
+{% endblock %}
+
+
+

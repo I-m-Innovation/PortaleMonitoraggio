@@ -1,0 +1,35 @@
+{% extends 'base_layout.html' %}
+{% load static %}
+
+{% block title %}Analisi Dati Impianti{% endblock %}
+{% block content %}
+	
+	<main>
+		<div class="container my-3">
+			<div class="analisi-card" style="padding: 0">
+				<div class="row p-0 m-0" style="height: 15px; background: linear-gradient(135deg, #d9d9d9,#8f8f8f);"></div>
+				<h1 style="color: #4a3c54; margin-left: 20px; font-weight: lighter">Parco impianti Zilio</h1>
+				<div class="row p-3 pt-0">
+					<div class="col-8 border-end">
+						<div class="home-map" style="border-radius: 8px; width: 100%;">{{ map | safe }}</div>
+					</div>
+					<div class="col-4">
+						<h4>Visione Dati</h4>
+						<div class="list-group list-group-mine">
+							<ul class="list-group">
+								{% for nickname, impianto in impianti.items %}
+									<a class="list-group-item rounded d-flex align-items-start my-2" href="{% url 'analisi-impianto' nickname %}" style="text-decoration: none; color: #283c50;">
+										<img src="{% static 'images/water-drop-icon.png' %}" style="height: 20px" alt="water_icon">
+											<div class="ms-2 me-auto">
+								        <div class="fw-bold"><b>{{ impianto.nome_impianto }}</b> <i class="fa fa-angle-right" aria-hidden="true"></i></div>
+								      </div>
+									</a>
+								{% endfor %}
+							</ul>
+						</div>
+					</div>
+				</div>
+			</div>				
+		</div>
+	</main>
+{% endblock %}
