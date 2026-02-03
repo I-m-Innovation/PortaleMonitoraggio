@@ -153,8 +153,12 @@
 							    });
 							    console.log('Serie potenza finale:', potenzaData);
 							    console.log('Serie portata finale:', portataData);
-							
-							/* AGGIORNAMENTO LED IMPIANTO */
+														/* CONTROLLO VALORI NEGATIVI */
+							let negativiPotenza = potenzaData.filter(item => item[1] < 0);
+							let negativiPortata = portataData.filter(item => item[1] < 0);
+							console.log('Valori negativi potenza:', negativiPotenza);
+							console.log('Valori negativi portata:', negativiPortata);
+														/* AGGIORNAMENTO LED IMPIANTO */
 							document.getElementById("ledcolor").className = data.led;
 							console.log('Aggiornato LED impianto con classe:', data.led);
 							/* AGGIORNAMENTO LED GAUGES */
