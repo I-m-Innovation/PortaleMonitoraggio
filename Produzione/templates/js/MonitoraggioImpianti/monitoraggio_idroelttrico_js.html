@@ -197,14 +197,14 @@
 							  }],
 								yAxis: [
 									{
-										type: 'value', name: 'Potenza',
-										  axisLine: {show: true, lineStyle: {color: warmpalette[7],}},
-										  axisLabel: {formatter: '{value} kW'}, min: 0, max: {{ impianto.potenza_installata|stringformat:".2f" }}
+																		type: 'value', name: 'Potenza',
+																			axisLine: {show: true, lineStyle: {color: warmpalette[7],}},
+																			axisLabel: {formatter: '{value} kW'}, min: 'dataMin', max: {{ impianto.potenza_installata|stringformat:".2f" }}
 									},
 								  {
 										  type: 'value', name: 'Portata',
 										  axisLine: {show: true, lineStyle: {color: coolpalette[7]}},
-										  axisLabel: {formatter: '{value} {{ impianto.unita_misura }}'}, min: 0, max: {{ impianto.Var2_max|default:1|stringformat:".2f" }}
+										  axisLabel: {formatter: '{value} {{ impianto.unita_misura }}'}, min: 'dataMin', max: {{ impianto.Var2_max|default:1|stringformat:".2f" }}
 								  },
 								],
 							  grid:[{top:'7%',bottom:'7%',right:'8%', left:'8%'}],
