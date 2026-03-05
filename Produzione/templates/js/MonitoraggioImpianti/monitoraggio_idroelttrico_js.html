@@ -210,6 +210,16 @@
 									pressione: gauge_pres,
 									rendimento: gauge_eta
 							});
+							
+							const portataConcessione  = {% if impianto.portata_concessione and impianto.portata_concessione > 0 %}{{ impianto.portata_concessione|stringformat:".2f" }}{% else %}0{% endif %};
+							const maxPortataDati = Math.max(...portata.filter(val => val !== null && !isNaN(val)));
+							const maxPortataAsse = Math.max(maxPortataDati || 0, portataConcessione) * 1.1; // +10%
+							console.log('Calcolo asse portata:', {
+								portataConcessione: portataConcessione,
+								maxPortataDati: maxPortataDati,
+								maxPortataAsse: maxPortataAsse
+							});
+
 
 							/* CREAZIONE DEL GRAFICO PRINCIPALE */
 							console.log('Imposto le opzioni del grafico principale su DayChart');
@@ -234,14 +244,40 @@
 							  }],
 								yAxis: [
 									{
-																		type: 'value', name: 'Potenza',
-																			axisLine: {show: true, lineStyle: {color: warmpalette[7],}},
-																			axisLabel: {formatter: '{value} kW'}, min: -2, max: {{ impianto.potenza_installata|default_if_none:"0"|stringformat:".2f" }}
+										type: 'value', 
+										name: 'Potenza',
+										axisLine: {
+											show: true, 
+											lineStyle: {
+												color: warmpalette[7],
+											}
+										},
+										axisLabel: {
+											formatter: '{value} kW'
+										}, 
+										min: -2, 
+										max: {{ impianto.potenza_installata|default_if_none:"0"|stringformat:".2f" }}
 									},
-								  {
-										  type: 'value', name: 'Portata',
-										  axisLine: {show: true, lineStyle: {color: coolpalette[7]}},
-										  axisLabel: {formatter: '{value} {{ impianto.unita_misura }}'}, min: 'dataMin', max: 'dataMax'
+									{
+										type: 'value', 
+										name: 'Portata',
+										axisLine: {
+											show: true, 
+											lineStyle: {
+												color: coolpalette[7]
+											}
+										},
+										axisLabel: {
+											formatter: '{value} {{ impianto.unita_misura }}'
+										}, 
+										min: 0, 
+										max: maxPortataAsse
+										{% comment %} 
+											Valori precedenti dinamici che impostavano min e max in base ai dati ricevuti.
+											min: 'dataMin'
+											max: 'dataMax'
+											max: {% if impianto.portata_concessione and impianto.portata_concessione > 0 %}{{ impianto.portata_concessione|stringformat:".2f" }}{% else %}100{% endif %}
+										{% endcomment %}
 								  },
 								],
 							  grid:[{top:'7%',bottom:'7%',right:'8%', left:'8%'}],
@@ -273,10 +309,16 @@
 										  tooltip: {valueFormatter: value => value != null ? toLocale(value,2) + ' {{ impianto.unita_misura }}' : 'N/A'},
 										  lineStyle: {width: 2,}, emphasis: {focus: 'series'}, showSymbol: false,
 										  connectNulls: false, // Interrompe la linea quando trova valori null
-										  markLine: {data: [
-												{yAxis: {{ QMedia_anno|default_if_none:"0"|stringformat:".2f" }}, label: {position:'insideEndTop', backgroundColor: '#efefef', formatter: params => toLocale(params.value,2) + ' {{ impianto.unita_misura }}'}},
-														  {yAxis: {{ QMedia_anno|default_if_none:"0"|stringformat:".2f" }}, label: {formatter: 'Portata media anno', position: 'insideStartTop'}}],
-										  },
+										  markLine: {
+												data: [
+													{yAxis: {{ QMedia_anno|default_if_none:"0"|stringformat:".2f" }}, label: {position:'insideEndTop', backgroundColor: '#efefef', formatter: params => toLocale(params.value,2) + ' {{ impianto.unita_misura }}'}},
+													{yAxis: {{ QMedia_anno|default_if_none:"0"|stringformat:".2f" }}, label: {formatter: 'Portata media anno', position: 'insideStartTop'}},
+													{% if impianto.portata_concessione and impianto.portata_concessione > 0 %}
+													{yAxis: {{ impianto.portata_concessione|stringformat:".2f" }}, label: {position:'insideEndBottom', backgroundColor: '#ffcccc', formatter: params => toLocale(params.value,2) + ' {{ impianto.unita_misura }}'}, lineStyle: {color: '#ff4444', type: 'dashed'}},
+													{yAxis: {{ impianto.portata_concessione|stringformat:".2f" }}, label: {formatter: 'Portata concessione', position: 'insideStartBottom'}, lineStyle: {color: '#ff4444', type: 'dashed'}}
+													{% endif %}
+												]
+											},
 									},
 								]
 							});

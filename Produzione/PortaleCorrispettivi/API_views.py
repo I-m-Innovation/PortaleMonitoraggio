@@ -258,8 +258,8 @@ def datiFatturazioneTFO(request, nickname, anno, mese):
     # IMPORTANTE: I nickname devono corrispondere esattamente a quelli inviati dal JavaScript
     # Se arriva "ponte_giurino" dal frontend, deve essere mappato qui con lo stesso formato
     nickname_to_table = {
-        "petilia_bf_partitore": "corrispettivi_energia_BA",
-        "petilia_bf_partitore": "corrispettivi_energia_BA",  # Aggiunto in minuscolo per compatibilità
+        "petilia_bf_partitore": "corrispettivi_energia_PAR",
+        "petilia_bf_canaletta": "corrispettivi_energia_CAN",  # Aggiunto in minuscolo per compatibilità
         
         "Ionico Foresta": "corrispettivi_energia_I1",
         "ionico_foresta": "corrispettivi_energia_I1",  # Aggiunto con underscore per compatibilità
@@ -720,8 +720,8 @@ def datiTFO_annuale(request, nickname, anno):
 def _map_nickname_to_table(nickname):
     # stessa mappa usata negli endpoint mensili
     nickname_to_table = {
-        "petilia_bf_partitore": "corrispettivi_energia_BA",
-        "petilia_bf_partitore": "corrispettivi_energia_BA",
+        "petilia_bf_partitore": "corrispettivi_energia_PAR",
+        "petilia_bf_canaletta": "corrispettivi_energia_CAN",
         "Ionico Foresta": "corrispettivi_energia_I1",
         "ionico_foresta": "corrispettivi_energia_I1",
         "San Teodoro": "corrispettivi_energia_PE",
