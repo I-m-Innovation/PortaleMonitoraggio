@@ -57,10 +57,10 @@
               </div>
           </div>
 
-            <script src="https://code.highcharts.com/highcharts.js"></script>
-            <script src="https://code.highcharts.com/modules/exporting.js"></script>
-            <script src="https://code.highcharts.com/modules/export-data.js"></script>
-            <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+          <script src="{% static 'vendor/highcharts/highcharts.js' %}"></script>
+          <script src="{% static 'vendor/highcharts/modules/exporting.js' %}"></script>
+          <script src="{% static 'vendor/highcharts/modules/export-data.js' %}"></script>
+          <script src="{% static 'vendor/highcharts/modules/accessibility.js' %}"></script>
 
             <hr class="my-5">
 
@@ -84,10 +84,10 @@
   <script src="{% static 'js/grafico_totale_impianto.js' %}"></script>
   <script src="{% static 'js/graficocorrispettivi.js' %}"></script>
   <script src="{% static 'js/tabellamisure.js' %}"></script>
-
+{% comment %} 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       inizializzaTabellaLetture("{{ anno }}", "{{ nickname }}");
     });
-  </script>
+  </script> {% endcomment %}
 {% endblock %}
