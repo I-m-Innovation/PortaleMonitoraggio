@@ -70,3 +70,38 @@ nav {
 }
 
 
+.overview-link-container {
+    text-align: center;
+    margin-bottom: 1.25rem;
+}
+
+.overview-link {
+    --overview-bg: rgba(255, 255, 255, 0.85);
+    --overview-bg-hover: rgba(255, 255, 255, 1);
+    --overview-text: #2f3740;
+    --overview-text-hover: coral;
+
+    display: inline-block;
+    padding: 0.625rem 1.25rem;
+    background-color: var(--overview-bg);
+    color: var(--overview-text);
+    text-decoration: none;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    font-weight: 700;
+    line-height: 1.2;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+    transition: background-color 0.25s ease, color 0.25s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.overview-link:hover {
+    background-color: var(--overview-bg-hover);
+    color: var(--overview-text-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24);
+}
+
+.overview-link:focus-visible {
+    outline: 2px solid #ff7f50;
+    outline-offset: 2px;
+}

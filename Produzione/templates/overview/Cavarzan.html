@@ -1,0 +1,218 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Impianto Fotovoltaico Cavarzan</title>
+	<link rel="stylesheet" href="{% static 'css/style_overview_page.css' %}">
+</head>
+<body>
+    <a href="{% url 'overview-main' %}" class="back-link">&larr; Lista impianti</a>
+	<h1>Impianto Fotovoltaico Cavarzan</h1>
+
+	<header class="category-header">
+		<button class="category-button" type="button" data-target="panel-anagrafici" aria-controls="panel-anagrafici" aria-pressed="false">Dati anagrafici</button>
+		<button class="category-button" type="button" data-target="panel-contrattuali" aria-controls="panel-contrattuali" aria-pressed="false">Dati contrattuali</button>
+		<button class="category-button" type="button" data-target="panel-fatturazione" aria-controls="panel-fatturazione" aria-pressed="false">Fatturazione e pagamenti</button>
+		<button class="category-button" type="button" data-target="panel-om" aria-controls="panel-om" aria-pressed="false">O&amp;M straordinaria</button>
+		<button class="category-button" type="button" data-target="panel-prestazione" aria-controls="panel-prestazione" aria-pressed="false">Dati di prestazione</button>
+	</header>
+
+	<section class="category-panel" id="panel-empty" data-panel>
+		<p class="empty-state">Seleziona una categoria per visualizzare le informazioni.</p>
+	</section>
+
+	<section class="category-panel" id="panel-anagrafici" data-panel hidden>
+			<table class="two-col">
+				<tbody>
+					<tr>
+                        <td>Nome impianto</td>
+					<td>Cavarzan</td>
+                    </tr>
+                    <tr>
+                        <td>Proprietario</td>
+					<td>Cavarzan S.r.l.</td>
+                    </tr>
+                    <tr>
+                        <td>Indirizzo</td>
+					<td>Via Industrie 45, Treviso</td>
+                    </tr>
+                    <tr>
+                        <td>Anno di installazione</td>
+					<td>2016</td>
+                    </tr>
+                    <tr>
+                        <td>Tipo di impianto</td>
+					<td>Fotovoltaico su copertura</td>
+                    </tr>
+                    <tr>
+					<td>Capacita</td>
+					<td>250 kW</td>
+                    </tr>
+				</tbody>
+			</table>
+	</section>
+
+	<section class="category-panel" id="panel-contrattuali" data-panel hidden>
+			<table class="two-col">
+				<tbody>
+                    <tr>
+                        <td>Data di inizio contratto</td>
+					<td>01/06/2016</td>
+                    </tr>
+                    <tr>
+                        <td>Data di fine contratto</td>
+					<td>31/05/2031</td>
+                    </tr>
+                    <tr>
+                        <td>Valore totale di contratto</td>
+					<td>â‚¬ 950.000</td>
+                    </tr>
+					<tr>
+						<td>Canone</td>
+					<td>â‚¬ 19.800</td>
+					</tr>
+					<tr>
+					<td>Periodicita</td>
+					<td>Semestrale</td>
+					</tr>
+                    <tr>
+                        <td>Totale annuale</td>
+					<td>â‚¬ 39.600</td>
+                    </tr>
+                    <tr>
+						<td>Contratto (PDF)</td>
+						<td><a href="#" download>Scarica PDF</a></td>
+					</tr>
+                </tbody>
+                
+			</table>
+	</section>
+
+	<section class="category-panel" id="panel-fatturazione" data-panel hidden>
+			<table class="two-col">
+				<tbody>
+					<tr>
+						<td>Totale fatturato</td>
+					<td class="value">â‚¬ 420.000</td>
+					</tr>
+					<tr>
+						<td>Totale da incassare</td>
+					<td class="value">â‚¬ 18.750</td>
+					</tr>
+					<tr>
+						<td>Numero di fatture scoperte</td>
+					<td class="value">2</td>
+					</tr>
+					<tr>
+						<td>Prossima fattura</td>
+					<td class="value"> 10/04/2026 <span class="badge warning">In scadenza</span></td>
+					</tr>
+					<tr>
+						<td>Importo fattura (canone)</td>
+					<td class="value">â‚¬ 19.800</td>
+					</tr>
+				</tbody>
+			</table>
+	</section>
+
+	<section class="category-panel" id="panel-om" data-panel hidden>
+			<table class="two-col">
+			<tbody>
+				<tr>
+					<td>Numero ordini di vendita emessi</td>
+					<td class="value">6</td>
+				</tr>
+				<tr>
+					<td>Valore ordini emessi (totale)</td>
+					<td class="value">â‚¬ 78.000</td>
+				</tr>
+				<tr>
+					<td>Valore ordini emessi (annuale)</td>
+					<td class="value">â‚¬ 22.000</td>
+				</tr>
+				<tr>
+					<td>Fatture straordinarie (totale)</td>
+					<td class="value">3</td>
+				</tr>
+				<tr>
+					<td>Fatture straordinarie (annuale)</td>
+					<td class="value">1</td>
+				</tr>
+				<tr>
+					<td>Totale da incassare</td>
+					<td class="value">â‚¬ 9.400</td>
+				</tr>
+			</tbody>
+			</table>
+	</section>
+
+	<section class="category-panel" id="panel-prestazione" data-panel hidden>
+			<table class="two-col">
+				<tbody>
+					<tr>
+					<td>PR aspettato (PVSystem)</td>
+					<td class="value">83%</td>
+					</tr>
+					<tr>
+					<td>PR misurato ultimi 12 mesi</td>
+					<td class="value">81%</td>
+					</tr>
+					<tr>
+						<td>Ore equivalenti (PVSystem)</td>
+					<td class="value">1.360 h</td>
+					</tr>
+					<tr>
+						<td>Ore equivalenti</td>
+					<td class="value">1.330 h</td>
+					</tr>
+					<tr>
+						<td>Stato di funzionamento LED</td>
+						<td class="value"><span class="status-dot green" aria-hidden="true"></span></td>
+					</tr>
+				</tbody>
+			</table>
+	</section>
+
+	<script>
+		const buttons = document.querySelectorAll('.category-button');
+		const panels = document.querySelectorAll('[data-panel]');
+		const emptyPanel = document.getElementById('panel-empty');
+
+		const resetPanels = () => {
+			panels.forEach((panel) => {
+				panel.hidden = panel.id !== 'panel-empty';
+			});
+			buttons.forEach((button) => {
+				button.setAttribute('aria-pressed', 'false');
+				button.classList.remove('active');
+			});
+		};
+
+		buttons.forEach((button) => {
+			button.addEventListener('click', () => {
+				const targetId = button.dataset.target;
+				const targetPanel = document.getElementById(targetId);
+
+				if (button.classList.contains('active')) {
+					resetPanels();
+					return;
+				}
+
+				panels.forEach((panel) => {
+					panel.hidden = panel.id !== targetId;
+				});
+				emptyPanel.hidden = true;
+
+				buttons.forEach((btn) => {
+					const isActive = btn === button;
+					btn.setAttribute('aria-pressed', String(isActive));
+					btn.classList.toggle('active', isActive);
+				});
+			});
+		});
+	</script>
+</body>
+</html>
+

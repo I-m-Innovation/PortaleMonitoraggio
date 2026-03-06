@@ -1,0 +1,227 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Fotovoltaico Alessi</title>
+	<link rel="stylesheet" href="{% static 'css/style_overview_page.css' %}">
+</head>
+<body>
+    <a href="{% url 'overview-main' %}" class="back-link">&larr; Lista impianti</a>
+	<h1>Impianto Fotovoltaico - Alessi</h1>
+
+	<div class="section-grid">
+		<div class="section-block">
+		<div class="section-header">
+			<h2>Dati anagrafici impianto</h2>
+			<button class="toggle-button" type="button" aria-expanded="false" aria-controls="table-anagrafici">
+				Apri tabella
+			</button>
+		</div>
+		<div id="table-anagrafici" class="shutter">
+			<table class="two-col">
+				<tbody>
+					<tr>
+                        <td>Nome impianto</td>
+                        <td>Alessi</td>
+                    </tr>
+                    <tr>
+                        <td>Proprietario</td>
+                        <td>Alessi S.p.A.</td>
+                    </tr>
+                    <tr>
+                        <td>Indirizzo</td>
+                        <td>Via Roma 123, Milano</td>
+                    </tr>
+                    <tr>
+                        <td>Anno di installazione</td>
+                        <td>2018</td>
+                    </tr>
+                    <tr>
+                        <td>Tipo di impianto</td>
+                        <td>Fotovoltaico a terra</td>
+                    </tr>
+                    <tr>
+                        <td>Capacità</td>
+                        <td>500 kW</td>
+                    </tr>
+
+				</tbody>
+			</table>
+		</div>
+	</div>
+
+		<div class="section-block">
+		<div class="section-header">
+			<h2>Dati contrattuali</h2>
+			<button class="toggle-button" type="button" aria-expanded="false" aria-controls="table-contrattuali">
+				Apri tabella
+			</button>
+		</div>
+		<div id="table-contrattuali" class="shutter">
+			<table class="two-col">
+                <!-- data di inizio contratto, data di fine contratto, valore totale di contratto, canone, periodicità, totale annuale -->
+				<tbody>
+                    <tr>
+                        <td>Data di inizio contratto</td>
+                        <td>01/01/2018</td>
+                    </tr>
+                    <tr>
+                        <td>Data di fine contratto</td>
+                        <td>31/12/2037</td>
+                    </tr>
+                    <tr>
+                        <td>Valore totale di contratto</td>
+                        <td>€ 2.500.000</td>
+                    </tr>
+					<tr>
+						<td>Canone</td>
+						<td>€ 31.250</td>
+					</tr>
+					<tr>
+						<td>Periodicità</td>
+						<td>Trimestrale</td>
+					</tr>
+                    <tr>
+                        <td>Totale annuale</td>
+                        <td>€ 125.000</td>
+                    </tr>
+                    <tr>
+						<td>Contratto (PDF)</td>
+						<td><a href="#" download>Scarica PDF</a></td>
+					</tr>
+                </tbody>
+                
+			</table>
+		</div>
+	</div>
+
+		<div class="section-block">
+		<div class="section-header">
+			<h2>Dati di fatturazione e pagamento</h2>
+			<button class="toggle-button" type="button" aria-expanded="false" aria-controls="table-fatturazione">
+				Apri tabella
+			</button>
+		</div>
+		<div id="table-fatturazione" class="shutter">
+			<table class="two-col">
+				<tbody>
+					<tr>
+						<td>Totale fatturato</td>
+						<td class="value">€ 1.280.000</td>
+					</tr>
+					<tr>
+						<td>Totale da incassare</td>
+						<td class="value">€ 42.500</td>
+					</tr>
+					<tr>
+						<td>Numero di fatture scoperte</td>
+						<td class="value">3</td>
+					</tr>
+					<tr>
+						<td>Prossima fattura</td>
+						<td class="value">
+							15/04/2026
+                            <span class="badge warning">In scadenza</span>
+						</td>
+					</tr>
+					<tr>
+						<td>Importo fattura (canone)</td>
+						<td class="value">€ 31.250</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+
+		<div class="section-block">
+		<div class="section-header">
+			<h2>O&amp;M straordinaria</h2>
+			<button class="toggle-button" type="button" aria-expanded="false" aria-controls="table-om">
+				Apri tabella
+			</button>
+		</div>
+		<div id="table-om" class="shutter">
+			<table class="two-col">
+			<tbody>
+				<tr>
+					<td>Numero ordini di vendita emessi</td>
+					<td class="value">12</td>
+				</tr>
+				<tr>
+					<td>Valore ordini emessi (totale)</td>
+					<td class="value">€ 185.000</td>
+				</tr>
+				<tr>
+					<td>Valore ordini emessi (annuale)</td>
+					<td class="value">€ 48.000</td>
+				</tr>
+				<tr>
+					<td>Fatture straordinarie (totale)</td>
+					<td class="value">7</td>
+				</tr>
+				<tr>
+					<td>Fatture straordinarie (annuale)</td>
+					<td class="value">2</td>
+				</tr>
+				<tr>
+					<td>Totale da incassare</td>
+					<td class="value">€ 22.500</td>
+				</tr>
+			</tbody>
+			</table>
+		</div>
+	</div>
+
+		<div class="section-block">
+		<div class="section-header">
+			<h2>Dati di prestazione</h2>
+			<button class="toggle-button" type="button" aria-expanded="false" aria-controls="table-prestazione">
+				Apri tabella
+			</button>
+		</div>
+		<div id="table-prestazione" class="shutter">
+			<table class="two-col">
+				<tbody>
+					<tr>
+						<td><b>PR</b> (Performance Ratio) aspettato (PVSystem)</td>
+						<td class="value">84%</td>
+					</tr>
+					<tr>
+						<td><b>PR</b> (Performance Ratio) misurato ultimi 12 mesi</td>
+						<td class="value">82%</td>
+					</tr>
+					<tr>
+						<td>Ore equivalenti (PVSystem)</td>
+						<td class="value">1.420 h</td>
+					</tr>
+					<tr>
+						<td>Ore equivalenti</td>
+						<td class="value">1.390 h</td>
+					</tr>
+					<tr>
+						<td>Stato di funzionamento LED</td>
+						<td class="value"><span class="status-dot green" aria-hidden="true"></span></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+	</div>
+
+	<script>
+		document.querySelectorAll('.toggle-button').forEach((button) => {
+			const tableId = button.getAttribute('aria-controls');
+			const table = document.getElementById(tableId);
+
+			button.addEventListener('click', () => {
+				const isOpen = table.classList.toggle('open');
+				button.textContent = isOpen ? 'Chiudi tabella' : 'Apri tabella';
+				button.setAttribute('aria-expanded', String(isOpen));
+			});
+		});
+	</script>
+</body>
+</html>
+

@@ -25,6 +25,11 @@
 	<div class="background-image"></div>
 	<div class="content" style="padding-top: 13%">
 		<div class="container">
+			{% comment %} --------------- link temporaneo a pagina di overview --------------------- {% endcomment %}
+			<div class="overview-link-container">
+				<a class="overview-link" href="{% url 'overview-main' %}">Overview</a>
+			</div>
+			{% comment %} -------------------------------------------------------------------------- {% endcomment %}
 			<div class="row justify-content-center" >
 				{% if user.username != "Finance" %}
 				<div class="col">
