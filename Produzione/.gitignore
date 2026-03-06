@@ -50,3 +50,13 @@ media/
 
 .env
 
+# Node dependencies
+node_modules/
+
+# npm logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# temp folder created during manual vendor extraction
+tmp_highcharts_vendor/
