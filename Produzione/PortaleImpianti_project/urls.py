@@ -34,4 +34,5 @@ urlpatterns = [
     path('loading/1/', views.loadingPageMonitoraggio, name='next-monitoraggio'),
     path('loading/2/', views.loadingPageAnalisi, name='next-analisi'),
     path('loading/3/', views.loadingPageCorrispettivi, name='next-corrispettivi'),
+    path('portale-zilio-service/', include('PortaleZilioService.urls'))
 ]
