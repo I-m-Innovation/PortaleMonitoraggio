@@ -11,3 +11,32 @@
 .category-panel table {
     width: 100%;
 }
+
+/* Visual separator between ordinary and extraordinary table sections */
+.category-panel table th.straord-start,
+.category-panel table td.straord-start {
+    border-left: 3px solid #c73a3a;
+    padding-left: 20px;
+}
+
+.category-panel table td.straord-col {
+    background-color: #fff8f8;
+}
+
+.category-panel table th.straord-col {
+    background-color: var(--accent);
+    color: #ffffff;
+}
+
+.category-panel table th.section-header {
+    text-align: center;
+}
+
+/* Small visual gap between grouped header row and column header row */
+.category-panel table thead tr:first-child th {
+    padding-bottom: 16px;
+}
+
+.category-panel table thead tr:nth-child(2) th {
+    padding-top: 10px;
+}

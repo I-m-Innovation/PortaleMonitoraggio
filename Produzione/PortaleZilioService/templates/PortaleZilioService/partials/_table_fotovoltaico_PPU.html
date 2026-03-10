@@ -1,0 +1,45 @@
+﻿<table>
+    <thead>
+        <tr>
+            <th>Impianto</th>
+            <th>Cliente</th>
+            <th>Tariffa MWh</th>
+            <th>Strumento di Contabilizzazione</th>
+            <th>Maturato dall'Inizio</th>
+            <th>Fatturato dall'Inizio</th>
+            <th>Tipologia di Pagamento</th>
+            <th>Data Inizio</th>
+            <th>Data Fine</th>
+            <th>Anni Contratto</th>
+            <th>PR Stimato Annuo</th>
+            <th>Energia Stimata Annua</th>
+            <th>Mancata Produzione</th>
+            <th>Importo Stimato Annuo</th>
+            <th>Importo Reale Annuo</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+            <tr>
+                <td>{{ row.nome_impianto }}</td>
+                <td>{{ row.nome_cliente }}</td>
+                <td>{{ row.tariffa_mwh }}</td>
+                <td>{{ row.strumento_di_contabilizzazione }}</td>
+                <td>{{ row.maturato_dall_inizio }}</td>
+                <td>{{ row.fatturato_dall_inizio }}</td>
+                <td>{{ row.tipologia_di_pagamento }}</td>
+                <td>{{ row.data_di_inizio }}</td>
+                <td>{{ row.data_di_fine }}</td>
+                <td>{{ row.totale_anni_contratto }}</td>
+                <td>{{ row.pr_stimato_annuo }}</td>
+                <td>{{ row.energia_stimata_annua }}</td>
+                <td>{{ row.mancata_produzione }}</td>
+                <td>{{ row.importo_stimato_annuo }}</td>
+                <td>{{ row.importo_reale_annuo }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="15">Nessun dato disponibile.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+

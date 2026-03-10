@@ -1,0 +1,30 @@
+<table>
+    <thead>
+        <tr>
+            <th aria-label="Stato"></th>
+            <th>Nome</th>
+            <th>Potenza</th>
+            <th>Portata</th>
+            <th>Salto</th>
+            <th>Lettura Dati</th>
+            <th>Stato Contratto</th>
+            <th>Dettagli</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+            <tr>
+                <td><span class="{{ row.status_class }}" aria-hidden="true"></span></td>
+                <td>{{ row.nome }}</td>
+                <td>{{ row.potenza }}</td>
+                <td>{{ row.portata }}</td>
+                <td>{{ row.salto }}</td>
+                <td>{{ row.lettura_dati }}</td>
+                <td>{{ row.stato_contratto }}</td>
+                <td><a href="{{ row.dettaglio_url }}">link</a></td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="8">Nessun dato disponibile.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>

@@ -9,97 +9,56 @@
     <link rel="stylesheet" href="{% static 'PortaleZilioService/css/home.css' %}">
 </head>
 <body>
+    <h1>Portale Zilio Service</h1>
     <section class="energy-section" id="section-zilio-service">
-        <h1>Portale Zilio Service</h1>
+        <h2>Fotovoltaico</h2>
 
-        <header class="category-header" data-group="zs">
-            <button class="category-button" type="button" data-group="zs" data-target="zs-attivi" aria-controls="zs-attivi" aria-pressed="false">Contratti attivi</button>
-            <button class="category-button" type="button" data-group="zs" data-target="zs-passivi" aria-controls="zs-passivi" aria-pressed="false">Contratti passivi</button>
-            <button class="category-button" type="button" data-group="zs" data-target="zs-api" aria-controls="zs-api" aria-pressed="false">Dati da API</button>
+        <header class="category-header-fotovoltaico" data-group="fv">
+            <button class="category-button" type="button" data-group="fv" data-target="fv-clienti" aria-controls="fv-clienti" aria-pressed="false">FV Clienti</button>
+            <button class="category-button" type="button" data-group="fv" data-target="fv-proprieta" aria-controls="fv-proprieta" aria-pressed="false">FV Proprieta</button>
+            <button class="category-button" type="button" data-group="fv" data-target="fv-costruzione" aria-controls="fv-costruzione" aria-pressed="false">FV In Costruzione</button>
+            <button class="category-button" type="button" data-group="fv" data-target="fv-ppu" aria-controls="fv-ppu" aria-pressed="false">FV PPU</button>
         </header>
 
-        <section class="category-panel" id="zs-empty" data-panel data-group="zs">
+        <section class="category-panel" id="fv-empty" data-panel data-group="fv">
             <p class="empty-state">Seleziona una categoria per visualizzare i dati.</p>
         </section>
 
-        <section class="category-panel" id="zs-attivi" data-panel data-group="zs" hidden>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Cliente</th>
-                        <th>Tipologia</th>
-                        <th>Inizio</th>
-                        <th>Fine</th>
-                        <th>Totale</th>
-                        <th>Fatturato</th>
-                        <th>Da incassare</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Esempio Srl</td>
-                        <td>O&amp;M</td>
-                        <td>01/01/2026</td>
-                        <td>31/12/2028</td>
-                        <td>120.000,00 EUR</td>
-                        <td>20.000,00 EUR</td>
-                        <td>100.000,00 EUR</td>
-                    </tr>
-                </tbody>
-            </table>
+        <section class="category-panel" id="fv-clienti" data-panel data-group="fv" hidden>
+            {% include "PortaleZilioService/partials/_table_fotovoltaico_clienti.html" with rows=fv_clienti_rows %}
         </section>
 
-        <section class="category-panel" id="zs-passivi" data-panel data-group="zs" hidden>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Fornitore</th>
-                        <th>Servizio</th>
-                        <th>Inizio</th>
-                        <th>Fine</th>
-                        <th>Totale</th>
-                        <th>Pagato</th>
-                        <th>Da pagare</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Fornitore Demo</td>
-                        <td>Monitoraggio</td>
-                        <td>01/03/2026</td>
-                        <td>28/02/2027</td>
-                        <td>24.000,00 EUR</td>
-                        <td>6.000,00 EUR</td>
-                        <td>18.000,00 EUR</td>
-                    </tr>
-                </tbody>
-            </table>
+        <section class="category-panel" id="fv-proprieta" data-panel data-group="fv" hidden>
+            {% include "PortaleZilioService/partials/_table_fotovoltaico_proprieta.html" with rows=fv_proprieta_rows %}
         </section>
 
-        <section class="category-panel" id="zs-api" data-panel data-group="zs" hidden>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Sorgente</th>
-                        <th>Ultimo aggiornamento</th>
-                        <th>Stato</th>
-                        <th>Record</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>API placeholder</td>
-                        <td>--</td>
-                        <td>Non configurata</td>
-                        <td>0</td>
-                    </tr>
-                </tbody>
-            </table>
+        <section class="category-panel" id="fv-costruzione" data-panel data-group="fv" hidden>
+            {% include "PortaleZilioService/partials/_table_fotovoltaico_in_costruzione.html" with rows=fv_in_costruzione_rows %}
+        </section>
+
+        <section class="category-panel" id="fv-ppu" data-panel data-group="fv" hidden>
+            {% include "PortaleZilioService/partials/_table_fotovoltaico_PPU.html" with rows=fv_ppu_rows %}
+        </section>
+
+        
+    </section>
+
+    <section>
+        <h2>Idroelettrico</h2>
+
+        <header class="category-header-idroelettrico" data-group="idr">
+            <button class="category-button" type="button" data-group="idr" data-target="idr-proprieta" aria-controls="idr-proprieta" aria-pressed="false">IDR Proprieta</button>
+        </header>
+
+        <section class="category-panel" id="idr-empty" data-panel data-group="idr">
+            <p class="empty-state">Seleziona una categoria per visualizzare i dati.</p>
+        </section>
+        
+        <section class="category-panel" id="idr-proprieta" data-panel data-group="idr" hidden>
+            {% include "PortaleZilioService/partials/_table_idroelettrico_proprieta.html" with rows=idr_proprieta_rows %}
         </section>
     </section>
 
     <script src="{% static 'PortaleZilioService/js/homeTables.js' %}" defer></script>
 </body>
 </html>
-
-
