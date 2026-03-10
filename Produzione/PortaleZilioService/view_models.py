@@ -2,14 +2,6 @@ from dataclasses import dataclass
 
 
 '''
-Totale maturato (da inizio contratto): si calcola in automatico dalla data di inizio contratto applicando la periodicità al canone
-Fatturato (andando a leggere su esolver le fatture effettivamente emesse)
-Andando a leggere su esolver se è pagata
-
-Riepilogo colonne sotto header ORDINARIO:
-Contratto inizio | Contratto fine | Anni di contratto | Totale contratto | Totale annuo su MW | Totale annuo |
-Maturato | Fatturato | Incassato | Data prossima fattura | Importo prossima fattura
-
 Nota: dobbiamo stabilire come quali tabelle farci preparare da Sistemi e capire come funzionano le API
 '''
 
