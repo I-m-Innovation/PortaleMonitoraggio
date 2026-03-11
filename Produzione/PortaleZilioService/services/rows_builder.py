@@ -25,57 +25,119 @@ def _potenza_text(meta: FvMetadata) -> str:
     #just two number after the ,
     return f"{meta.potenza:.2f} kW" if meta.potenza is not None else "--"
 
-def _build_om_row(meta: FvMetadata, row_class):
-    return row_class(
-        status_class= "--",
-        nome_impianto=meta.nome_impianto or "--",
-        nome_cliente=meta.nome_cliente or "--",
-        potenza=_potenza_text(meta),
-        pr_contrattuale=str(meta.pr_contrattuale) if meta.pr_contrattuale is not None else "--",
-        pr_ultimi_12_mesi="--",
-        mancata_produzione="--",
-        ore_equivalenti="--",
-        ore_equivalenti_pvsys="--",
-        inizio_contratto=_fmt_date(meta.data_inizio_contratto),
-        fine_contratto=_fmt_date(meta.data_fine_contratto),
-        totale_anni_contratto=_calcola_anni_contratto(meta.data_inizio_contratto, meta.data_fine_contratto),
-        totale_annuale_su_MW="--",
-        totale_contratto="--",
-        totale_annuale="--",
-        totale_maturato="--",
-        totale_fatturato="--",
-        totale_incassato="--",
-        data_prossima_fattura="--",
-        importo_prossima_fattura="--",
-        numero_fatture_straordinarie_annuo="--",
-        numero_fatture_straordinarie_totali="--",
-        totale_fatturato_straordinario="--",
-        totale_ordinato_straordinario="--",
-    )
-
-
 # Orchestration module that builds row objects/lists for each table shown in home.html.
 def build_fotovoltaico_clienti_rows():
     q = FvMetadata.objects.select_related("impianto").filter(
         categoria_fv=FvMetadata.CategoriaFv.CLIENTE,
         is_in_costruzione=False,
     ).order_by("nome_cliente")
-    return [_build_om_row(meta, FotovoltaicoClientiRow) for meta in q]
+    rows = []
+    for meta in q:
+        rows.append(
+            FotovoltaicoClientiRow(
+                status_class="--",
+                nome_impianto=meta.nome_impianto or "--",
+                nome_cliente=meta.nome_cliente or "--",
+                potenza=_potenza_text(meta),
+                pr_contrattuale=str(meta.pr_contrattuale) if meta.pr_contrattuale is not None else "--",
+                pr_ultimi_12_mesi="--",
+                mancata_produzione="--",
+                ore_equivalenti="--",
+                ore_equivalenti_pvsys="--",
+                inizio_contratto=_fmt_date(meta.data_inizio_contratto),
+                fine_contratto=_fmt_date(meta.data_fine_contratto),
+                totale_anni_contratto=_calcola_anni_contratto(meta.data_inizio_contratto, meta.data_fine_contratto),
+                totale_annuale_su_MW="--",
+                totale_contratto="--",
+                totale_annuale="--",
+                totale_maturato="--",
+                totale_fatturato="--",
+                totale_incassato="--",
+                data_prossima_fattura="--",
+                importo_prossima_fattura="--",
+                numero_fatture_straordinarie_annuo="--",
+                numero_fatture_straordinarie_totali="--",
+                totale_fatturato_straordinario="--",
+                totale_ordinato_straordinario="--",
+            )
+        )
+    return rows
 
 
 def build_fotovoltaico_proprieta_rows():
+    # solo impianti di proprietà, non in costruzione, ordinati per nome impianto
     q = FvMetadata.objects.select_related("impianto").filter(
-        categoria_fv=FvMetadata.CategoriaFv.PROPRIETA,
-        is_in_costruzione=False,
-    ).order_by("nome_impianto")
-    return [_build_om_row(meta, FotovoltaicoProprietaRow) for meta in q]
+            categoria_fv=FvMetadata.CategoriaFv.PROPRIETA,
+            is_in_costruzione=False,
+        ).order_by("nome_impianto")
+    rows = []
+    for meta in q:
+        rows.append(
+            FotovoltaicoProprietaRow(
+                status_class="--",
+                nome_impianto=meta.nome_impianto or "--",
+                nome_cliente=meta.nome_cliente or "--",
+                potenza=_potenza_text(meta),
+                pr_contrattuale=str(meta.pr_contrattuale) if meta.pr_contrattuale is not None else "--",
+                pr_ultimi_12_mesi="--",
+                mancata_produzione="--",
+                ore_equivalenti="--",
+                ore_equivalenti_pvsys="--",
+                inizio_contratto=_fmt_date(meta.data_inizio_contratto),
+                fine_contratto=_fmt_date(meta.data_fine_contratto),
+                totale_anni_contratto=_calcola_anni_contratto(meta.data_inizio_contratto, meta.data_fine_contratto),
+                totale_annuale_su_MW="--",
+                totale_contratto="--",
+                totale_annuale="--",
+                totale_maturato="--",
+                totale_fatturato="--",
+                totale_incassato="--",
+                data_prossima_fattura="--",
+                importo_prossima_fattura="--",
+                numero_fatture_straordinarie_annuo="--",
+                numero_fatture_straordinarie_totali="--",
+                totale_fatturato_straordinario="--",
+                totale_ordinato_straordinario="--",
+            )
+        )
+    return rows
 
 
 def build_fotovoltaico_in_costruzione_rows():
     q = FvMetadata.objects.select_related("impianto").filter(
         is_in_costruzione=True,
     ).order_by("nome_impianto")
-    return [_build_om_row(meta, FotovoltaicoInCostruzioneRow) for meta in q]
+    rows = []
+    for meta in q:
+        rows.append(
+            FotovoltaicoInCostruzioneRow(
+                status_class="--",
+                nome_impianto=meta.nome_impianto or "--",
+                nome_cliente=meta.nome_cliente or "--",
+                potenza=_potenza_text(meta),
+                pr_contrattuale=str(meta.pr_contrattuale) if meta.pr_contrattuale is not None else "--",
+                pr_ultimi_12_mesi="--",
+                mancata_produzione="--",
+                ore_equivalenti="--",
+                ore_equivalenti_pvsys="--",
+                inizio_contratto=_fmt_date(meta.data_inizio_contratto),
+                fine_contratto=_fmt_date(meta.data_fine_contratto),
+                totale_anni_contratto=_calcola_anni_contratto(meta.data_inizio_contratto, meta.data_fine_contratto),
+                totale_annuale_su_MW="--",
+                totale_contratto="--",
+                totale_annuale="--",
+                totale_maturato="--",
+                totale_fatturato="--",
+                totale_incassato="--",
+                data_prossima_fattura="--",
+                importo_prossima_fattura="--",
+                numero_fatture_straordinarie_annuo="--",
+                numero_fatture_straordinarie_totali="--",
+                totale_fatturato_straordinario="--",
+                totale_ordinato_straordinario="--",
+            )
+        )
+    return rows
 
 
 def build_fotovoltaico_ppu_rows():
