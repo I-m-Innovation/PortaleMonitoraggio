@@ -1,4 +1,4 @@
-﻿from datetime import date
+from datetime import date
 
 from ..models import FvMetadata, MonitoraggioImpianto
 from ..view_models import (
@@ -14,6 +14,57 @@ def _fmt_date(value: date | None) -> str:
     return value.strftime("%d/%m/%Y") if value else "--"
 
 
+def _fmt_equivalent_hours(value: float | None) -> str:
+    if value is None:
+        return "--"
+    return f"{value:.2f}"
+
+
+def _fmt_performance_ratio(value: float | None) -> str:
+    if value is None:
+        return "--"
+    return f"{value * 100:.2f}%"
+
+
+def _ore_equivalenti_text(meta: FvMetadata) -> str:
+    if meta.impianto is None:
+        return "--"
+    return _fmt_equivalent_hours(meta.impianto.ore_equivalenti_annue)
+
+
+def _pr_annuo_text(meta: FvMetadata) -> str:
+    if meta.impianto is not None and meta.impianto.performance_ratio_annuo is not None:
+        return _fmt_performance_ratio(meta.impianto.performance_ratio_annuo)
+
+    if meta.nome_impianto:
+        fallback = (
+            MonitoraggioImpianto.objects.filter(
+                nome_impianto__startswith=f"{meta.nome_impianto} -",
+                performance_ratio_annuo__isnull=False,
+            )
+            .order_by("nome_impianto")
+            .first()
+        )
+        if fallback is not None:
+            return _fmt_performance_ratio(fallback.performance_ratio_annuo)
+
+    return "--"
+
+
+def _status_class(meta: FvMetadata) -> str:
+    if meta.impianto is None or not meta.impianto.stato_operativo:
+        return "--"
+
+    status = meta.impianto.stato_operativo.lower()
+    if status == "online":
+        return "status-dot-green"
+    if status == "offline":
+        return "status-dot-red"
+    if status in {"warning", "warn"}:
+        return "status-dot-yellow"
+    return "--"
+
+
 def _calcola_anni_contratto(data_inizio: date | None, data_fine: date | None) -> str:
     if not data_inizio or not data_fine:
         return "--"
@@ -22,10 +73,9 @@ def _calcola_anni_contratto(data_inizio: date | None, data_fine: date | None) ->
 
 
 def _potenza_text(meta: FvMetadata) -> str:
-    #just two number after the ,
     return f"{meta.potenza:.2f} kW" if meta.potenza is not None else "--"
 
-# Orchestration module that builds row objects/lists for each table shown in home.html.
+
 def build_fotovoltaico_clienti_rows():
     q = FvMetadata.objects.select_related("impianto").filter(
         categoria_fv=FvMetadata.CategoriaFv.CLIENTE,
@@ -35,14 +85,14 @@ def build_fotovoltaico_clienti_rows():
     for meta in q:
         rows.append(
             FotovoltaicoClientiRow(
-                status_class="--",
+                status_class=_status_class(meta),
                 nome_impianto=meta.nome_impianto or "--",
                 nome_cliente=meta.nome_cliente or "--",
                 potenza=_potenza_text(meta),
                 pr_contrattuale=str(meta.pr_contrattuale) if meta.pr_contrattuale is not None else "--",
-                pr_ultimi_12_mesi="--",
+                pr_ultimi_12_mesi=_pr_annuo_text(meta),
                 mancata_produzione="--",
-                ore_equivalenti="--",
+                ore_equivalenti=_ore_equivalenti_text(meta),
                 ore_equivalenti_pvsys="--",
                 inizio_contratto=_fmt_date(meta.data_inizio_contratto),
                 fine_contratto=_fmt_date(meta.data_fine_contratto),
@@ -65,23 +115,22 @@ def build_fotovoltaico_clienti_rows():
 
 
 def build_fotovoltaico_proprieta_rows():
-    # solo impianti di proprietà, non in costruzione, ordinati per nome impianto
     q = FvMetadata.objects.select_related("impianto").filter(
-            categoria_fv=FvMetadata.CategoriaFv.PROPRIETA,
-            is_in_costruzione=False,
-        ).order_by("nome_impianto")
+        categoria_fv=FvMetadata.CategoriaFv.PROPRIETA,
+        is_in_costruzione=False,
+    ).order_by("nome_impianto")
     rows = []
     for meta in q:
         rows.append(
             FotovoltaicoProprietaRow(
-                status_class="--",
+                status_class=_status_class(meta),
                 nome_impianto=meta.nome_impianto or "--",
                 nome_cliente=meta.nome_cliente or "--",
                 potenza=_potenza_text(meta),
                 pr_contrattuale=str(meta.pr_contrattuale) if meta.pr_contrattuale is not None else "--",
-                pr_ultimi_12_mesi="--",
+                pr_ultimi_12_mesi=_pr_annuo_text(meta),
                 mancata_produzione="--",
-                ore_equivalenti="--",
+                ore_equivalenti=_ore_equivalenti_text(meta),
                 ore_equivalenti_pvsys="--",
                 inizio_contratto=_fmt_date(meta.data_inizio_contratto),
                 fine_contratto=_fmt_date(meta.data_fine_contratto),
@@ -111,14 +160,14 @@ def build_fotovoltaico_in_costruzione_rows():
     for meta in q:
         rows.append(
             FotovoltaicoInCostruzioneRow(
-                status_class="--",
+                status_class=_status_class(meta),
                 nome_impianto=meta.nome_impianto or "--",
                 nome_cliente=meta.nome_cliente or "--",
                 potenza=_potenza_text(meta),
                 pr_contrattuale=str(meta.pr_contrattuale) if meta.pr_contrattuale is not None else "--",
-                pr_ultimi_12_mesi="--",
+                pr_ultimi_12_mesi=_pr_annuo_text(meta),
                 mancata_produzione="--",
-                ore_equivalenti="--",
+                ore_equivalenti=_ore_equivalenti_text(meta),
                 ore_equivalenti_pvsys="--",
                 inizio_contratto=_fmt_date(meta.data_inizio_contratto),
                 fine_contratto=_fmt_date(meta.data_fine_contratto),

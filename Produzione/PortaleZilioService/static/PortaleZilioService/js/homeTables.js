@@ -7,7 +7,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const formPanels = Array.from(document.querySelectorAll("[data-form-panel]"));
     const modalTitle = document.getElementById("fv-form-modal-title");
     const fvAddButtons = Array.from(document.querySelectorAll("[data-add-button-for]"));
-    const tableTracks = Array.from(document.querySelectorAll(".table-scroll-track[data-auto-scroll='true']"));
+    const syncBanner = document.querySelector("[data-sync-banner]");
+
+    let tableTracks = [];
+    let autoScrollControllers = [];
 
     const modalTitles = {
         fv_clienti: "Nuovo Record FV Clienti",
@@ -15,6 +18,15 @@ document.addEventListener("DOMContentLoaded", () => {
         fv_in_costruzione: "Nuovo Record FV In Costruzione",
         fv_ppu: "Nuovo Record FV PPU",
     };
+
+    const syncPanelMap = {
+        fv_clienti: "fv-clienti",
+        fv_proprieta: "fv-proprieta",
+        fv_costruzione: "fv-costruzione",
+        fv_ppu: "fv-ppu",
+        idr_proprieta: "idr-proprieta",
+    };
+    let bannerTimeoutId = null;
 
     const setFvAddButtons = (activeTargetId = "") => {
         fvAddButtons.forEach((btn) => {
@@ -48,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
             rafId: null,
         };
 
-        const SPEED_PX_PER_SEC = 60; 
+        const SPEED_PX_PER_SEC = 30;
         const END_PAUSE_MS = 2000;
         const USER_PAUSE_MS = 5000;
 
@@ -105,7 +117,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const next = Math.max(0, Math.min(state.maxScroll, desired));
             track.scrollLeft = next;
 
-            // Edge reached (or rounded to same pixel): reverse and pause briefly.
             if (Math.abs(track.scrollLeft - prev) < 0.5) {
                 state.direction *= -1;
                 state.edgePauseUntil = now + END_PAUSE_MS;
@@ -122,14 +133,100 @@ document.addEventListener("DOMContentLoaded", () => {
 
         refresh();
         state.rafId = requestAnimationFrame(tick);
-        return { refresh };
+        return {
+            refresh,
+            stop: () => {
+                if (state.rafId !== null) {
+                    cancelAnimationFrame(state.rafId);
+                }
+            },
+        };
     };
 
-    const autoScrollControllers = tableTracks.map((track) => createAutoScroller(track));
+    const rebuildTableControllers = () => {
+        autoScrollControllers.forEach((controller) => controller.stop());
+        tableTracks = Array.from(document.querySelectorAll(".table-scroll-track[data-auto-scroll='true']"));
+        autoScrollControllers = tableTracks.map((track) => createAutoScroller(track));
+    };
 
     const refreshTables = () => {
         updateStickyOffsets();
         autoScrollControllers.forEach((controller) => controller.refresh());
+    };
+
+    const setBannerState = (message, state) => {
+        if (!syncBanner) {
+            return;
+        }
+        if (bannerTimeoutId) {
+            clearTimeout(bannerTimeoutId);
+            bannerTimeoutId = null;
+        }
+        syncBanner.textContent = message;
+        syncBanner.hidden = false;
+        syncBanner.classList.remove("is-pending", "is-success", "is-error");
+        if (state) {
+            syncBanner.classList.add(state);
+        }
+        if (state === "is-success") {
+            bannerTimeoutId = window.setTimeout(() => {
+                syncBanner.hidden = true;
+                bannerTimeoutId = null;
+            }, 3000);
+        }
+    };
+
+    const getCsrfToken = () => {
+        const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : "";
+    };
+
+    const applyUpdatedTables = (tables) => {
+        Object.entries(syncPanelMap).forEach(([payloadKey, panelId]) => {
+            if (!tables[payloadKey]) {
+                return;
+            }
+            const panel = document.getElementById(panelId);
+            if (!panel) {
+                return;
+            }
+            panel.innerHTML = tables[payloadKey];
+        });
+
+        rebuildTableControllers();
+        requestAnimationFrame(refreshTables);
+        setTimeout(refreshTables, 60);
+        setTimeout(refreshTables, 180);
+    };
+
+    const triggerIscSync = async () => {
+        if (!syncBanner || !syncBanner.dataset.syncUrl) {
+            return;
+        }
+
+        setBannerState("Recupero dati ISC in corso...", "is-pending");
+
+        try {
+            const response = await fetch(syncBanner.dataset.syncUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCsrfToken(),
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                body: JSON.stringify({}),
+            });
+
+            const payload = await response.json();
+            if (!response.ok || !payload.ok) {
+                throw new Error(payload.message || "Sync ISC non riuscito.");
+            }
+
+            applyUpdatedTables(payload.tables || {});
+            setBannerState(payload.message || "Aggiornamento dati completato.", "is-success");
+        } catch (error) {
+            setBannerState(error.message || "Errore durante il recupero dati ISC.", "is-error");
+        }
     };
 
     const resetGroup = (group) => {
@@ -188,8 +285,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     setFvAddButtons("");
+    rebuildTableControllers();
     refreshTables();
     window.addEventListener("resize", refreshTables);
+    triggerIscSync();
 
     if (!modal) {
         return;

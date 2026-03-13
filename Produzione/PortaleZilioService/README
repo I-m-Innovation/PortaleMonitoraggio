@@ -26,3 +26,49 @@ commit di prova per git
 ## Next Step
 
 - Implement fields incrementally in `rows_builder.py` (2-3 fields at a time), starting from contract dates and contract-years calculation from `FvMetadata`.
+
+## SQLite DDL - tab_impianti_api_metriche
+
+Use these statements when recreating the local or production SQLite schema for cached API metrics shown in the UI.
+
+```sql
+CREATE TABLE IF NOT EXISTS tab_impianti_api_metriche (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    fv_metadata_id INTEGER,                 -- aggancio diretto a fv_metadata se lo hai
+    impianto_id INTEGER,                    -- opzionale: aggancio a tab_impianti / Impianto
+    nome_impianto TEXT NOT NULL,            -- ridondante ma comodo per debug e query veloci
+
+    api_provider TEXT,                      -- es: 'isolarcloud'
+    external_plant_id TEXT,                 -- id impianto lato provider, se disponibile
+
+    stato_connessione TEXT DEFAULT 'unknown',
+    energy_year_kwh REAL,
+    equivalent_hours_year REAL,
+    equivalent_hours_day REAL,
+
+    inverters_count INTEGER,
+    inverters_ok INTEGER,
+    coverage REAL,
+
+    ultimo_sync DATETIME,
+    raw_payload_json TEXT,                  -- opzionale, utile per debug
+
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE (fv_metadata_id),
+    UNIQUE (impianto_id)
+);
+```
+
+```sql
+CREATE TRIGGER IF NOT EXISTS trg_tab_impianti_api_metriche_updated_at
+AFTER UPDATE ON tab_impianti_api_metriche
+FOR EACH ROW
+BEGIN
+    UPDATE tab_impianti_api_metriche
+    SET updated_at = CURRENT_TIMESTAMP
+    WHERE id = NEW.id;
+END;
+```

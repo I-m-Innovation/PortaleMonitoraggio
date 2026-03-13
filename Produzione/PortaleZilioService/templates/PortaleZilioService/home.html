@@ -9,7 +9,14 @@
     <link rel="stylesheet" href="{% static 'PortaleZilioService/css/home.css' %}">
 </head>
 <body>
-    <h1>Portale Zilio Service</h1>
+    <h1>Portale Zilio Service <span class="h1-work-in-progress">IN LAVORAZIONE</span></h1>
+    <section
+        id="isc-sync-banner"
+        class="sync-banner"
+        data-sync-banner
+        data-sync-url="{% url 'PortaleZilioService:sync-isc' %}"
+        hidden
+    ></section>
     <section class="energy-section" id="section-zilio-service">
         <h2>Fotovoltaico</h2>
 
@@ -33,15 +40,15 @@
         </section>
 
         <section class="category-panel" id="fv-clienti" data-panel data-group="fv" hidden>
-            {% include "PortaleZilioService/partials/_table_fotovoltaico_clienti.html" with rows=fv_clienti_rows %}
+            {% include "PortaleZilioService/partials/_table_fotovoltaico_clienti.html" with rows=fv_clienti_rows ore_equivalenti_year=ore_equivalenti_year %}
         </section>
 
         <section class="category-panel" id="fv-proprieta" data-panel data-group="fv" hidden>
-            {% include "PortaleZilioService/partials/_table_fotovoltaico_proprieta.html" with rows=fv_proprieta_rows %}
+            {% include "PortaleZilioService/partials/_table_fotovoltaico_proprieta.html" with rows=fv_proprieta_rows ore_equivalenti_year=ore_equivalenti_year %}
         </section>
 
         <section class="category-panel" id="fv-costruzione" data-panel data-group="fv" hidden>
-            {% include "PortaleZilioService/partials/_table_fotovoltaico_in_costruzione.html" with rows=fv_in_costruzione_rows %}
+            {% include "PortaleZilioService/partials/_table_fotovoltaico_in_costruzione.html" with rows=fv_in_costruzione_rows ore_equivalenti_year=ore_equivalenti_year %}
         </section>
 
         <section class="category-panel" id="fv-ppu" data-panel data-group="fv" hidden>

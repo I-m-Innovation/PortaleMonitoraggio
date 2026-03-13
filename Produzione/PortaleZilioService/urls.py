@@ -6,6 +6,7 @@ from .views import (
     fv_ppu_create_view,
     fv_proprieta_create_view,
     home_view,
+    sync_isc_metrics_view,
     test_view,
 )
 
@@ -17,5 +18,6 @@ urlpatterns = [
     path("fv/new/proprieta/", fv_proprieta_create_view, name="fv-proprieta-create"),
     path("fv/new/in-costruzione/",fv_in_costruzione_create_view,name="fv-in-costruzione-create",),
     path("fv/new/ppu/", fv_ppu_create_view, name="fv-ppu-create"),
+    path("api/sync-isc/", sync_isc_metrics_view, name="sync-isc"),
     path("test/", test_view, name="test-view"),
 ]
