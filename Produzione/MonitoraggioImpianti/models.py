@@ -41,6 +41,15 @@ class Impianto(models.Model):
 	lettura_dati = models.CharField(max_length=50, null=True, blank=True, editable=True, help_text="Tipo lettura dati impianti", verbose_name='Lettura dati')
 	proprieta = models.BooleanField(default=False, editable=True, help_text="Indica se l'impianto è di propietà Zilio", verbose_name='Proprietà')
 
+	ore_equivalenti_giornaliere = models.FloatField(null=True, blank=True, editable=True, help_text="Ore equivalenti giornaliere", verbose_name='Ore equivalenti giornaliere')
+	ore_equivalenti_annue = models.FloatField(null=True, blank=True, editable=True, help_text="Ore equivalenti annue", verbose_name='Ore equivalenti annue')
+	ore_equivalenti_totali = models.FloatField(null=True, blank=True, editable=True, help_text="Ore equivalenti totali", verbose_name='Ore equivalenti totali')
+	stato_operativo = models.CharField(max_length=50, null=True, blank=True, editable=True, help_text="Stato operativo impianto", verbose_name='Stato operativo')
+	energia_annua_kwh = models.FloatField(null=True, blank=True, editable=True, help_text="Energia annua prodotta in kWh", verbose_name='Energia annua [kWh]')
+	ha_meteo_station = models.BooleanField(null=True, blank=True, editable=True, help_text="Indica se l'impianto dispone di una meteo station ISC", verbose_name='Meteo station disponibile')
+	irraggiamento_annuo_kwh_m2 = models.FloatField(null=True, blank=True, editable=True, help_text="Irraggiamento annuo sul piano moduli in kWh/m2", verbose_name='Irraggiamento annuo [kWh/m2]')
+	performance_ratio_annuo = models.FloatField(null=True, blank=True, editable=True, help_text="Performance ratio annuo dell'impianto", verbose_name='PR annuo')
+
 	class Meta:
 		verbose_name = 'Impianto'
 		verbose_name_plural = 'Impianti'

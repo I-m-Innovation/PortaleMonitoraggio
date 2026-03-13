@@ -51,7 +51,7 @@ INSTALLED_APPS = [
     "AnalisiDatiImpianti.apps.AnalisidatiimpiantiConfig",
     "AutomazioneDati.apps.AutomazionedatiConfig",
     "PortaleCorrispettivi.apps.PortalecorrispettiviConfig",
-    
+    "PortaleZilioService"
     
 ]
 

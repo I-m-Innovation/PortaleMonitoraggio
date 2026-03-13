@@ -1,0 +1,272 @@
+/* App-specific overrides for PortaleZilioService overview home */
+
+.energy-section h1 {
+    margin-bottom: 1rem;
+}
+
+.sync-banner {
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid #c7d4e2;
+    background: #eef5fb;
+    color: #24496b;
+    font-weight: 600;
+}
+
+.sync-banner.is-pending {
+    border-color: #d6b14f;
+    background: #fff6df;
+    color: #7a5600;
+}
+
+.sync-banner.is-success {
+    border-color: #8fc7a4;
+    background: #eaf7ee;
+    color: #1f6a39;
+}
+
+.sync-banner.is-error {
+    border-color: #d49a9a;
+    background: #fdeeee;
+    color: #8a2f2f;
+}
+
+.category-header {
+    margin-bottom: 1rem;
+}
+
+.category-header-fotovoltaico {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.fv-header-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+}
+
+.fv-header-add {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+}
+
+.category-panel table {
+    width: 100%;
+}
+
+.category-panel {
+    width: 100%;
+    max-width: 100%;
+}
+
+.table-scroll-track {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: 2px solid var(--table-border);
+    box-shadow: var(--shadow);
+    background: #ffffff;
+}
+
+.table-scroll-track table {
+    width: max-content;
+    min-width: 100%;
+    border: 0;
+    box-shadow: none;
+}
+
+.table-scroll-track table thead tr:last-child th:nth-child(1),
+.table-scroll-track table tbody td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+}
+
+.table-scroll-track table thead tr:last-child th:nth-child(2),
+.table-scroll-track table tbody td:nth-child(2) {
+    position: sticky;
+    left: var(--sticky-left-2, 140px);
+    z-index: 3;
+}
+
+.table-scroll-track table thead tr:last-child th:nth-child(1),
+.table-scroll-track table thead tr:last-child th:nth-child(2) {
+    z-index: 6;
+    background: var(--accent);
+}
+
+.table-scroll-track table tbody td:nth-child(1),
+.table-scroll-track table tbody td:nth-child(2) {
+    background: #ffffff;
+}
+
+.table-scroll-track table thead tr:last-child th:nth-child(2),
+.table-scroll-track table tbody td:nth-child(2) {
+    box-shadow: 2px 0 0 rgba(35, 79, 120, 0.16);
+}
+
+.table-scroll-track table tbody tr:nth-child(even) td:nth-child(1),
+.table-scroll-track table tbody tr:nth-child(even) td:nth-child(2) {
+    background: var(--row-alt);
+}
+
+.table-add-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    border: 1px solid var(--accent);
+    background-color: var(--accent);
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.table-add-button[hidden] {
+    display: none !important;
+}
+
+.table-add-button:hover,
+.table-add-button:focus {
+    filter: brightness(0.92);
+}
+
+/* Visual separator between ordinary and extraordinary table sections */
+.category-panel table th.straord-start,
+.category-panel table td.straord-start {
+    border-left: 3px solid #c73a3a;
+    padding-left: 20px;
+}
+
+.category-panel table td.straord-col {
+    background-color: #fff8f8;
+}
+
+.category-panel table th.straord-col {
+    background-color: var(--accent);
+    color: #ffffff;
+}
+
+.category-panel table th.section-header {
+    text-align: center;
+}
+
+/* Small visual gap between grouped header row and column header row */
+.category-panel table thead tr:first-child th {
+    padding-bottom: 16px;
+}
+
+.category-panel table thead tr:nth-child(2) th {
+    padding-top: 10px;
+}
+
+.fv-form {
+    max-width: 860px;
+}
+
+.fv-form p {
+    margin-bottom: 12px;
+}
+
+.fv-form label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.fv-form input,
+.fv-form select,
+.fv-form textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #c7ced6;
+}
+
+body.modal-open {
+    overflow: hidden;
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+}
+
+.modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.modal-content {
+    position: relative;
+    width: min(860px, calc(100% - 24px));
+    max-height: calc(100vh - 24px);
+    margin: 12px auto;
+    background: #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.25);
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #d9dee5;
+}
+
+.modal-header h3 {
+    margin: 0;
+}
+
+.modal-close {
+    border: 0;
+    background: transparent;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    color: #4a5561;
+}
+
+.modal-body {
+    overflow: auto;
+    padding: 14px 16px 18px;
+}
+
+.modal-form-block h4 {
+    margin: 0 0 10px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+
+.h1-work-in-progress {
+    font-size: 1em;
+    color: #ffb115;
+    border: 1px solid #c73a3a;
+    background: #fff8f8;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}

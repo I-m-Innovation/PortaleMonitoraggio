@@ -1,0 +1,74 @@
+commit di prova per git
+
+## PortaleZilioService - Daily Summary (2026-03-10)
+
+- Fixed model setup in `PortaleZilioService` to avoid duplicate-table conflicts with `MonitoraggioImpianti`.
+- Stabilized `home.html` structure with grouped panels and partial tables.
+- Added and aligned table partials with current `view_models.py` fields.
+- Introduced grouped headers (`O&M Ordinaria` / `Straordinario`) and visual separators.
+- Added/ordered confirmed columns, including `Mancata Produzione` and `Totale Annuo su MW`.
+- Created `FvMetadata` model + migrations for FV business metadata not available in legacy tables.
+- Added admin management for `FvMetadata` with ordered fields for manual data entry.
+- Switched `rows_builder.py` to read FV rows from `FvMetadata` (category/flags/contracts), with placeholders for not-yet-implemented metrics.
+- Resolved runtime errors encountered during setup:
+  - duplicate `db_table` mapping
+  - bad imports / stale file state
+  - SQLite lock during migration
+  - invalid field access (e.g., `nome_cliente` on wrong model)
+  - wrong queryset filters (e.g., `tipo` on `FvMetadata`)
+
+## Current Status
+
+- `FvMetadata` table exists and can be populated from Django admin.
+- UI table columns are aligned with the confirmed structure.
+- Basic row population works; many computed/API fields still intentionally set to `--`.
+
+## Next Step
+
+- Implement fields incrementally in `rows_builder.py` (2-3 fields at a time), starting from contract dates and contract-years calculation from `FvMetadata`.
+
+## SQLite DDL - tab_impianti_api_metriche
+
+Use these statements when recreating the local or production SQLite schema for cached API metrics shown in the UI.
+
+```sql
+CREATE TABLE IF NOT EXISTS tab_impianti_api_metriche (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    fv_metadata_id INTEGER,                 -- aggancio diretto a fv_metadata se lo hai
+    impianto_id INTEGER,                    -- opzionale: aggancio a tab_impianti / Impianto
+    nome_impianto TEXT NOT NULL,            -- ridondante ma comodo per debug e query veloci
+
+    api_provider TEXT,                      -- es: 'isolarcloud'
+    external_plant_id TEXT,                 -- id impianto lato provider, se disponibile
+
+    stato_connessione TEXT DEFAULT 'unknown',
+    energy_year_kwh REAL,
+    equivalent_hours_year REAL,
+    equivalent_hours_day REAL,
+
+    inverters_count INTEGER,
+    inverters_ok INTEGER,
+    coverage REAL,
+
+    ultimo_sync DATETIME,
+    raw_payload_json TEXT,                  -- opzionale, utile per debug
+
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE (fv_metadata_id),
+    UNIQUE (impianto_id)
+);
+```
+
+```sql
+CREATE TRIGGER IF NOT EXISTS trg_tab_impianti_api_metriche_updated_at
+AFTER UPDATE ON tab_impianti_api_metriche
+FOR EACH ROW
+BEGIN
+    UPDATE tab_impianti_api_metriche
+    SET updated_at = CURRENT_TIMESTAMP
+    WHERE id = NEW.id;
+END;
+```

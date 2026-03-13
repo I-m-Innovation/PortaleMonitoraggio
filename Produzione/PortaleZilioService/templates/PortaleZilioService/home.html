@@ -1,0 +1,144 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portale Zilio Service - Overview</title>
+    <link rel="stylesheet" href="{% static 'css/style_overview_page.css' %}">
+    <link rel="stylesheet" href="{% static 'PortaleZilioService/css/home.css' %}">
+</head>
+<body>
+    <h1>Portale Zilio Service <span class="h1-work-in-progress">IN LAVORAZIONE</span></h1>
+    <section
+        id="isc-sync-banner"
+        class="sync-banner"
+        data-sync-banner
+        data-sync-url="{% url 'PortaleZilioService:sync-isc' %}"
+        hidden
+    ></section>
+    <section class="energy-section" id="section-zilio-service">
+        <h2>Fotovoltaico</h2>
+
+        <header class="category-header-fotovoltaico" data-group="fv">
+            <div class="fv-header-tabs">
+                <button class="category-button" type="button" data-group="fv" data-target="fv-clienti" aria-controls="fv-clienti" aria-pressed="false">FV Clienti</button>
+                <button class="category-button" type="button" data-group="fv" data-target="fv-proprieta" aria-controls="fv-proprieta" aria-pressed="false">FV Proprieta</button>
+                <button class="category-button" type="button" data-group="fv" data-target="fv-costruzione" aria-controls="fv-costruzione" aria-pressed="false">FV In Costruzione</button>
+                <button class="category-button" type="button" data-group="fv" data-target="fv-ppu" aria-controls="fv-ppu" aria-pressed="false">FV PPU</button>
+            </div>
+            <div class="fv-header-add">
+                <button class="table-add-button" type="button" data-add-button-for="fv-clienti" data-modal-open="fv_clienti" aria-label="Aggiungi record FV Clienti" title="Aggiungi record FV Clienti" hidden>+</button>
+                <button class="table-add-button" type="button" data-add-button-for="fv-proprieta" data-modal-open="fv_proprieta" aria-label="Aggiungi record FV Proprieta" title="Aggiungi record FV Proprieta" hidden>+</button>
+                <button class="table-add-button" type="button" data-add-button-for="fv-costruzione" data-modal-open="fv_in_costruzione" aria-label="Aggiungi record FV In Costruzione" title="Aggiungi record FV In Costruzione" hidden>+</button>
+                <button class="table-add-button" type="button" data-add-button-for="fv-ppu" data-modal-open="fv_ppu" aria-label="Aggiungi record FV PPU" title="Aggiungi record FV PPU" hidden>+</button>
+            </div>
+        </header>
+
+        <section class="category-panel" id="fv-empty" data-panel data-group="fv">
+            <p class="empty-state">Seleziona una categoria per visualizzare i dati.</p>
+        </section>
+
+        <section class="category-panel" id="fv-clienti" data-panel data-group="fv" hidden>
+            {% include "PortaleZilioService/partials/_table_fotovoltaico_clienti.html" with rows=fv_clienti_rows ore_equivalenti_year=ore_equivalenti_year %}
+        </section>
+
+        <section class="category-panel" id="fv-proprieta" data-panel data-group="fv" hidden>
+            {% include "PortaleZilioService/partials/_table_fotovoltaico_proprieta.html" with rows=fv_proprieta_rows ore_equivalenti_year=ore_equivalenti_year %}
+        </section>
+
+        <section class="category-panel" id="fv-costruzione" data-panel data-group="fv" hidden>
+            {% include "PortaleZilioService/partials/_table_fotovoltaico_in_costruzione.html" with rows=fv_in_costruzione_rows ore_equivalenti_year=ore_equivalenti_year %}
+        </section>
+
+        <section class="category-panel" id="fv-ppu" data-panel data-group="fv" hidden>
+            {% include "PortaleZilioService/partials/_table_fotovoltaico_PPU.html" with rows=fv_ppu_rows %}
+        </section>
+
+        
+    </section>
+
+    <section>
+        <h2>Idroelettrico</h2>
+
+        <header class="category-header-idroelettrico" data-group="idr">
+            <button class="category-button" type="button" data-group="idr" data-target="idr-proprieta" aria-controls="idr-proprieta" aria-pressed="false">IDR Proprieta</button>
+        </header>
+
+        <section class="category-panel" id="idr-empty" data-panel data-group="idr">
+            <p class="empty-state">Seleziona una categoria per visualizzare i dati.</p>
+        </section>
+        
+        <section class="category-panel" id="idr-proprieta" data-panel data-group="idr" hidden>
+            {% include "PortaleZilioService/partials/_table_idroelettrico_proprieta.html" with rows=idr_proprieta_rows %}
+        </section>
+    </section>
+
+    <div
+        id="fv-form-modal"
+        class="modal"
+        {% if active_form_type %}data-open-on-load="{{ active_form_type }}"{% endif %}
+        hidden
+    >
+        <div class="modal-backdrop" data-modal-close></div>
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="fv-form-modal-title">
+            <div class="modal-header">
+                <h3 id="fv-form-modal-title">Nuovo Record FV</h3>
+                <button type="button" class="modal-close" data-modal-close aria-label="Chiudi">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <section class="modal-form-block" data-form-panel="fv_clienti" hidden>
+                    <h4>Nuovo Record FV Clienti</h4>
+                    <form method="post" class="fv-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="fv_clienti">
+                        {{ fv_forms.fv_clienti.as_p }}
+                        <div class="modal-actions">
+                            <button type="submit" class="category-button">Salva</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="modal-form-block" data-form-panel="fv_proprieta" hidden>
+                    <h4>Nuovo Record FV Proprieta</h4>
+                    <form method="post" class="fv-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="fv_proprieta">
+                        {{ fv_forms.fv_proprieta.as_p }}
+                        <div class="modal-actions">
+                            <button type="submit" class="category-button">Salva</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="modal-form-block" data-form-panel="fv_in_costruzione" hidden>
+                    <h4>Nuovo Record FV In Costruzione</h4>
+                    <form method="post" class="fv-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="fv_in_costruzione">
+                        {{ fv_forms.fv_in_costruzione.as_p }}
+                        <div class="modal-actions">
+                            <button type="submit" class="category-button">Salva</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="modal-form-block" data-form-panel="fv_ppu" hidden>
+                    <h4>Nuovo Record FV PPU</h4>
+                    <form method="post" class="fv-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="fv_ppu">
+                        {{ fv_forms.fv_ppu.as_p }}
+                        <div class="modal-actions">
+                            <button type="submit" class="category-button">Salva</button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'PortaleZilioService/js/homeTables.js' %}" defer></script>
+</body>
+</html>
