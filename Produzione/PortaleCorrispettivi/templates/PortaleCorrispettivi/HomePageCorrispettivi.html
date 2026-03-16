@@ -17,11 +17,7 @@
 						<div class="col-1">
 							<b>Selezionare anno</b>
 							<select class="form-select form-select-sm" aria-label=".form-select-sm example" id="selettore-anno">
-								<option value="2021">2021</option>
-								<option value="2022">2022</option>
-								<option value="2023">2023</option>
-								<option value="2024">2024</option>
-								<option value="2025" selected>2025</option>
+								<!-- Le opzioni vengono popolate da homepagecorrispettivi.js con gli anni dal 2021 all'anno corrente. -->
 							</select>
 						</div>
 						
@@ -66,6 +62,7 @@
 	<script src="{% static 'vendor/highcharts/modules/exporting.js' %}"></script>
 	<script src="{% static 'vendor/highcharts/modules/export-data.js' %}"></script>
 
+	<script src="{% static 'js/homepagecorrispettivi.js' %}"></script>
 	<script src="{% static 'js/totalgrafico.js' %}"></script>
 	
 {% endblock %}

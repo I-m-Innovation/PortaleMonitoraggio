@@ -49,7 +49,7 @@ class DayChartData(APIView):
 		print(f"DEBUG: Found impianto: {impianto.nome_impianto}")
 		Now = datetime.now()
 		print(f"DEBUG: Current time: {Now}")
-		# ---------------------------------------- FTP ---------------------------------------------------
+		# ---------------------------------------- FTP ----------------------------------------------------------
 		if impianto.lettura_dati == 'ftp':
 			print("DEBUG: Using FTP data reading method")
 			# NOME FILE "last24hTL"
@@ -130,7 +130,7 @@ class DayChartData(APIView):
 			print(f"DEBUG: Prepared chart_data with {len(df_time_series)} data points")
 			return Response(chart_data)
 
-		# ---------------------------------------- ISolarCloud ---------------------------------------------------
+		# ---------------------------------------- ISolarCloud --------------------------------------------------
 		elif impianto.lettura_dati == 'API_ISC':
 			nome_impianto = impianto.nome_impianto
 			# NOME FILE TEMPORANEO CON I DATI DI MONITORAGGIO
@@ -338,3 +338,7 @@ class DayChartData(APIView):
 				'info': {'co2': co2_kg, 'case': case, 'alberi': alberi, 'energy': round(energy, 2), }
 			}
 			return Response(chart_data)
+
+        # ---------------------------------------- SAJ - Elekeeper (DA IMPLEMENTARE) ----------------------------
+        
+        
