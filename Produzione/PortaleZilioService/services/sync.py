@@ -18,21 +18,29 @@ class MetricsSyncService:
 
     def sync_queryset(self, queryset, window: MetricsWindow | None = None) -> SyncOutcome:
         active_window = window or rolling_12_months_until_yesterday()
-        updated = 0
         skipped = 0
         missing: list[str] = []
 
+        # Phase 1 – network I/O outside any transaction so SQLite is never
+        # locked while waiting for HTTP responses.
+        impianti_list = list(queryset)
+        results: list[tuple] = []
+        for impianto in impianti_list:
+            provider = self.registry.get_provider(getattr(impianto, "lettura_dati", None))
+            try:
+                snapshot = provider.fetch_snapshot(impianto, active_window)
+                metrics = self.calculator.compute(snapshot, active_window)
+                results.append((impianto, metrics))
+            except NotImplementedError:
+                skipped += 1
+                missing.append(impianto.nome_impianto)
+
+        # Phase 2 – write to DB in a single short atomic block.
+        updated = 0
         with transaction.atomic():
-            for impianto in queryset:
-                provider = self.registry.get_provider(getattr(impianto, "lettura_dati", None))
-                try:
-                    snapshot = provider.fetch_snapshot(impianto, active_window)
-                    metrics = self.calculator.compute(snapshot, active_window)
-                    persist_metrics_to_impianto(impianto, metrics)
-                    updated += 1
-                except NotImplementedError:
-                    skipped += 1
-                    missing.append(impianto.nome_impianto)
+            for impianto, metrics in results:
+                persist_metrics_to_impianto(impianto, metrics)
+                updated += 1
 
         return SyncOutcome(
             updated=updated,

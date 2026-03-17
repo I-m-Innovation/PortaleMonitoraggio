@@ -13,6 +13,12 @@ main {
 }
 
 
+#costruzione-tab-button,
+#agrivoltaico-tab-button {
+    margin-right: 1rem;
+}
+
+
 .energy-section h1 {
     margin-bottom: 1rem;
 }

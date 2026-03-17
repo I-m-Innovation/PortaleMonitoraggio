@@ -93,6 +93,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        'OPTIONS': {
+            'timeout': 120,  # seconds to wait for the write lock before raising OperationalError
+        },
     }
 }
 
