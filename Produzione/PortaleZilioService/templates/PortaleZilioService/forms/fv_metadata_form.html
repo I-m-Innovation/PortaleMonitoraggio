@@ -1,24 +1,25 @@
+{% extends "base_layout.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ page_title|default:"Nuovo Record FV" }}</title>
+
+{% block title %}{{ page_title|default:"Nuovo Record FV" }}{% endblock %}
+
+{% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/style_overview_page.css' %}">
     <link rel="stylesheet" href="{% static 'PortaleZilioService/css/home.css' %}">
-</head>
-<body>
-    <section class="energy-section">
-        <h1>{{ page_title|default:"Nuovo Record Fotovoltaico" }}</h1>
-        <p>
-            <a class="category-button" href="{% url 'PortaleZilioService:home' %}">Torna alla Home</a>
-        </p>
-        <form method="post" class="fv-form">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit" class="category-button">Salva</button>
-        </form>
-    </section>
-</body>
-</html>
+{% endblock %}
+
+{% block content %}
+    <main>
+        <section class="energy-section">
+            <h1>{{ page_title|default:"Nuovo Record Fotovoltaico" }}</h1>
+            <p>
+                <a class="category-button" href="{% url 'PortaleZilioService:home' %}">Torna alla Home</a>
+            </p>
+            <form method="post" class="fv-form">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="category-button">Salva</button>
+            </form>
+        </section>
+    </main>
+{% endblock %}

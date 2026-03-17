@@ -1,5 +1,18 @@
 /* App-specific overrides for PortaleZilioService overview home */
 
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    padding: 0;
+}
+main {
+    padding: 1.5rem;
+}
+
+
 .energy-section h1 {
     margin-bottom: 1rem;
 }
