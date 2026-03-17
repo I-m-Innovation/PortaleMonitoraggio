@@ -9,8 +9,10 @@ from ...API_inverter.API_iSolarCloud import (
     _post,
     _sum_point_from_result_data,
     find_weather_station_device,
+    get_all_devices,
     get_all_plants,
     login_ISC,
+    WEATHER_STATION_DEVICE_TYPE,
 )
 
 try:
@@ -42,9 +44,16 @@ class IscMetricsProvider:
         total_equivalent_hours = getattr(impianto, "ore_equivalenti_totali", None)
         status = "online" if api_plant.get("ps_status") == 1 else "offline"
 
+        devices = get_all_devices(token=token, plant_id=plant_id)
+        inverter_keys = [
+            d["ps_key"]
+            for d in devices
+            if d.get("ps_key") and str(d.get("device_type")) != WEATHER_STATION_DEVICE_TYPE
+        ]
+
         energy_kwh = self._fetch_energy_kwh(
             token=token,
-            inverter_keys=[],
+            inverter_keys=inverter_keys,
             plant_id=plant_id,
             window=window,
         )
@@ -102,7 +111,10 @@ class IscMetricsProvider:
         return None
 
     def _fetch_energy_kwh(self, token: str, inverter_keys: list[str], plant_id: int, window: MetricsWindow) -> float:
-        ps_keys = inverter_keys or [str(plant_id)]
+        if not inverter_keys:
+            raise NotImplementedError(
+                f"No inverter ps_keys found for plant_id={plant_id}. Cannot query energy data."
+            )
         total_wh = 0.0
         for chunk_start, chunk_end in _date_chunks(window.start_date, window.end_date, max_days=100):
             payload = {
@@ -110,7 +122,7 @@ class IscMetricsProvider:
                 "token": token,
                 "query_type": "1",
                 "data_type": "2",
-                "ps_key_list": ps_keys,
+                "ps_key_list": inverter_keys,
                 "data_point": "p1",
                 "start_time": chunk_start.strftime("%Y%m%d"),
                 "end_time": chunk_end.strftime("%Y%m%d"),
