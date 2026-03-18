@@ -2,13 +2,14 @@
 <table>
     <thead>
         <tr>
-            <th colspan="19" class="section-header">O&amp;M Ordinaria</th>
+            <th colspan="20" class="section-header">O&amp;M Ordinaria</th>
             <th colspan="5" class="section-header straord-start straord-col">Straordinario</th>
         </tr>
         <tr>
             <th aria-label="Stato"></th>
             <th>Impianto</th>
             <th>Cliente</th>
+            <th>Tipologia Contratto</th>
             <th>Potenza</th>
             <th>PR Contrattuale</th>
             <th>PR Ultimi 12 Mesi</th>
@@ -38,6 +39,7 @@
                 <td><span class="{{ row.status_class }}" aria-hidden="true"></span></td>
                 <td>{{ row.nome_impianto }}</td>
                 <td>{{ row.nome_cliente }}</td>
+                <td>{{ row.tipologia_contratto }}</td>
                 <td>{{ row.potenza }}</td>
                 <td>{{ row.pr_contrattuale }}</td>
                 <td class="js-pr-ultimi-12-mesi">{{ row.pr_ultimi_12_mesi }}</td>
@@ -61,7 +63,7 @@
                 <td class="straord-col">{{ row.numero_fatture_straordinarie_totali }}</td>
             </tr>
         {% empty %}
-            <tr><td colspan="24">Nessun dato disponibile.</td></tr>
+            <tr><td colspan="25">Nessun dato disponibile.</td></tr>
         {% endfor %}
     </tbody>
 </table>

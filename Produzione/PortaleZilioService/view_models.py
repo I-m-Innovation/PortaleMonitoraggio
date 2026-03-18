@@ -78,6 +78,7 @@ class FotovoltaicoInCostruzioneRow:
     status_class: str
     nome_impianto: str
     nome_cliente: str
+    tipologia_contratto: str
     potenza: str
     pr_contrattuale: str  # 78% di solito secondo nicola e comunque lo deve inserire lui 
     pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  

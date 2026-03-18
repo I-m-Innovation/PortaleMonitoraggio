@@ -163,6 +163,7 @@ def build_fotovoltaico_in_costruzione_rows():
                 status_class=_status_class(meta),
                 nome_impianto=meta.nome_impianto or "--",
                 nome_cliente=meta.nome_cliente or "--",
+                tipologia_contratto="--",
                 potenza=_potenza_text(meta),
                 pr_contrattuale=str(meta.pr_contrattuale) if meta.pr_contrattuale is not None else "--",
                 pr_ultimi_12_mesi=_pr_annuo_text(meta),
