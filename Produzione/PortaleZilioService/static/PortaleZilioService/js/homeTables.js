@@ -256,6 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
         requestAnimationFrame(refreshTables);
         setTimeout(refreshTables, 60);
         setTimeout(refreshTables, 180);
+        document.dispatchEvent(new CustomEvent("portalezilio:tables-updated"));
     };
 
     const triggerIscSync = async () => {
