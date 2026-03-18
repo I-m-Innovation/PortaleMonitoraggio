@@ -15,7 +15,6 @@ main {
 
 #costruzione-tab-button {
     background-color: #d96b6b;
-    border-color: #bb4f4f;
     font-weight: 700;
     color: white;
 }
@@ -24,7 +23,6 @@ main {
     background-color: #d62828;
     color: white;
     font-weight: 700;
-    border-color: #a61d1d;
 }
 
 #costruzione-tab-button,
@@ -32,20 +30,17 @@ main {
     margin-right: 1rem;
 }
 
-
-
-#ppu-tab-button {
-    /* same logic as costruzione-tab-button but with green colors */
+#agrivoltaico-tab-button {
     background-color: #6bd96b;
-    border-color: #4fbb4f;
+    border-color: var(--accent);
     font-weight: 700;
     color: white;
 }
-#ppu-tab-button:hover {
+#agrivoltaico-tab-button:hover {
     background-color: #28d628;
     color: white;
     font-weight: 700;
-    border-color: #1da61d;
+    border-color: var(--accent);
 }
 
 
