@@ -22,8 +22,8 @@ class FotovoltaicoClientiRow:
     inizio_contratto: str
     fine_contratto: str
     totale_anni_contratto: str
-    totale_annuale_su_MW: str
     totale_contratto: str
+    totale_annuale_su_MW: str
     totale_annuale: str
     totale_maturato: str
     totale_fatturato: str
@@ -33,10 +33,11 @@ class FotovoltaicoClientiRow:
 
     # COLONNE STRAORDINARIO  - separate da una linea rossa 
 
+    totale_ordinato_straordinario: str
+    totale_fatturato_straordinario: str
+    margine_straordinario: str
     numero_fatture_straordinarie_annuo: str
     numero_fatture_straordinarie_totali: str
-    totale_fatturato_straordinario: str
-    totale_ordinato_straordinario: str
 
 
 @dataclass(frozen=True)
@@ -53,8 +54,8 @@ class FotovoltaicoProprietaRow:
     inizio_contratto: str
     fine_contratto: str
     totale_anni_contratto: str
-    totale_annuale_su_MW: str
     totale_contratto: str
+    totale_annuale_su_MW: str
     totale_annuale: str
     totale_maturato: str
     totale_fatturato: str
@@ -64,10 +65,11 @@ class FotovoltaicoProprietaRow:
 
     # COLONNE STRAORDINARIO  - separate da una linea rossa 
 
+    totale_ordinato_straordinario: str
+    totale_fatturato_straordinario: str
+    margine_straordinario: str
     numero_fatture_straordinarie_annuo: str
     numero_fatture_straordinarie_totali: str
-    totale_fatturato_straordinario: str
-    totale_ordinato_straordinario: str
 
 
 @dataclass(frozen=True)
@@ -84,8 +86,8 @@ class FotovoltaicoInCostruzioneRow:
     inizio_contratto: str
     fine_contratto: str
     totale_anni_contratto: str
-    totale_annuale_su_MW: str
     totale_contratto: str
+    totale_annuale_su_MW: str
     totale_annuale: str
     totale_maturato: str
     totale_fatturato: str
@@ -95,10 +97,11 @@ class FotovoltaicoInCostruzioneRow:
 
     # COLONNE STRAORDINARIO  - separate da una linea rossa 
 
+    totale_ordinato_straordinario: str
+    totale_fatturato_straordinario: str
+    margine_straordinario: str
     numero_fatture_straordinarie_annuo: str
     numero_fatture_straordinarie_totali: str
-    totale_fatturato_straordinario: str
-    totale_ordinato_straordinario: str
     
 @dataclass(frozen=True)
 class AgrivoltaicoRow:
@@ -114,8 +117,8 @@ class AgrivoltaicoRow:
     inizio_contratto: str
     fine_contratto: str
     totale_anni_contratto: str
-    totale_annuale_su_MW: str
     totale_contratto: str
+    totale_annuale_su_MW: str
     totale_annuale: str
     totale_maturato: str
     totale_fatturato: str
@@ -125,10 +128,11 @@ class AgrivoltaicoRow:
 
     # COLONNE STRAORDINARIO  - separate da una linea rossa 
 
+    totale_ordinato_straordinario: str
+    totale_fatturato_straordinario: str
+    margine_straordinario: str
     numero_fatture_straordinarie_annuo: str
     numero_fatture_straordinarie_totali: str
-    totale_fatturato_straordinario: str
-    totale_ordinato_straordinario: str
 
 @dataclass(frozen=True)
 class FotovoltaicoPPURow:
@@ -146,7 +150,7 @@ class FotovoltaicoPPURow:
     pr_stimato_annuo: str 
     energia_stimata_annua: str # annuo ? da verificare 
     mancata_produzione: str
-    importo_stimato_annuo: str  # annuo ? da verificare
+    fatturato_previsto: str  # annuo ? da verificare
     importo_reale_annuo: str  # annuo ? da verificare
 
 

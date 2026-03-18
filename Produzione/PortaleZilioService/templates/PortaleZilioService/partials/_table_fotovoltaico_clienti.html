@@ -3,7 +3,7 @@
         <thead>
             <tr>
                 <th colspan="19" class="section-header">O&amp;M Ordinaria</th>
-                <th colspan="4" class="section-header straord-start straord-col">Straordinario</th>
+                <th colspan="5" class="section-header straord-start straord-col">Straordinario</th>
             </tr>
             <tr>
                 <th aria-label="Stato"></th>
@@ -25,10 +25,11 @@
                 <th>Incassato</th>
                 <th>Data Prossima Fattura</th>
                 <th>Importo Prossima Fattura</th>
-                <th class="straord-start straord-col"># Fatture Straord. Annuo</th>
-                <th class="straord-col"># Fatture Straord. Totali</th>
-                <th class="straord-col">Totale Fatt. Straordinario</th>
-                <th class="straord-col">Totale Ordinato Straordinario</th>
+                <th class="straord-start straord-col">Costo sostenuto</th>
+                <th class="straord-col">Totale fatturato</th>
+                <th class="straord-col">Margine</th>
+                <th class="straord-col"># Fatture Straordinarie Annuo</th>
+                <th class="straord-col"># Fatture Totali</th>
             </tr>
         </thead>
         <tbody>
@@ -39,7 +40,7 @@
                     <td>{{ row.nome_cliente }}</td>
                     <td>{{ row.potenza }}</td>
                     <td>{{ row.pr_contrattuale }}</td>
-                    <td>{{ row.pr_ultimi_12_mesi }}</td>
+                    <td class="js-pr-ultimi-12-mesi">{{ row.pr_ultimi_12_mesi }}</td>
                     <td>{{ row.mancata_produzione }}</td>
                     <td>{{ row.ore_equivalenti }}</td>
                     <td>{{ row.inizio_contratto }}</td>
@@ -53,13 +54,14 @@
                     <td>{{ row.totale_incassato }}</td>
                     <td>{{ row.data_prossima_fattura }}</td>
                     <td>{{ row.importo_prossima_fattura }}</td>
-                    <td class="straord-start straord-col">{{ row.numero_fatture_straordinarie_annuo }}</td>
-                    <td class="straord-col">{{ row.numero_fatture_straordinarie_totali }}</td>
+                    <td class="straord-start straord-col">{{ row.totale_ordinato_straordinario }}</td>
                     <td class="straord-col">{{ row.totale_fatturato_straordinario }}</td>
-                    <td class="straord-col">{{ row.totale_ordinato_straordinario }}</td>
+                    <td class="straord-col">{{ row.margine_straordinario }}</td>
+                    <td class="straord-col">{{ row.numero_fatture_straordinarie_annuo }}</td>
+                    <td class="straord-col">{{ row.numero_fatture_straordinarie_totali }}</td>
                 </tr>
             {% empty %}
-                <tr><td colspan="23">Nessun dato disponibile.</td></tr>
+                <tr><td colspan="24">Nessun dato disponibile.</td></tr>
             {% endfor %}
         </tbody>
     </table>

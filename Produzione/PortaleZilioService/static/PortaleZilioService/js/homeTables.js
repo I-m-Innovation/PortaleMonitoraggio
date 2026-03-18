@@ -1,24 +1,11 @@
 document.addEventListener("DOMContentLoaded", () => {
     const buttons = Array.from(document.querySelectorAll(".category-button[data-group][data-target]"));
     const panels = Array.from(document.querySelectorAll("[data-panel]"));
-    const modal = document.getElementById("fv-form-modal");
-    const modalOpenButtons = Array.from(document.querySelectorAll("[data-modal-open]"));
-    const modalCloseButtons = Array.from(document.querySelectorAll("[data-modal-close]"));
-    const formPanels = Array.from(document.querySelectorAll("[data-form-panel]"));
-    const modalTitle = document.getElementById("fv-form-modal-title");
-    const fvAddButtons = Array.from(document.querySelectorAll("[data-add-button-for]"));
     const syncBanner = document.querySelector("[data-sync-banner]");
 
     let tableTracks = [];
     let autoScrollControllers = [];
     const autoScrollPreferenceByPanel = new Map();
-
-    const modalTitles = {
-        fv_clienti: "Nuovo Record FV Clienti",
-        fv_proprieta: "Nuovo Record FV Proprieta",
-        fv_in_costruzione: "Nuovo Record FV In Costruzione",
-        fv_ppu: "Nuovo Record FV PPU",
-    };
 
     const syncPanelMap = {
         fv_clienti: "fv-clienti",
@@ -28,14 +15,6 @@ document.addEventListener("DOMContentLoaded", () => {
         idr_proprieta: "idr-proprieta",
     };
     let bannerTimeoutId = null;
-
-    const setFvAddButtons = (activeTargetId = "") => {
-        fvAddButtons.forEach((btn) => {
-            const isActive = btn.dataset.addButtonFor === activeTargetId;
-            btn.hidden = !isActive;
-            btn.disabled = !isActive;
-        });
-    };
 
     const updateStickyOffsets = () => {
         tableTracks.forEach((track) => {
@@ -256,6 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
         requestAnimationFrame(refreshTables);
         setTimeout(refreshTables, 60);
         setTimeout(refreshTables, 180);
+        document.dispatchEvent(new CustomEvent("portalezilio:tables-updated"));
     };
 
     const triggerIscSync = async () => {
@@ -300,9 +280,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 button.classList.remove("active");
             }
         });
-        if (group === "fv") {
-            setFvAddButtons("");
-        }
         requestAnimationFrame(refreshTables);
     };
 
@@ -325,9 +302,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
-        if (group === "fv") {
-            setFvAddButtons(targetId);
-        }
         requestAnimationFrame(refreshTables);
         setTimeout(refreshTables, 60);
         setTimeout(refreshTables, 180);
@@ -343,57 +317,8 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    setFvAddButtons("");
     rebuildTableControllers();
     refreshTables();
     window.addEventListener("resize", refreshTables);
     triggerIscSync();
-
-    if (!modal) {
-        return;
-    }
-
-    const setActiveFormPanel = (formType) => {
-        formPanels.forEach((panel) => {
-            panel.hidden = panel.dataset.formPanel !== formType;
-        });
-        if (modalTitle) {
-            modalTitle.textContent = modalTitles[formType] || "Nuovo Record FV";
-        }
-    };
-
-    const openModal = (formType) => {
-        setActiveFormPanel(formType);
-        modal.hidden = false;
-        document.body.classList.add("modal-open");
-    };
-
-    const closeModal = () => {
-        modal.hidden = true;
-        document.body.classList.remove("modal-open");
-    };
-
-    modalOpenButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-            const formType = button.dataset.modalOpen;
-            if (formType) {
-                openModal(formType);
-            }
-        });
-    });
-
-    modalCloseButtons.forEach((button) => {
-        button.addEventListener("click", closeModal);
-    });
-
-    document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && !modal.hidden) {
-            closeModal();
-        }
-    });
-
-    const initialFormType = modal.dataset.openOnLoad;
-    if (initialFormType) {
-        openModal(initialFormType);
-    }
 });
