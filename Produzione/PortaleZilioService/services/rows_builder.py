@@ -108,6 +108,7 @@ def build_fotovoltaico_clienti_rows():
                 numero_fatture_straordinarie_totali="--",
                 totale_fatturato_straordinario="--",
                 totale_ordinato_straordinario="--",
+                margine_straordinario="--",
             )
         )
     return rows
@@ -145,6 +146,7 @@ def build_fotovoltaico_proprieta_rows():
                 numero_fatture_straordinarie_totali="--",
                 totale_fatturato_straordinario="--",
                 totale_ordinato_straordinario="--",
+                margine_straordinario="--",
             )
         )
     return rows
@@ -181,6 +183,7 @@ def build_fotovoltaico_in_costruzione_rows():
                 numero_fatture_straordinarie_totali="--",
                 totale_fatturato_straordinario="--",
                 totale_ordinato_straordinario="--",
+                margine_straordinario="--",
             )
         )
     return rows
@@ -209,7 +212,7 @@ def build_fotovoltaico_ppu_rows():
                 pr_stimato_annuo="--",
                 energia_stimata_annua="--",
                 mancata_produzione="--",
-                importo_stimato_annuo="--",
+                fatturato_previsto="--",
                 importo_reale_annuo="--",
             )
         )
