@@ -225,7 +225,7 @@ def _sum_point_from_result_data(obj: Any, point_key: str = "p1", data_type_key: 
     Sum numeric values for a point in nested iSolarCloud result_data.
 
     Common shape:
-      { "<ps_key>": { "p1": [ {"2":"123.4","time_stamp":"YYYYMMDD"}, ... ] } }
+    { "<ps_key>": { "p1": [ {"2":"123.4","time_stamp":"YYYYMMDD"}, ... ] } }
     """
     total = 0.0
 
