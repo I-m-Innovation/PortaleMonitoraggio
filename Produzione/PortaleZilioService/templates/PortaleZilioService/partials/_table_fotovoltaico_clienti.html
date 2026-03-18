@@ -1,69 +1,67 @@
 ﻿<div class="table-scroll-track" data-auto-scroll="true">
-<table>
-    <thead>
-        <tr>
-            <th colspan="20" class="section-header">O&amp;M Ordinaria</th>
-            <th colspan="4" class="section-header straord-start straord-col">Straordinario</th>
-        </tr>
-        <tr>
-            <th aria-label="Stato"></th>
-            <th>Impianto</th>
-            <th>Cliente</th>
-            <th>Potenza</th>
-            <th>PR Contrattuale</th>
-            <th>PR Ultimi 12 Mesi</th>
-            <th>Mancata Produzione</th>
-            <th>Ore Equivalenti ({{ ore_equivalenti_year }})</th>
-            <th>Ore Equiv. PVsyst</th>
-            <th>Inizio Contratto</th>
-            <th>Fine Contratto</th>
-            <th>Anni Contratto</th>
-            <th>Totale Annuo su MW</th>
-            <th>Totale Contratto</th>
-            <th>Totale Annuale</th>
-            <th>Maturato</th>
-            <th>Totale Fatturato</th>
-            <th>Incassato</th>
-            <th>Data Prossima Fattura</th>
-            <th>Importo Prossima Fattura</th>
-            <th class="straord-start straord-col"># Fatture Straord. Annuo</th>
-            <th class="straord-col"># Fatture Straord. Totali</th>
-            <th class="straord-col">Totale Fatt. Straordinario</th>
-            <th class="straord-col">Totale Ordinato Straordinario</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for row in rows %}
+    <table>
+        <thead>
             <tr>
-                <td><span class="{{ row.status_class }}" aria-hidden="true"></span></td>
-                <td>{{ row.nome_impianto }}</td>
-                <td>{{ row.nome_cliente }}</td>
-                <td>{{ row.potenza }}</td>
-                <td>{{ row.pr_contrattuale }}</td>
-                <td>{{ row.pr_ultimi_12_mesi }}</td>
-                <td>{{ row.mancata_produzione }}</td>
-                <td>{{ row.ore_equivalenti }}</td>
-                <td>{{ row.ore_equivalenti_pvsys }}</td>
-                <td>{{ row.inizio_contratto }}</td>
-                <td>{{ row.fine_contratto }}</td>
-                <td>{{ row.totale_anni_contratto }}</td>
-                <td>{{ row.totale_annuale_su_MW }}</td>
-                <td>{{ row.totale_contratto }}</td>
-                <td>{{ row.totale_annuale }}</td>
-                <td>{{ row.totale_maturato }}</td>
-                <td>{{ row.totale_fatturato }}</td>
-                <td>{{ row.totale_incassato }}</td>
-                <td>{{ row.data_prossima_fattura }}</td>
-                <td>{{ row.importo_prossima_fattura }}</td>
-                <td class="straord-start straord-col">{{ row.numero_fatture_straordinarie_annuo }}</td>
-                <td class="straord-col">{{ row.numero_fatture_straordinarie_totali }}</td>
-                <td class="straord-col">{{ row.totale_fatturato_straordinario }}</td>
-                <td class="straord-col">{{ row.totale_ordinato_straordinario }}</td>
+                <th colspan="19" class="section-header">O&amp;M Ordinaria</th>
+                <th colspan="4" class="section-header straord-start straord-col">Straordinario</th>
             </tr>
-        {% empty %}
-            <tr><td colspan="24">Nessun dato disponibile.</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
+            <tr>
+                <th aria-label="Stato"></th>
+                <th>Impianto</th>
+                <th>Cliente</th>
+                <th>Potenza</th>
+                <th>PR Contrattuale</th>
+                <th>PR Ultimi 12 Mesi</th>
+                <th>Mancata Produzione</th>
+                <th>Ore Equivalenti ({{ ore_equivalenti_year }})</th>
+                <th>Inizio Contratto</th>
+                <th>Fine Contratto</th>
+                <th>Anni Contratto</th>
+                <th>Totale Contratto</th>
+                <th>Totale Annuo su MW</th>
+                <th>Totale Annuale</th>
+                <th>Maturato</th>
+                <th>Totale Fatturato</th>
+                <th>Incassato</th>
+                <th>Data Prossima Fattura</th>
+                <th>Importo Prossima Fattura</th>
+                <th class="straord-start straord-col"># Fatture Straord. Annuo</th>
+                <th class="straord-col"># Fatture Straord. Totali</th>
+                <th class="straord-col">Totale Fatt. Straordinario</th>
+                <th class="straord-col">Totale Ordinato Straordinario</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+                <tr>
+                    <td><span class="{{ row.status_class }}" aria-hidden="true"></span></td>
+                    <td>{{ row.nome_impianto }}</td>
+                    <td>{{ row.nome_cliente }}</td>
+                    <td>{{ row.potenza }}</td>
+                    <td>{{ row.pr_contrattuale }}</td>
+                    <td>{{ row.pr_ultimi_12_mesi }}</td>
+                    <td>{{ row.mancata_produzione }}</td>
+                    <td>{{ row.ore_equivalenti }}</td>
+                    <td>{{ row.inizio_contratto }}</td>
+                    <td>{{ row.fine_contratto }}</td>
+                    <td>{{ row.totale_anni_contratto }}</td>
+                    <td>{{ row.totale_contratto }}</td>
+                    <td>{{ row.totale_annuale_su_MW }}</td>
+                    <td>{{ row.totale_annuale }}</td>
+                    <td>{{ row.totale_maturato }}</td>
+                    <td>{{ row.totale_fatturato }}</td>
+                    <td>{{ row.totale_incassato }}</td>
+                    <td>{{ row.data_prossima_fattura }}</td>
+                    <td>{{ row.importo_prossima_fattura }}</td>
+                    <td class="straord-start straord-col">{{ row.numero_fatture_straordinarie_annuo }}</td>
+                    <td class="straord-col">{{ row.numero_fatture_straordinarie_totali }}</td>
+                    <td class="straord-col">{{ row.totale_fatturato_straordinario }}</td>
+                    <td class="straord-col">{{ row.totale_ordinato_straordinario }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="23">Nessun dato disponibile.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 

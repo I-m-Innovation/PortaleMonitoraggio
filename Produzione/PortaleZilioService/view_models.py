@@ -19,7 +19,6 @@ class FotovoltaicoClientiRow:
     pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  
     mancata_produzione: str
     ore_equivalenti: str   # Nicola capisce se sono a contratto o no
-    ore_equivalenti_pvsys: str   # era da cambiare ?
     inizio_contratto: str
     fine_contratto: str
     totale_anni_contratto: str
@@ -51,7 +50,6 @@ class FotovoltaicoProprietaRow:
     pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  
     mancata_produzione: str
     ore_equivalenti: str   # Nicola capisce se sono a contratto o no
-    ore_equivalenti_pvsys: str   # era da cambiare ?
     inizio_contratto: str
     fine_contratto: str
     totale_anni_contratto: str
@@ -83,7 +81,6 @@ class FotovoltaicoInCostruzioneRow:
     pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  
     mancata_produzione: str
     ore_equivalenti: str   # Nicola capisce se sono a contratto o no
-    ore_equivalenti_pvsys: str   # era da cambiare ?
     inizio_contratto: str
     fine_contratto: str
     totale_anni_contratto: str
@@ -102,7 +99,36 @@ class FotovoltaicoInCostruzioneRow:
     numero_fatture_straordinarie_totali: str
     totale_fatturato_straordinario: str
     totale_ordinato_straordinario: str
+    
+@dataclass(frozen=True)
+class AgrivoltaicoRow:
+    # COLONNE ORDINARIO 
+    status_class: str
+    nome_impianto: str
+    nome_cliente: str
+    potenza: str
+    pr_contrattuale: str  # 78% di solito secondo nicola e comunque lo deve inserire lui 
+    pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  
+    mancata_produzione: str
+    ore_equivalenti: str   # Nicola capisce se sono a contratto o no
+    inizio_contratto: str
+    fine_contratto: str
+    totale_anni_contratto: str
+    totale_annuale_su_MW: str
+    totale_contratto: str
+    totale_annuale: str
+    totale_maturato: str
+    totale_fatturato: str
+    totale_incassato: str
+    data_prossima_fattura: str # da togliere ? 
+    importo_prossima_fattura: str # da togliere ?
 
+    # COLONNE STRAORDINARIO  - separate da una linea rossa 
+
+    numero_fatture_straordinarie_annuo: str
+    numero_fatture_straordinarie_totali: str
+    totale_fatturato_straordinario: str
+    totale_ordinato_straordinario: str
 
 @dataclass(frozen=True)
 class FotovoltaicoPPURow:
@@ -143,34 +169,3 @@ class IdroelettricoProprietaRow:
 # endregion 
 
 
-
-''' 
-STARTING POINT MODELS
-
-@dataclass(frozen=True)
-class FotovoltaicoClientiRow:
-    status_class: str
-    nome: str
-    potenza: str
-    pr_atteso: str
-    pr_ultimi_3_mesi: str
-    ore_equiv: str
-    inizio_contratto: str
-    fine_contratto: str
-    totale_contratto: str
-    fatturato: str
-    da_incassare: str
-    dettaglio_url: str
-
-
-@dataclass(frozen=True)
-class FotovoltaicoPPURow:
-    status_class: str
-    nome: str
-    potenza: str
-    produzione_mese: str
-    prezzo_medio: str
-    ricavo_mese: str
-    ultimo_aggiornamento: str
-    dettaglio_url: str
-'''

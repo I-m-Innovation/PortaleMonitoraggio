@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let tableTracks = [];
     let autoScrollControllers = [];
+    const autoScrollPreferenceByPanel = new Map();
 
     const modalTitles = {
         fv_clienti: "Nuovo Record FV Clienti",
@@ -48,8 +49,52 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
 
+    const getTrackPreferenceKey = (track, index) => {
+        const panel = track.closest("[data-panel]");
+        if (panel?.id) {
+            return panel.id;
+        }
+        return track.dataset.autoScrollKey || `table-track-${index}`;
+    };
+
+    const ensureAutoScrollToggle = (track, controller) => {
+        if (!track.dataset.autoScrollToggleBound) {
+            const toolbar = document.createElement("div");
+            toolbar.className = "table-scroll-toolbar";
+
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "table-scroll-toggle";
+            button.dataset.autoScrollToggle = "true";
+            toolbar.appendChild(button);
+
+            track.parentNode?.insertBefore(toolbar, track);
+            track.dataset.autoScrollToggleBound = "true";
+        }
+
+        const button = track.previousElementSibling?.querySelector("[data-auto-scroll-toggle='true']");
+        if (!button) {
+            return;
+        }
+
+        const syncButtonState = () => {
+            const isStopped = controller.isStopped();
+            button.textContent = isStopped ? "Riavvia scorrimento" : "Stop scorrimento";
+            button.setAttribute("aria-pressed", String(isStopped));
+            button.classList.toggle("is-stopped", isStopped);
+        };
+
+        button.onclick = () => {
+            controller.setStopped(!controller.isStopped());
+            syncButtonState();
+        };
+
+        syncButtonState();
+    };
+
     const createAutoScroller = (track) => {
         const panel = track.closest("[data-panel]");
+        const preferenceKey = track.dataset.autoScrollPreferenceKey || "";
         const state = {
             direction: 1,
             userPauseUntil: 0,
@@ -58,6 +103,7 @@ document.addEventListener("DOMContentLoaded", () => {
             maxScroll: 0,
             lastTs: 0,
             rafId: null,
+            isStopped: autoScrollPreferenceByPanel.get(preferenceKey) ?? false,
         };
 
         const SPEED_PX_PER_SEC = 30;
@@ -91,7 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const tick = (now) => {
             const isVisible = !panel || !panel.hidden;
-            if (!state.hasOverflow || !isVisible) {
+            if (!state.hasOverflow || !isVisible || state.isStopped) {
                 state.lastTs = 0;
                 state.rafId = requestAnimationFrame(tick);
                 return;
@@ -135,6 +181,14 @@ document.addEventListener("DOMContentLoaded", () => {
         state.rafId = requestAnimationFrame(tick);
         return {
             refresh,
+            isStopped: () => state.isStopped,
+            setStopped: (isStopped) => {
+                state.isStopped = Boolean(isStopped);
+                state.lastTs = 0;
+                if (preferenceKey) {
+                    autoScrollPreferenceByPanel.set(preferenceKey, state.isStopped);
+                }
+            },
             stop: () => {
                 if (state.rafId !== null) {
                     cancelAnimationFrame(state.rafId);
@@ -146,7 +200,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const rebuildTableControllers = () => {
         autoScrollControllers.forEach((controller) => controller.stop());
         tableTracks = Array.from(document.querySelectorAll(".table-scroll-track[data-auto-scroll='true']"));
-        autoScrollControllers = tableTracks.map((track) => createAutoScroller(track));
+        autoScrollControllers = tableTracks.map((track, index) => {
+            track.dataset.autoScrollPreferenceKey = getTrackPreferenceKey(track, index);
+            const controller = createAutoScroller(track);
+            ensureAutoScrollToggle(track, controller);
+            return controller;
+        });
     };
 
     const refreshTables = () => {
