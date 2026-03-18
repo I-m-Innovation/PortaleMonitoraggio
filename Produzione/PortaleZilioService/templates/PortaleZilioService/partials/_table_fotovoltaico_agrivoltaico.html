@@ -1,8 +1,8 @@
-﻿<div class="table-scroll-track" data-auto-scroll="true">
+<div class="table-scroll-track" data-auto-scroll="true">
 <table>
     <thead>
         <tr>
-            <th colspan="19" class="section-header">O&amp;M Ordinaria</th>
+            <th colspan="20" class="section-header">O&amp;M Ordinaria</th>
             <th colspan="4" class="section-header straord-start straord-col">Straordinario</th>
         </tr>
         <tr>
@@ -13,7 +13,7 @@
             <th>PR Contrattuale</th>
             <th>PR Ultimi 12 Mesi</th>
             <th>Mancata Produzione</th>
-            <th>Ore Equivalenti ({{ ore_equivalenti_year }})</th>
+            <th>Ore Equivalenti ultimi 12 mesi</th>
             <th>Inizio Contratto</th>
             <th>Fine Contratto</th>
             <th>Anni Contratto</th>
@@ -41,7 +41,7 @@
                 <td>{{ row.pr_contrattuale }}</td>
                 <td>{{ row.pr_ultimi_12_mesi }}</td>
                 <td>{{ row.mancata_produzione }}</td>
-                <td>{{ row.ore_equivalenti }}</td>
+                <td>{{ row.ore_equivalenti }}</td> <!-- Ore Equivalenti ultimi 12 mesi -->
                 <td>{{ row.inizio_contratto }}</td>
                 <td>{{ row.fine_contratto }}</td>
                 <td>{{ row.totale_anni_contratto }}</td>
@@ -59,9 +59,8 @@
                 <td class="straord-col">{{ row.totale_ordinato_straordinario }}</td>
             </tr>
         {% empty %}
-            <tr><td colspan="23">Nessun dato disponibile.</td></tr>
+            <tr><td colspan="24">Nessun dato disponibile.</td></tr>
         {% endfor %}
     </tbody>
 </table>
 </div>
-

@@ -5,7 +5,7 @@ from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
 
-from MonitoraggioImpianti.services.isc_sync import sync_isc_impianti
+from .services.sync import MetricsSyncService
 
 from .forms import (
     FvClientiForm,
@@ -109,13 +109,19 @@ def home_view(request):
 @require_POST
 def sync_isc_metrics_view(request):
     try:
-        result = sync_isc_impianti(refresh=True)
+        outcome = MetricsSyncService().sync_api_isc_impianti()
         tables = _build_tables_payload(request)
         return JsonResponse(
             {
                 "ok": True,
-                "message": f"Aggiornamento completato. Impianti aggiornati: {result['updated']}.",
-                "result": result,
+                "message": f"Aggiornamento completato. Impianti aggiornati: {outcome.updated}.",
+                "result": {
+                    "updated": outcome.updated,
+                    "skipped": outcome.skipped,
+                    "missing": outcome.missing,
+                    "window_start": outcome.window_start.isoformat(),
+                    "window_end": outcome.window_end.isoformat(),
+                },
                 "tables": tables,
             }
         )

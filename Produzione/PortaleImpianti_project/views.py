@@ -12,21 +12,6 @@ def HomePage(request):
 	return render(request, 'HomePage.html')
 
 
-@login_required(login_url='login')
-def overview_main(request):
-	return render(request, 'overview/overview_main.html')
-
-
-@login_required(login_url='login')
-def overview_alessi(request):
-	return render(request, 'overview/Alessi.html')
-
-
-@login_required(login_url='login')
-def overview_cavarzan(request):
-	return render(request, 'overview/Cavarzan.html')
-
-
 def loadingPageMonitoraggio(request):
 	return render(request, 'loading_gif/loading_1.html')
 

@@ -1,5 +1,24 @@
 /* App-specific overrides for PortaleZilioService overview home */
 
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    padding: 0;
+}
+main {
+    padding: 1.5rem;
+}
+
+
+#costruzione-tab-button,
+#agrivoltaico-tab-button {
+    margin-right: 1rem;
+}
+
+
 .energy-section h1 {
     margin-bottom: 1rem;
 }
@@ -73,6 +92,38 @@
     border: 2px solid var(--table-border);
     box-shadow: var(--shadow);
     background: #ffffff;
+}
+
+.table-scroll-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0 0 8px;
+}
+
+.table-scroll-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 0 12px;
+    border: 1px solid #9fb3c8;
+    border-radius: 6px;
+    background: #f4f7fb;
+    color: #24496b;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.table-scroll-toggle:hover,
+.table-scroll-toggle:focus {
+    background: #e7eef7;
+}
+
+.table-scroll-toggle.is-stopped {
+    border-color: var(--accent);
+    background: #ffffff;
+    color: var(--accent);
 }
 
 .table-scroll-track table {

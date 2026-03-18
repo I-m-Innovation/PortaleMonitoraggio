@@ -1,1 +1,1 @@
-﻿# Service layer package for building and organizing dashboard row data.
+﻿"""Service layer: provider adapters, metrics calculation, sync orchestration."""

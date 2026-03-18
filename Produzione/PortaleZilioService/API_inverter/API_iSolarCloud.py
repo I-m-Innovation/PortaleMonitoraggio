@@ -205,6 +205,21 @@ def _date_chunks(start: date, end: date, max_days: int = 100):
         current = chunk_end + timedelta(days=1)
 
 
+def _shift_year(value: date, years: int) -> date:
+    target_year = value.year + years
+    try:
+        return value.replace(year=target_year)
+    except ValueError:
+        # Handle February 29 when the target year is not leap.
+        return value.replace(year=target_year, day=28)
+
+
+def _last_12_month_window(end_date: Optional[date] = None) -> tuple[date, date]:
+    rolling_end = end_date or (date.today() - timedelta(days=1))
+    rolling_start = _shift_year(rolling_end + timedelta(days=1), -1)
+    return rolling_start, rolling_end
+
+
 def _sum_point_from_result_data(obj: Any, point_key: str = "p1", data_type_key: str = "2") -> float:
     """
     Sum numeric values for a point in nested iSolarCloud result_data.
@@ -303,16 +318,46 @@ def _sum_minute_point_energy(result_data: Dict[str, Any], ps_key: str, point_key
     return total_kwh_m2
 
 
+def _get_period_energy_kwh(
+    token: str,
+    inverter_keys: list[str],
+    start_date: date,
+    end_date: date,
+    data_point: str = "p1",
+) -> float:
+    total_wh = 0.0
+    for chunk_start, chunk_end in _date_chunks(start_date, end_date, max_days=100):
+        payload = {
+            "appkey": LOGIN_PARAMS["appkey"],
+            "token": token,
+            "query_type": "1",
+            "data_type": "2",
+            "ps_key_list": inverter_keys,
+            "data_point": data_point,
+            "start_time": chunk_start.strftime("%Y%m%d"),
+            "end_time": chunk_end.strftime("%Y%m%d"),
+            "order": 0,
+            "is_get_point_dict": "1",
+        }
+        resp = _post("plant_data_daily", payload)
+        total_wh += _sum_point_from_result_data(
+            resp.get("result_data", {}),
+            point_key=data_point,
+            data_type_key="2",
+        )
+
+    return total_wh / 1000.0
+
+
 def get_plant_year_performance_ratio(
     token: str,
     plant: Dict[str, Any],
     year: int,
     irradiation_point: str = "p2005",
 ) -> Dict[str, Any]:
-    plant_name = plant.get("plant_name", "Unknown")
     plant_id = plant.get("plant_id")
     plant_power_kw = _to_float(plant.get("peak_power_kw")) or 0.0
-    energy_year_kwh = _to_float(plant.get("energy_year_kwh"))
+    inverter_keys = plant.get("inverters", []) or []
     if not plant_id:
         return {
             "has_weather_station": False,
@@ -339,12 +384,17 @@ def get_plant_year_performance_ratio(
             "performance_ratio_year": None,
         }
 
-    total_irradiation_kwh_m2 = 0.0
-    start_date = date(year, 1, 1)
-    today = date.today()
-    end_date = min(date(year, 12, 31), today) if year == today.year else date(year, 12, 31)
+    window_start, window_end = _last_12_month_window()
+    energy_period_kwh = _get_period_energy_kwh(
+        token=token,
+        inverter_keys=inverter_keys,
+        start_date=window_start,
+        end_date=window_end,
+        data_point="p1",
+    ) if inverter_keys else None
 
-    for chunk_start, chunk_end in _date_chunks(start_date, end_date, max_days=100):
+    total_irradiation_kwh_m2 = 0.0
+    for chunk_start, chunk_end in _date_chunks(window_start, window_end, max_days=100):
         payload = {
             "appkey": LOGIN_PARAMS["appkey"],
             "token": token,
@@ -365,8 +415,8 @@ def get_plant_year_performance_ratio(
         )
     total_irradiation_kwh_m2 = total_irradiation_kwh_m2 / 1000.0
 
-    if total_irradiation_kwh_m2 > 0 and plant_power_kw > 0 and energy_year_kwh is not None:
-        performance_ratio = energy_year_kwh / (plant_power_kw * total_irradiation_kwh_m2)
+    if total_irradiation_kwh_m2 > 0 and plant_power_kw > 0 and energy_period_kwh is not None:
+        performance_ratio = energy_period_kwh / (plant_power_kw * total_irradiation_kwh_m2)
     else:
         performance_ratio = None
 
@@ -375,6 +425,8 @@ def get_plant_year_performance_ratio(
         "weather_station_ps_key": weather_station_ps_key,
         "irradiation_year_kwh_m2": round(total_irradiation_kwh_m2, 4) if total_irradiation_kwh_m2 > 0 else None,
         "performance_ratio_year": round(performance_ratio, 4) if performance_ratio is not None else None,
+        "performance_ratio_start_date": window_start.isoformat(),
+        "performance_ratio_end_date": window_end.isoformat(),
     }
 
 
