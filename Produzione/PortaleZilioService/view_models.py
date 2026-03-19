@@ -171,6 +171,25 @@ class IdroelettricoProprietaRow:
     stato_contratto: str
     dettaglio_url: str
 
+
+@dataclass(frozen=True)
+class IdroelettricoGSERow:
+    nome_impianto: str
+    nome_cliente: str
+    tariffa_mwh: str
+    strumento_di_contabilizzazione: str
+    maturato_dall_inizio: str
+    fatturato_dall_inizio: str
+    tipologia_di_pagamento: str
+    data_di_inizio: str
+    data_di_fine: str
+    totale_anni_contratto: str
+    pr_stimato_annuo: str
+    energia_stimata_annua: str
+    mancata_produzione: str
+    fatturato_previsto: str
+    importo_reale_annuo: str
+
 # endregion 
 
 

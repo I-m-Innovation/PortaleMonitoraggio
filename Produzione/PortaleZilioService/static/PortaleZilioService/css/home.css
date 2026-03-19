@@ -13,6 +13,37 @@ main {
     padding: 1.5rem;
 }
 
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.page-header-copy {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.page-header-copy h1 {
+    margin-bottom: 0;
+}
+
+.page-header-brand {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 0 0 auto;
+}
+
+.page-header-logo {
+    display: block;
+    width: auto;
+    max-width: min(260px, 30vw);
+    max-height: 96px;
+}
+
 
 #costruzione-tab-button {
     background-color: #d96b6b;
@@ -90,6 +121,14 @@ main {
     gap: 10px;
     margin-bottom: 8px;
 }
+.category-header-idroelettrico {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
 
 .fv-header-tabs {
     display: flex;
@@ -123,7 +162,7 @@ p.empty-state {
 .table-scroll-toolbar {
     display: flex;
     justify-content: flex-end;
-    margin: 0 0 8px;
+    flex: 0 0 auto;
 }
 
 .table-scroll-toggle {
@@ -197,6 +236,8 @@ p.empty-state {
 .table-panel-actions {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
     margin: 0 0 8px;
 }
 
@@ -258,4 +299,21 @@ p.empty-state {
     padding: 2px 6px;
     border-radius: 4px;
     font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .page-header-brand {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .page-header-logo {
+        max-width: min(220px, 55vw);
+        max-height: 80px;
+    }
 }

@@ -10,6 +10,7 @@ from .services.rows_builder import (
     build_fotovoltaico_in_costruzione_rows,
     build_fotovoltaico_ppu_rows,
     build_fotovoltaico_proprieta_rows,
+    build_idroelettrico_gse_rows,
     build_idroelettrico_proprieta_rows,
 )
 
@@ -20,6 +21,7 @@ def _build_home_context():
         "fv_proprieta_rows": build_fotovoltaico_proprieta_rows(),
         "fv_in_costruzione_rows": build_fotovoltaico_in_costruzione_rows(),
         "fv_ppu_rows": build_fotovoltaico_ppu_rows(),
+        "idr_gse_rows": build_idroelettrico_gse_rows(),
         "idr_proprieta_rows": build_idroelettrico_proprieta_rows(),
     }
 
@@ -50,6 +52,11 @@ def _build_tables_payload(request):
         "idr_proprieta": render_to_string(
             "PortaleZilioService/partials/_table_idroelettrico_proprieta.html",
             {"rows": context["idr_proprieta_rows"]},
+            request=request,
+        ),
+        "idr_gse": render_to_string(
+            "PortaleZilioService/partials/_table_idroelettrico_gse.html",
+            {"rows": context["idr_gse_rows"]},
             request=request,
         ),
     }
