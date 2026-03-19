@@ -24,9 +24,9 @@ class FotovoltaicoClientiRow:
     totale_anni_contratto: str
     totale_contratto: str
     totale_annuale_su_MW: str
-    totale_annuale: str
+    totale_annuo: str
     totale_maturato: str
-    totale_fatturato: str
+    fatturato: str
     totale_incassato: str
     data_prossima_fattura: str # da togliere ? 
     importo_prossima_fattura: str # da togliere ?
@@ -56,9 +56,9 @@ class FotovoltaicoProprietaRow:
     totale_anni_contratto: str
     totale_contratto: str
     totale_annuale_su_MW: str
-    totale_annuale: str
+    totale_annuo: str
     totale_maturato: str
-    totale_fatturato: str
+    fatturato: str
     totale_incassato: str
     data_prossima_fattura: str # da togliere ? 
     importo_prossima_fattura: str # da togliere ?
@@ -89,9 +89,9 @@ class FotovoltaicoInCostruzioneRow:
     totale_anni_contratto: str
     totale_contratto: str
     totale_annuale_su_MW: str
-    totale_annuale: str
+    totale_annuo: str
     totale_maturato: str
-    totale_fatturato: str
+    fatturato: str
     totale_incassato: str
     data_prossima_fattura: str # da togliere ? 
     importo_prossima_fattura: str # da togliere ?
@@ -120,9 +120,9 @@ class AgrivoltaicoRow:
     totale_anni_contratto: str
     totale_contratto: str
     totale_annuale_su_MW: str
-    totale_annuale: str
+    totale_annuo: str
     totale_maturato: str
-    totale_fatturato: str
+    fatturato: str
     totale_incassato: str
     data_prossima_fattura: str # da togliere ? 
     importo_prossima_fattura: str # da togliere ?
