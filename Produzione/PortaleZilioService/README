@@ -27,6 +27,24 @@ commit di prova per git
 
 - Implement fields incrementally in `rows_builder.py` (2-3 fields at a time), starting from contract dates and contract-years calculation from `FvMetadata`.
 
+## Image Reference
+
+Image file:
+
+- `Produzione/PortaleZilioService/static/PortaleZilioService/images/image.png`
+
+Use this relative path in CSS files under `static/PortaleZilioService/css/`:
+
+```css
+url('../images/image.png')
+```
+
+Use this Markdown path from this README file:
+
+```md
+![alt text](static/PortaleZilioService/images/image.png)
+```
+
 ## SQLite DDL - tab_impianti_api_metriche
 
 Use these statements when recreating the local or production SQLite schema for cached API metrics shown in the UI.

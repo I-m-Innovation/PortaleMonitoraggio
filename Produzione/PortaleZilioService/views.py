@@ -3,6 +3,8 @@ from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
 
+from PortaleZilioService.API_inverter.API_iSolarCloud import get_all_devices, login_ISC
+
 from .services.sync import MetricsSyncService
 
 from .services.rows_builder import (
@@ -97,3 +99,32 @@ def sync_isc_metrics_view(request):
 
 def test_view(request):
     return render(request, "PortaleZilioService/test.html")
+
+
+
+# iSolarCloud views
+def _get_data_from_isc():
+    login_resp = login_ISC()
+    token = login_resp.get("result_data", {}).get("token")
+    if not token:
+        print("Login failed: missing iSolarCloud token")
+        return 2
+    devices = get_all_devices(token=token)
+    for device in devices:
+        print(f"Device: {device.get('device_name')} (type: {device.get('device_type')})")
+    
+    
+    
+    pass
+
+
+# saj - elekeeper views
+def _get_data_from_saj():
+    pass
+
+
+# myleo views 
+def _get_data_from_myleo():
+    pass
+
+
