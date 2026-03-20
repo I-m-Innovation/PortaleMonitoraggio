@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 
 from ..models import FvMetadata, MonitoraggioImpianto
 from ..view_models import (
@@ -76,6 +77,12 @@ def _potenza_text(meta: FvMetadata) -> str:
     return f"{meta.potenza:.2f} kW" if meta.potenza is not None else "--"
 
 
+def _fmt_decimal(value: Decimal | None) -> str:
+    if value is None:
+        return "--"
+    return f"{value:.2f}"
+
+
 def build_fotovoltaico_clienti_rows():
     q = FvMetadata.objects.select_related("impianto").filter(
         categoria_fv=FvMetadata.CategoriaFv.CLIENTE,
@@ -96,9 +103,9 @@ def build_fotovoltaico_clienti_rows():
                 inizio_contratto=_fmt_date(meta.data_inizio_contratto),
                 fine_contratto=_fmt_date(meta.data_fine_contratto),
                 totale_anni_contratto=_calcola_anni_contratto(meta.data_inizio_contratto, meta.data_fine_contratto),
-                totale_annuale_su_MW="--",
-                totale_contratto="--",
-                totale_annuale="--",
+                totale_annuale_su_MW=_fmt_decimal(meta.totale_annuo_su_mv),
+                totale_contratto=_fmt_decimal(meta.totale_contratto),
+                totale_annuale=_fmt_decimal(meta.totale_annuo),
                 totale_maturato="--",
                 totale_fatturato="--",
                 totale_incassato="--",
@@ -134,9 +141,9 @@ def build_fotovoltaico_proprieta_rows():
                 inizio_contratto=_fmt_date(meta.data_inizio_contratto),
                 fine_contratto=_fmt_date(meta.data_fine_contratto),
                 totale_anni_contratto=_calcola_anni_contratto(meta.data_inizio_contratto, meta.data_fine_contratto),
-                totale_annuale_su_MW="--",
-                totale_contratto="--",
-                totale_annuale="--",
+                totale_annuale_su_MW=_fmt_decimal(meta.totale_annuo_su_mv),
+                totale_contratto=_fmt_decimal(meta.totale_contratto),
+                totale_annuale=_fmt_decimal(meta.totale_annuo),
                 totale_maturato="--",
                 totale_fatturato="--",
                 totale_incassato="--",
@@ -171,9 +178,9 @@ def build_fotovoltaico_in_costruzione_rows():
                 inizio_contratto=_fmt_date(meta.data_inizio_contratto),
                 fine_contratto=_fmt_date(meta.data_fine_contratto),
                 totale_anni_contratto=_calcola_anni_contratto(meta.data_inizio_contratto, meta.data_fine_contratto),
-                totale_annuale_su_MW="--",
-                totale_contratto="--",
-                totale_annuale="--",
+                totale_annuale_su_MW=_fmt_decimal(meta.totale_annuo_su_mv),
+                totale_contratto=_fmt_decimal(meta.totale_contratto),
+                totale_annuale=_fmt_decimal(meta.totale_annuo),
                 totale_maturato="--",
                 totale_fatturato="--",
                 totale_incassato="--",
