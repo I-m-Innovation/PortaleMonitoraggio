@@ -2,6 +2,8 @@ from django.contrib import admin
 
 from .models import (
     FotovoltaicoMetadata,
+    FotovoltaicoMetricheTecniche,
+    FotovoltaicoStatoEconomico,
     FvMetadata,
     IdroelettricoMetadata,
     ImpiantoAnagrafica,
@@ -111,6 +113,125 @@ class FotovoltaicoMetadataAdmin(admin.ModelAdmin):
     list_filter = ("categoria_fv", "is_ppu", "is_agrivoltaico")
     search_fields = ("impianto__nome_impianto", "impianto__tag_impianto")
     list_select_related = ("impianto",)
+
+
+@admin.register(FotovoltaicoStatoEconomico)
+class FotovoltaicoStatoEconomicoAdmin(admin.ModelAdmin):
+    list_display = (
+        "impianto_nome",
+        "impianto",
+        "data_inizio_contratto",
+        "data_fine_contratto",
+        "totale_contratto",
+        "api_sync_status",
+        "last_api_sync_at",
+        "updated_at",
+    )
+    list_filter = ("api_sync_status",)
+    search_fields = (
+        "impianto__nome_impianto",
+        "impianto__tag_impianto",
+        "impianto__codice_impianto",
+    )
+    list_select_related = ("impianto",)
+    ordering = ("impianto__nome_impianto",)
+    readonly_fields = (
+        "anni_contratto",
+        "totale_annuale_su_mw",
+        "totale_annuo",
+        "maturato",
+        "fatturato",
+        "incassato",
+        "data_prossima_fattura",
+        "importo_prossima_fattura",
+        "costo_sostenuto_straordinario",
+        "totale_fatturato_straordinario",
+        "margine_straordinario",
+        "numero_fatture_straordinarie_annuo",
+        "numero_fatture_straordinarie_totali",
+        "last_api_sync_at",
+        "api_sync_status",
+        "api_sync_note",
+        "created_at",
+        "updated_at",
+    )
+    fields = (
+        "impianto",
+        "data_inizio_contratto",
+        "data_fine_contratto",
+        "totale_contratto",
+        "anni_contratto",
+        "totale_annuale_su_mw",
+        "totale_annuo",
+        "maturato",
+        "fatturato",
+        "incassato",
+        "data_prossima_fattura",
+        "importo_prossima_fattura",
+        "costo_sostenuto_straordinario",
+        "totale_fatturato_straordinario",
+        "margine_straordinario",
+        "numero_fatture_straordinarie_annuo",
+        "numero_fatture_straordinarie_totali",
+        "last_api_sync_at",
+        "api_sync_status",
+        "api_sync_note",
+        "note",
+        "created_at",
+        "updated_at",
+    )
+
+    @admin.display(ordering="impianto__nome_impianto", description="Nome impianto")
+    def impianto_nome(self, obj):
+        return obj.impianto.nome_impianto
+
+
+@admin.register(FotovoltaicoMetricheTecniche)
+class FotovoltaicoMetricheTecnicheAdmin(admin.ModelAdmin):
+    list_display = (
+        "impianto_nome",
+        "impianto",
+        "pr_ultimi_12_mesi",
+        "mancata_produzione",
+        "ore_equivalenti_ultimi_12_mesi",
+        "sync_status",
+        "last_sync_at",
+        "updated_at",
+    )
+    list_filter = ("sync_status",)
+    search_fields = (
+        "impianto__nome_impianto",
+        "impianto__tag_impianto",
+        "impianto__codice_impianto",
+    )
+    list_select_related = ("impianto",)
+    ordering = ("impianto__nome_impianto",)
+    readonly_fields = (
+        "pr_ultimi_12_mesi",
+        "mancata_produzione",
+        "ore_equivalenti_ultimi_12_mesi",
+        "last_sync_at",
+        "sync_status",
+        "sync_note",
+        "created_at",
+        "updated_at",
+    )
+    fields = (
+        "impianto",
+        "pr_ultimi_12_mesi",
+        "mancata_produzione",
+        "ore_equivalenti_ultimi_12_mesi",
+        "last_sync_at",
+        "sync_status",
+        "sync_note",
+        "note",
+        "created_at",
+        "updated_at",
+    )
+
+    @admin.display(ordering="impianto__nome_impianto", description="Nome impianto")
+    def impianto_nome(self, obj):
+        return obj.impianto.nome_impianto
 
 
 @admin.register(IdroelettricoMetadata)

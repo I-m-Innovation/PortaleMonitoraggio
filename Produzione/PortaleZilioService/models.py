@@ -165,6 +165,123 @@ class FotovoltaicoMetadata(models.Model):
         return f"{self.impianto.nome_impianto} - FV"
 
 
+class FotovoltaicoStatoEconomico(models.Model):
+    class ApiSyncStatus(models.TextChoices):
+        NEVER = "never", "Mai sincronizzato"
+        OK = "ok", "OK"
+        PARTIAL = "partial", "Parziale"
+        ERROR = "error", "Errore"
+
+    impianto = models.OneToOneField(
+        ImpiantoAnagrafica,
+        on_delete=models.CASCADE,
+        related_name="fotovoltaico_stato_economico",
+    )
+
+    # Dati manuali
+    data_inizio_contratto = models.DateField(blank=True, null=True)
+    data_fine_contratto = models.DateField(blank=True, null=True)
+    totale_contratto = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+
+    # Dati persistiti per dashboard / calcolo
+    anni_contratto = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
+    totale_annuale_su_mw = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    totale_annuo = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+
+    # Dati da API gestionale
+    maturato = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    fatturato = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    incassato = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    data_prossima_fattura = models.DateField(blank=True, null=True)
+    importo_prossima_fattura = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+
+    # Straordinario
+    costo_sostenuto_straordinario = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    totale_fatturato_straordinario = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    margine_straordinario = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    numero_fatture_straordinarie_annuo = models.PositiveIntegerField(blank=True, null=True)
+    numero_fatture_straordinarie_totali = models.PositiveIntegerField(blank=True, null=True)
+
+    # Metadati sincronizzazione
+    last_api_sync_at = models.DateTimeField(blank=True, null=True)
+    api_sync_status = models.CharField(
+        max_length=20,
+        choices=ApiSyncStatus.choices,
+        default=ApiSyncStatus.NEVER,
+    )
+    api_sync_note = models.TextField(blank=True, null=True)
+
+    note = models.TextField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Stato economico fotovoltaico"
+        verbose_name_plural = "Stati economici fotovoltaici"
+        ordering = ["impianto__nome_impianto"]
+        constraints = [
+            models.CheckConstraint(
+                check=(
+                    Q(data_fine_contratto__isnull=True)
+                    | Q(data_inizio_contratto__isnull=True)
+                    | Q(data_fine_contratto__gte=F("data_inizio_contratto"))
+                ),
+                name="ck_fv_stato_economico_contract_dates",
+            ),
+        ]
+
+    def clean(self):
+        if self.impianto.tipo_impianto != ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO:
+            raise ValidationError("FotovoltaicoStatoEconomico puo' essere associato solo a impianti fotovoltaici.")
+
+    def __str__(self):
+        return f"{self.impianto.nome_impianto} - Stato economico FV"
+
+
+class FotovoltaicoMetricheTecniche(models.Model):
+    class SyncStatus(models.TextChoices):
+        NEVER = "never", "Mai sincronizzato"
+        OK = "ok", "OK"
+        PARTIAL = "partial", "Parziale"
+        ERROR = "error", "Errore"
+
+    impianto = models.OneToOneField(
+        ImpiantoAnagrafica,
+        on_delete=models.CASCADE,
+        related_name="fotovoltaico_metriche_tecniche",
+    )
+
+    pr_ultimi_12_mesi = models.DecimalField(max_digits=6, decimal_places=4, blank=True, null=True)
+    mancata_produzione = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    ore_equivalenti_ultimi_12_mesi = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+
+    last_sync_at = models.DateTimeField(blank=True, null=True)
+    sync_status = models.CharField(
+        max_length=20,
+        choices=SyncStatus.choices,
+        default=SyncStatus.NEVER,
+    )
+    sync_note = models.TextField(blank=True, null=True)
+
+    note = models.TextField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Metriche tecniche fotovoltaico"
+        verbose_name_plural = "Metriche tecniche fotovoltaico"
+        ordering = ["impianto__nome_impianto"]
+
+    def clean(self):
+        if self.impianto.tipo_impianto != ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO:
+            raise ValidationError("FotovoltaicoMetricheTecniche puo' essere associato solo a impianti fotovoltaici.")
+
+    def __str__(self):
+        return f"{self.impianto.nome_impianto} - Metriche tecniche FV"
+
+
 class IdroelettricoMetadata(models.Model):
     class CategoriaIDR(models.TextChoices):
         PROPRIETA = "proprieta", "Proprietà"
