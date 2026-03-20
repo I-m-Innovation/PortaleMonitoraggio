@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
         fv_proprieta: "fv-proprieta",
         fv_costruzione: "fv-costruzione",
         fv_ppu: "fv-ppu",
+        idr_gse: "idr-gse",
         idr_proprieta: "idr-proprieta",
     };
     let bannerTimeoutId = null;
@@ -36,7 +37,28 @@ document.addEventListener("DOMContentLoaded", () => {
         return track.dataset.autoScrollKey || `table-track-${index}`;
     };
 
+    const ensurePanelControlsRow = (track) => {
+        const panel = track.closest("[data-panel]");
+        if (!panel) {
+            return null;
+        }
+
+        let controlsRow = panel.querySelector(":scope > .table-panel-actions");
+        if (!controlsRow) {
+            controlsRow = document.createElement("div");
+            controlsRow.className = "table-panel-actions";
+            panel.insertBefore(controlsRow, track);
+        }
+
+        return controlsRow;
+    };
+
     const ensureAutoScrollToggle = (track, controller) => {
+        const controlsRow = ensurePanelControlsRow(track);
+        if (!controlsRow) {
+            return;
+        }
+
         if (!track.dataset.autoScrollToggleBound) {
             const toolbar = document.createElement("div");
             toolbar.className = "table-scroll-toolbar";
@@ -47,11 +69,11 @@ document.addEventListener("DOMContentLoaded", () => {
             button.dataset.autoScrollToggle = "true";
             toolbar.appendChild(button);
 
-            track.parentNode?.insertBefore(toolbar, track);
+            controlsRow.appendChild(toolbar);
             track.dataset.autoScrollToggleBound = "true";
         }
 
-        const button = track.previousElementSibling?.querySelector("[data-auto-scroll-toggle='true']");
+        const button = controlsRow.querySelector("[data-auto-scroll-toggle='true']");
         if (!button) {
             return;
         }

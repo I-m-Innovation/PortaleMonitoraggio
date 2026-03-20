@@ -6,6 +6,7 @@ from ..view_models import (
     FotovoltaicoInCostruzioneRow,
     FotovoltaicoPPURow,
     FotovoltaicoProprietaRow,
+    IdroelettricoGSERow,
     IdroelettricoProprietaRow,
 )
 
@@ -98,9 +99,9 @@ def build_fotovoltaico_clienti_rows():
                 totale_anni_contratto=_calcola_anni_contratto(meta.data_inizio_contratto, meta.data_fine_contratto),
                 totale_annuale_su_MW="--",
                 totale_contratto="--",
-                totale_annuale="--",
+                totale_annuo="--",
                 totale_maturato="--",
-                totale_fatturato="--",
+                fatturato="--",
                 totale_incassato="--",
                 data_prossima_fattura="--",
                 importo_prossima_fattura="--",
@@ -136,9 +137,9 @@ def build_fotovoltaico_proprieta_rows():
                 totale_anni_contratto=_calcola_anni_contratto(meta.data_inizio_contratto, meta.data_fine_contratto),
                 totale_annuale_su_MW="--",
                 totale_contratto="--",
-                totale_annuale="--",
+                totale_annuo="--",
                 totale_maturato="--",
-                totale_fatturato="--",
+                fatturato="--",
                 totale_incassato="--",
                 data_prossima_fattura="--",
                 importo_prossima_fattura="--",
@@ -174,9 +175,9 @@ def build_fotovoltaico_in_costruzione_rows():
                 totale_anni_contratto=_calcola_anni_contratto(meta.data_inizio_contratto, meta.data_fine_contratto),
                 totale_annuale_su_MW="--",
                 totale_contratto="--",
-                totale_annuale="--",
+                totale_annuo="--",
                 totale_maturato="--",
-                totale_fatturato="--",
+                fatturato="--",
                 totale_incassato="--",
                 data_prossima_fattura="--",
                 importo_prossima_fattura="--",
@@ -231,5 +232,27 @@ def build_idroelettrico_proprieta_rows():
             lettura_dati="API_ISC",
             stato_contratto="Attivo",
             dettaglio_url="#",
+        )
+    ]
+
+
+def build_idroelettrico_gse_rows():
+    return [
+        IdroelettricoGSERow(
+            nome_impianto="San Teodoro",
+            nome_cliente="GSE",
+            tariffa_mwh="--",
+            strumento_di_contabilizzazione="--",
+            maturato_dall_inizio="--",
+            fatturato_dall_inizio="--",
+            tipologia_di_pagamento="--",
+            data_di_inizio="--",
+            data_di_fine="--",
+            totale_anni_contratto="--",
+            pr_stimato_annuo="--",
+            energia_stimata_annua="--",
+            mancata_produzione="--",
+            fatturato_previsto="--",
+            importo_reale_annuo="--",
         )
     ]

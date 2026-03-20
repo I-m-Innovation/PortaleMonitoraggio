@@ -24,9 +24,9 @@ class FotovoltaicoClientiRow:
     totale_anni_contratto: str
     totale_contratto: str
     totale_annuale_su_MW: str
-    totale_annuale: str
+    totale_annuo: str
     totale_maturato: str
-    totale_fatturato: str
+    fatturato: str
     totale_incassato: str
     data_prossima_fattura: str # da togliere ? 
     importo_prossima_fattura: str # da togliere ?
@@ -56,9 +56,9 @@ class FotovoltaicoProprietaRow:
     totale_anni_contratto: str
     totale_contratto: str
     totale_annuale_su_MW: str
-    totale_annuale: str
+    totale_annuo: str
     totale_maturato: str
-    totale_fatturato: str
+    fatturato: str
     totale_incassato: str
     data_prossima_fattura: str # da togliere ? 
     importo_prossima_fattura: str # da togliere ?
@@ -89,9 +89,9 @@ class FotovoltaicoInCostruzioneRow:
     totale_anni_contratto: str
     totale_contratto: str
     totale_annuale_su_MW: str
-    totale_annuale: str
+    totale_annuo: str
     totale_maturato: str
-    totale_fatturato: str
+    fatturato: str
     totale_incassato: str
     data_prossima_fattura: str # da togliere ? 
     importo_prossima_fattura: str # da togliere ?
@@ -120,9 +120,9 @@ class AgrivoltaicoRow:
     totale_anni_contratto: str
     totale_contratto: str
     totale_annuale_su_MW: str
-    totale_annuale: str
+    totale_annuo: str
     totale_maturato: str
-    totale_fatturato: str
+    fatturato: str
     totale_incassato: str
     data_prossima_fattura: str # da togliere ? 
     importo_prossima_fattura: str # da togliere ?
@@ -170,6 +170,25 @@ class IdroelettricoProprietaRow:
     lettura_dati: str
     stato_contratto: str
     dettaglio_url: str
+
+
+@dataclass(frozen=True)
+class IdroelettricoGSERow:
+    nome_impianto: str
+    nome_cliente: str
+    tariffa_mwh: str
+    strumento_di_contabilizzazione: str
+    maturato_dall_inizio: str
+    fatturato_dall_inizio: str
+    tipologia_di_pagamento: str
+    data_di_inizio: str
+    data_di_fine: str
+    totale_anni_contratto: str
+    pr_stimato_annuo: str
+    energia_stimata_annua: str
+    mancata_produzione: str
+    fatturato_previsto: str
+    importo_reale_annuo: str
 
 # endregion 
 
