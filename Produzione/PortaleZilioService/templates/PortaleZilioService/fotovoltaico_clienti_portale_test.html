@@ -1,0 +1,33 @@
+{% extends "base_layout.html" %}
+{% load static %}
+
+{% block title %}Portale Zilio Service - Test FV Clienti Portale{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/style_overview_page.css' %}">
+    <link rel="stylesheet" href="{% static 'PortaleZilioService/css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+    <main>
+        <header class="page-header">
+            <div class="page-header-copy">
+                <h1>Test O&amp;M FV Clienti <span class="h1-work-in-progress">NUOVO BUILDER</span></h1>
+                <p class="empty-state">Vista temporanea basata sui model del portale.</p>
+            </div>
+            <div class="page-header-brand">
+                <a class="table-action-button" href="{% url 'PortaleZilioService:home' %}">Torna alla home</a>
+            </div>
+        </header>
+
+        <section class="energy-section" id="section-fv-clienti-portale-test">
+            {% include "PortaleZilioService/partials/_table_fotovoltaico_clienti_portale.html" with rows=fv_clienti_portale_rows %}
+            <p style="margin-top: 0.75rem; color: #6b7280; font-size: 0.95rem;">
+                WSM = Weather Station Missing
+            </p>
+        </section>
+    </main>
+
+    <script src="{% static 'PortaleZilioService/js/homeTables.js' %}" defer></script>
+    <script src="{% static 'PortaleZilioService/js/homePrHighlights.js' %}" defer></script>
+{% endblock %}

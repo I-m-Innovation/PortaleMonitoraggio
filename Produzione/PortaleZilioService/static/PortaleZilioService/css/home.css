@@ -262,6 +262,19 @@ p.empty-state {
     filter: brightness(0.92);
 }
 
+.status-dot-gray {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #aeb7c2;
+}
+
+.pr-placeholder-muted {
+    color: #8f98a3;
+    font-weight: 500;
+}
+
 /* Visual separator between ordinary and extraordinary table sections */
 .category-panel table th.straord-start,
 .category-panel table td.straord-start {
