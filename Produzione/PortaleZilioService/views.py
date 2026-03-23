@@ -8,14 +8,14 @@ from PortaleZilioService.API_inverter.API_iSolarCloud import get_all_devices, lo
 from .services.sync import MetricsSyncService
 
 from .services.rows_builder import (
-    build_fotovoltaico_in_costruzione_rows,
-    build_fotovoltaico_ppu_rows,
     build_idroelettrico_gse_rows,
     build_idroelettrico_proprieta_rows,
 )
 from .services.rows_builder_portale import (
+    build_agrivoltaico_rows_portale,
     build_fotovoltaico_clienti_rows_portale,
     build_fotovoltaico_in_costruzione_rows_portale,
+    build_fotovoltaico_ppu_rows_portale,
     build_fotovoltaico_proprieta_rows_portale,
 )
 
@@ -24,8 +24,9 @@ def _build_home_context():
     return {
         "fv_clienti_rows": build_fotovoltaico_clienti_rows_portale(),
         "fv_proprieta_rows": build_fotovoltaico_proprieta_rows_portale(),
+        "fv_agrivoltaico_rows": build_agrivoltaico_rows_portale(),
         "fv_in_costruzione_rows": build_fotovoltaico_in_costruzione_rows_portale(),
-        "fv_ppu_rows": build_fotovoltaico_ppu_rows(),
+        "fv_ppu_rows": build_fotovoltaico_ppu_rows_portale(),
         "idr_gse_rows": build_idroelettrico_gse_rows(),
         "idr_proprieta_rows": build_idroelettrico_proprieta_rows(),
     }
@@ -47,6 +48,11 @@ def _build_tables_payload(request):
         "fv_costruzione": render_to_string(
             "PortaleZilioService/partials/_table_fotovoltaico_in_costruzione.html",
             {"rows": context["fv_in_costruzione_rows"]},
+            request=request,
+        ),
+        "fv_agrivoltaico": render_to_string(
+            "PortaleZilioService/partials/_table_fotovoltaico_agrivoltaico.html",
+            {"rows": context["fv_agrivoltaico_rows"]},
             request=request,
         ),
         "fv_ppu": render_to_string(

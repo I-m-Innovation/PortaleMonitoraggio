@@ -5,8 +5,10 @@ from decimal import Decimal
 
 from ..models import ImpiantoAnagrafica, ImpiantoDispositivo
 from ..view_models import (
+    AgrivoltaicoRow,
     FotovoltaicoClientiRow,
     FotovoltaicoInCostruzioneRow,
+    FotovoltaicoPPURow,
     FotovoltaicoProprietaRow,
 )
 
@@ -225,6 +227,118 @@ def build_fotovoltaico_in_costruzione_rows_portale():
                 margine_straordinario="--",
                 numero_fatture_straordinarie_annuo="--",
                 numero_fatture_straordinarie_totali="--",
+            )
+        )
+
+    return rows
+
+
+def build_agrivoltaico_rows_portale():
+    queryset = (
+        ImpiantoAnagrafica.objects.select_related(
+            "fotovoltaico_metadata",
+            "fotovoltaico_stato_economico",
+            "fotovoltaico_metriche_tecniche",
+        )
+        .prefetch_related("dispositivi")
+        .filter(
+            tipo_impianto=ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO,
+            fotovoltaico_metadata__is_agrivoltaico=True,
+            fotovoltaico_metadata__is_ppu=False,
+        )
+        .exclude(stato_impianto=ImpiantoAnagrafica.StatoImpianto.IN_COSTRUZIONE)
+        .order_by("nome_cliente", "nome_impianto")
+    )
+
+    rows: list[AgrivoltaicoRow] = []
+    for impianto in queryset:
+        metadata = getattr(impianto, "fotovoltaico_metadata", None)
+        stato_economico = getattr(impianto, "fotovoltaico_stato_economico", None)
+        metriche = getattr(impianto, "fotovoltaico_metriche_tecniche", None)
+
+        rows.append(
+            AgrivoltaicoRow(
+                status_class=_status_class_portale(metriche),
+                nome_impianto=impianto.nome_impianto or "--",
+                nome_cliente=_fmt_not_defined(impianto.nome_cliente),
+                potenza=_fmt_power(impianto.potenza_installata_kw),
+                pr_contrattuale=_fmt_decimal(getattr(metadata, "pr_contrattuale", None)),
+                pr_ultimi_12_mesi=_pr_ultimi_12_mesi_text(impianto, metriche),
+                mancata_produzione="--",
+                ore_equivalenti=_fmt_equivalent_hours(
+                    getattr(metriche, "ore_equivalenti_ultimi_12_mesi", None)
+                ),
+                inizio_contratto=_fmt_date(
+                    getattr(stato_economico, "data_inizio_contratto", None)
+                ),
+                fine_contratto=_fmt_date(
+                    getattr(stato_economico, "data_fine_contratto", None)
+                ),
+                totale_anni_contratto=_calcola_anni_contratto(
+                    getattr(stato_economico, "data_inizio_contratto", None),
+                    getattr(stato_economico, "data_fine_contratto", None),
+                ),
+                totale_contratto="--",
+                totale_annuale_su_MW="--",
+                totale_annuo="--",
+                totale_maturato="--",
+                fatturato="--",
+                totale_incassato="--",
+                data_prossima_fattura="--",
+                importo_prossima_fattura="--",
+                totale_ordinato_straordinario="--",
+                totale_fatturato_straordinario="--",
+                margine_straordinario="--",
+                numero_fatture_straordinarie_annuo="--",
+                numero_fatture_straordinarie_totali="--",
+            )
+        )
+
+    return rows
+
+
+def build_fotovoltaico_ppu_rows_portale():
+    queryset = (
+        ImpiantoAnagrafica.objects.select_related(
+            "fotovoltaico_metadata",
+            "fotovoltaico_stato_economico",
+            "fotovoltaico_metriche_tecniche",
+        )
+        .filter(
+            tipo_impianto=ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO,
+            fotovoltaico_metadata__is_ppu=True,
+        )
+        .order_by("nome_cliente", "nome_impianto")
+    )
+
+    rows: list[FotovoltaicoPPURow] = []
+    for impianto in queryset:
+        stato_economico = getattr(impianto, "fotovoltaico_stato_economico", None)
+
+        rows.append(
+            FotovoltaicoPPURow(
+                nome_impianto=impianto.nome_impianto or "--",
+                nome_cliente=_fmt_not_defined(impianto.nome_cliente),
+                tariffa_mwh="--",
+                strumento_di_contabilizzazione="--",
+                maturato_dall_inizio="--",
+                fatturato_dall_inizio="--",
+                tipologia_di_pagamento="--",
+                data_di_inizio=_fmt_date(
+                    getattr(stato_economico, "data_inizio_contratto", None)
+                ),
+                data_di_fine=_fmt_date(
+                    getattr(stato_economico, "data_fine_contratto", None)
+                ),
+                totale_anni_contratto=_calcola_anni_contratto(
+                    getattr(stato_economico, "data_inizio_contratto", None),
+                    getattr(stato_economico, "data_fine_contratto", None),
+                ),
+                pr_stimato_annuo="--",
+                energia_stimata_annua="--",
+                mancata_produzione="--",
+                fatturato_previsto="--",
+                importo_reale_annuo="--",
             )
         )
 
