@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
+from ...models import ImpiantoDispositivo
 from ..dtos import ProviderPlantSnapshot
 from ..windows import MetricsWindow
 from ...API_inverter.API_iSolarCloud import (
@@ -87,6 +88,75 @@ class IscMetricsProvider:
             },
         )
 
+    def fetch_portale_snapshot(self, impianto, sorgente, window: MetricsWindow) -> ProviderPlantSnapshot:
+        token = self._login()
+        api_plant = self._find_matching_portale_plant(token, impianto, sorgente)
+        if api_plant is None:
+            raise NotImplementedError(
+                f"Plant {impianto.nome_impianto!r} not found on iSolarCloud for source "
+                f"{getattr(sorgente, 'identificativo_esterno', None)!r}"
+            )
+
+        plant_id = int(api_plant["ps_id"])
+        plant_name = api_plant.get("ps_name") or impianto.nome_impianto
+        peak_power_kw = self._safe_float(api_plant.get("installed_power")) or self._safe_float(
+            impianto.potenza_installata_kw
+        )
+        status = "online" if api_plant.get("ps_status") == 1 else "offline"
+
+        devices = get_all_devices(token=token, plant_id=plant_id)
+        inverter_keys = [
+            d["ps_key"]
+            for d in devices
+            if d.get("ps_key") and str(d.get("device_type")) != WEATHER_STATION_DEVICE_TYPE
+        ]
+        local_inverters_count = impianto.dispositivi.filter(
+            tipo_dispositivo=ImpiantoDispositivo.TipoDispositivo.INVERTER,
+            attivo=True,
+        ).count()
+
+        energy_kwh = self._fetch_energy_kwh(
+            token=token,
+            inverter_keys=inverter_keys,
+            plant_id=plant_id,
+            window=window,
+        )
+        weather_station = find_weather_station_device(token=token, plant_id=plant_id)
+        irradiation_kwh_m2 = self._fetch_irradiation_kwh_m2(
+            token=token,
+            weather_station=weather_station,
+            window=window,
+        )
+
+        inverters_ok = len(inverter_keys)
+        coverage = None
+        if local_inverters_count:
+            coverage = round(inverters_ok / local_inverters_count, 4)
+
+        return ProviderPlantSnapshot(
+            source_name=getattr(sorgente, "nome_sorgente", self.source_name),
+            plant_key=str(getattr(sorgente, "identificativo_esterno", None) or plant_id),
+            plant_name=plant_name,
+            window_start=window.start_date,
+            window_end=window.end_date,
+            peak_power_kw=peak_power_kw,
+            status=status,
+            daily_equivalent_hours=self._extract_daily_equivalent_hours(api_plant),
+            total_equivalent_hours=None,
+            window_energy_kwh=energy_kwh,
+            window_irradiation_kwh_m2=irradiation_kwh_m2,
+            has_weather_station=weather_station is not None,
+            inverters_count=local_inverters_count,
+            inverters_ok=inverters_ok,
+            coverage=coverage,
+            missing_inverters=[],
+            raw_payload={
+                "api_plant": api_plant,
+                "source_identifier": getattr(sorgente, "identificativo_esterno", None),
+                "weather_station": weather_station,
+            },
+        )
+
     def _login(self) -> str:
         login_resp = login_ISC()
         token = login_resp.get("result_data", {}).get("token")
@@ -101,6 +171,26 @@ class IscMetricsProvider:
             self._normalize(getattr(impianto, "nickname", None)),
             self._normalize(getattr(impianto, "tag", None)),
         }
+        for plant in plants:
+            plant_keys = {
+                self._normalize(plant.get("ps_name")),
+                self._normalize(str(plant.get("ps_id"))),
+            }
+            if candidates & plant_keys:
+                return plant
+        return None
+
+    def _find_matching_portale_plant(self, token: str, impianto, sorgente):
+        plants = get_all_plants(token=token, size=PAGE_SIZE)
+        candidates = {
+            self._normalize(getattr(sorgente, "identificativo_esterno", None)),
+            self._normalize(getattr(impianto, "codice_impianto", None)),
+            self._normalize(getattr(sorgente, "nome_riferimento_esterno", None)),
+            self._normalize(getattr(impianto, "tag_impianto", None)),
+            self._normalize(getattr(impianto, "nome_impianto", None)),
+        }
+        candidates.discard("")
+
         for plant in plants:
             plant_keys = {
                 self._normalize(plant.get("ps_name")),
