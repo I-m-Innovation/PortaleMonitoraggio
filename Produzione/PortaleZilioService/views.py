@@ -81,7 +81,6 @@ def home_view(request):
 def sync_isc_metrics_view(request):
     try:
         service = MetricsSyncService()
-        legacy_outcome = service.sync_api_isc_impianti()
         portale_outcome = service.sync_portale_fotovoltaico_isc_metrics()
         saj_outcome = service.sync_portale_fotovoltaico_saj_metrics()
         tables = _build_tables_payload(request)
@@ -90,19 +89,15 @@ def sync_isc_metrics_view(request):
                 "ok": True,
                 "message": (
                     "Aggiornamento completato. "
-                    f"Legacy aggiornati: {legacy_outcome.updated}. "
                     f"Nuove metriche FV ISC aggiornate: {portale_outcome.updated}. "
                     f"Nuove metriche FV SAJ aggiornate: {saj_outcome.updated}."
                 ),
                 "result": {
-                    "updated": legacy_outcome.updated,
-                    "skipped": legacy_outcome.skipped,
-                    "missing": legacy_outcome.missing,
-                    "window_start": legacy_outcome.window_start.isoformat(),
-                    "window_end": legacy_outcome.window_end.isoformat(),
                     "portale_updated": portale_outcome.updated,
                     "portale_skipped": portale_outcome.skipped,
                     "portale_missing": portale_outcome.missing,
+                    "window_start": portale_outcome.window_start.isoformat(),
+                    "window_end": portale_outcome.window_end.isoformat(),
                     "saj_updated": saj_outcome.updated,
                     "saj_skipped": saj_outcome.skipped,
                     "saj_missing": saj_outcome.missing,
