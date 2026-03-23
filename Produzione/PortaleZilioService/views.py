@@ -72,22 +72,6 @@ def home_view(request):
     return render(request, "PortaleZilioService/home.html", _build_home_context())
 
 
-def fotovoltaico_clienti_portale_test_view(request):
-    return render(
-        request,
-        "PortaleZilioService/fotovoltaico_clienti_portale_test.html",
-        {"fv_clienti_portale_rows": build_fotovoltaico_clienti_rows_portale()},
-    )
-
-
-def fotovoltaico_proprieta_portale_test_view(request):
-    return render(
-        request,
-        "PortaleZilioService/fotovoltaico_proprieta_portale_test.html",
-        {"fv_proprieta_portale_rows": build_fotovoltaico_proprieta_rows_portale()},
-    )
-
-
 @require_POST
 def sync_isc_metrics_view(request):
     try:
