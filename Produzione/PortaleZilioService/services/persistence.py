@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from django.utils import timezone
+
+from ..models import FotovoltaicoMetricheTecniche
 from .dtos import ComputedPlantMetrics
 
 
@@ -27,5 +30,33 @@ def persist_metrics_to_impianto(impianto, metrics: ComputedPlantMetrics) -> None
             "ha_meteo_station",
             "irraggiamento_annuo_kwh_m2",
             "performance_ratio_annuo",
+        ]
+    )
+
+
+def persist_metrics_to_fotovoltaico_metriche_tecniche(
+    impianto,
+    metrics: ComputedPlantMetrics,
+    *,
+    sync_status: str = FotovoltaicoMetricheTecniche.SyncStatus.OK,
+    sync_note: str = "",
+) -> None:
+    record, _ = FotovoltaicoMetricheTecniche.objects.get_or_create(impianto=impianto)
+    record.pr_ultimi_12_mesi = metrics.performance_ratio
+    record.ore_equivalenti_ultimi_12_mesi = metrics.equivalent_hours
+    record.stato_operativo = (
+        metrics.status or FotovoltaicoMetricheTecniche.StatoOperativo.UNKNOWN
+    )
+    record.last_sync_at = timezone.now()
+    record.sync_status = sync_status
+    record.sync_note = sync_note
+    record.save(
+        update_fields=[
+            "pr_ultimi_12_mesi",
+            "ore_equivalenti_ultimi_12_mesi",
+            "stato_operativo",
+            "last_sync_at",
+            "sync_status",
+            "sync_note",
         ]
     )

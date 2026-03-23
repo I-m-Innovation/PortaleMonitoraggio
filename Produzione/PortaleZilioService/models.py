@@ -36,6 +36,9 @@ class FvMetadata(models.Model):
     data_inizio_contratto = models.DateField(blank=True, null=True)
     data_fine_contratto = models.DateField(blank=True, null=True)
     pr_contrattuale = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    totale_contratto = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    totale_annuo_su_mv = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    totale_annuo = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     note = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -240,6 +243,12 @@ class FotovoltaicoStatoEconomico(models.Model):
 
 
 class FotovoltaicoMetricheTecniche(models.Model):
+    class StatoOperativo(models.TextChoices):
+        ONLINE = "online", "Online"
+        OFFLINE = "offline", "Offline"
+        WARNING = "warning", "Warning"
+        UNKNOWN = "unknown", "Unknown"
+
     class SyncStatus(models.TextChoices):
         NEVER = "never", "Mai sincronizzato"
         OK = "ok", "OK"
@@ -255,6 +264,11 @@ class FotovoltaicoMetricheTecniche(models.Model):
     pr_ultimi_12_mesi = models.DecimalField(max_digits=6, decimal_places=4, blank=True, null=True)
     mancata_produzione = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     ore_equivalenti_ultimi_12_mesi = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    stato_operativo = models.CharField(
+        max_length=20,
+        choices=StatoOperativo.choices,
+        default=StatoOperativo.UNKNOWN,
+    )
 
     last_sync_at = models.DateTimeField(blank=True, null=True)
     sync_status = models.CharField(
@@ -315,6 +329,7 @@ class IdroelettricoMetadata(models.Model):
 class ImpiantoDispositivo(models.Model):
     class TipoDispositivo(models.TextChoices):
         INVERTER = "inverter", "Inverter"
+        STORAGE_INVERTER = "storage_inverter", "Storage inverter"
         WEATHER_STATION = "weather_station", "Weather station"
 
     id = models.AutoField(primary_key=True)
