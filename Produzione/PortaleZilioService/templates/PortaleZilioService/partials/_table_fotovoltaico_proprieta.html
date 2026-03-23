@@ -40,7 +40,13 @@
                 <td>{{ row.nome_cliente }}</td>
                 <td>{{ row.potenza }}</td>
                 <td>{{ row.pr_contrattuale }}</td>
-                <td class="js-pr-ultimi-12-mesi">{{ row.pr_ultimi_12_mesi }}</td>
+                <td class="js-pr-ultimi-12-mesi">
+                    {% if row.pr_ultimi_12_mesi == "WSM" or row.pr_ultimi_12_mesi == "ERR" %}
+                        <span class="pr-placeholder-muted">{{ row.pr_ultimi_12_mesi }}</span>
+                    {% else %}
+                        {{ row.pr_ultimi_12_mesi }}
+                    {% endif %}
+                </td>
                 <td>{{ row.mancata_produzione }}</td>
                 <td>{{ row.ore_equivalenti }}</td>
                 <td>{{ row.inizio_contratto }}</td>
@@ -66,4 +72,5 @@
     </tbody>
 </table>
 </div>
+<p class="pr-placeholder-muted">WSM = Weather Station Missing. ERR = PR non disponibile nonostante la weather station sia presente.</p>
 
