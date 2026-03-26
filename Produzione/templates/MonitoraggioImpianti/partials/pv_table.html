@@ -4,6 +4,7 @@
 {% for nickname, impianto in plants_overview.items %}
 	<!-- FILTRO FOTOVOLTAICI -->
 	{% if impianto.tipo == 'Fotovoltaico' %}
+		{% with nickname_id=nickname|slugify %}
 		<!-- LINK ALLA PAGINA DELL'IMPIANTO -->
 		<a style="text-decoration: none; padding: 0 5px;" href="{% url 'monitoraggio-impianto' nickname %}" target="_blank">
 			<!-- CARD-IDRO, SI COLORA DI AZZURRO QUANDO SI FA HOVERING -->
@@ -39,26 +40,26 @@
 		            <!-- LED -->
 			          <td>
 				          <div class="container-fluid justify-content-center">
-					          <div class="led-box" style="background-color: rgba(255,255,255,0); height: 25px; width: 25px"><div id="Led_{{ nickname }}" class="led-class" ></div></div>
+					          <div class="led-box" style="background-color: rgba(255,255,255,0); height: 25px; width: 25px"><div id="Led_{{ nickname_id }}" class="led-class" ></div></div>
 				          </div>
 		            </td>
 		            <!-- CHART -->
-		            <td style="text-align: center; border: none;"><div id="minichart_{{ nickname }}" class="minichartPV"></div></td>
+		            <td style="text-align: center; border: none;"><div id="minichart_{{ nickname_id }}" class="minichartPV"></div></td>
 		            <!-- DATI: POTENZA + ENERGIA -->
 		            {# "humanize" serve per mettere i numeri all'italiana #}
 			          {% load humanize %}{% load i18n %}{% load l10n %}
 			          {% language 'de' %}
-		            <td style="text-align: center;"><b id="PLast_{{ nickname }}"> - </b><span style="color: #9f9f9f; font-size: 12px"> / {{ impianto.potenza_installata|floatformat:"2g" }} kW</span></td>
+		            <td style="text-align: center;"><b id="PLast_{{ nickname_id }}"> - </b><span style="color: #9f9f9f; font-size: 12px"> / {{ impianto.potenza_installata|floatformat:"2g" }} kW</span></td>
 			          {% endlanguage %}
 								{# IL DATO DI ENERGIA PER IL FOTOVOLTAICO è AGGIORNATO DALLO SCRIPT SOTTO #}
-		            <td style="text-align: center;"><b id="Energy_{{ nickname }}"> - </b></td>
+		            <td style="text-align: center;"><b id="Energy_{{ nickname_id }}"> - </b></td>
 			          <!-- RENDIMENTO -->
 		            {# RENDIMENTO FOTOVOLTAICO NON è PRESENTE #}
 		            <td style="text-align: center;"><b> - </b></td>
 		          </tr>
 		        </tbody>
 		      </table>
-				<div id="lastT_{{ nickname }}" class="aggiornamento-monitoraggio-card">
+				<div id="lastT_{{ nickname_id }}" class="aggiornamento-monitoraggio-card">
 					aggiornamento: 
 				</div>
     </div>
@@ -68,22 +69,22 @@
 		      /* VARIABILI */
 	        let endpoint = '{% url 'api-monitoraggio-impianto' nickname %}';
 	        {# id div GRAFICO #}
-			    let idMiniChart = 'minichart_'.concat('{{ nickname }}');
+			    let idMiniChart = 'minichart_'.concat('{{ nickname_id }}');
 			    {# id div ULTIMO TIMESTAMP #}
-	        let idLastT = 'lastT_'.concat('{{ nickname }}');
+	        let idLastT = 'lastT_'.concat('{{ nickname_id }}');
 			    {# id div LED #}
-	        let idLed = 'Led_'.concat('{{ nickname }}');
+	        let idLed = 'Led_'.concat('{{ nickname_id }}');
 			    {# id div ULTIMO DATO POTENZA #}
-	        let idPLast = 'PLast_'.concat('{{ nickname }}');
+	        let idPLast = 'PLast_'.concat('{{ nickname_id }}');
 			    {# id div ENERGIA #}
-	        let idEnergy = 'Energy_'.concat('{{ nickname }}');
+	        let idEnergy = 'Energy_'.concat('{{ nickname_id }}');
 		      
 		      /* ID GRAFICO */
-	        let MiniChart_{{ nickname }} = echarts.init(document.getElementById(idMiniChart));
-	        window.addEventListener('resize', function() {MiniChart_{{ nickname }}.resize();});
+	        let miniChart = echarts.init(document.getElementById(idMiniChart));
+	        window.addEventListener('resize', function() {miniChart.resize();});
 	            
 	        /* DEFINIZIONE GRAFICO ECHART */
-		      MiniChart_{{ nickname }}.setOption({
+		      miniChart.setOption({
 		          color: ['rgb(248,123,104)'],
 		          xAxis: [{ data: [], show: false }], 
 		          yAxis: {type: 'value', min: 0, offset:80, max: {{ impianto.potenza_installata|stringformat:".2f" }}, splitLine: {show: false}, show: false},
@@ -94,25 +95,25 @@
 	        });
 		      
 		      /* FUNZIONE DI AGGIORNAMENTO AUTOMATICO PER I DATI */
-		      (function ajax_{{ nickname }}() {
+		      (function ajaxPlant() {
 				      /* CHIAMATA AJAX PER I DATI */
 				      {# endpoint --> MonitoraggioImpianti.APIVIEWS #}
 	            $.ajax(endpoint).done(function(data) {
 	                let potenza = data.pot;
 	                let timestamps = data.time;
 	                let last_index = data.k_last;
-	                let last_t = timestamps[last_index];
+	                let last_t = (last_index !== null && last_index !== undefined) ? timestamps[last_index] : '';
 	                let info = data.info;
 	                last_t = 'aggiornamento: '.concat(last_t);
 	                
 	                /* INSERRISCE LED, ULTIMO TIMESTAMP E ENERGIA-GIORNO */
 	                document.getElementById(idLed).className = data.led;
 	                document.getElementById(idLastT).innerHTML = last_t;
-	                if (data.PLast) {document.getElementById(idPLast).innerHTML = toLocale(data.PLast,0) + ' kW'}
-	                if (info.energy) {document.getElementById(idEnergy).innerHTML = toLocaleKWh(info.energy,0)}
+	                if (data.PLast !== null && data.PLast !== undefined) {document.getElementById(idPLast).innerHTML = toLocale(data.PLast,0) + ' kW'}
+	                if (info && info.energy !== null && info.energy !== undefined) {document.getElementById(idEnergy).innerHTML = toLocaleKWh(info.energy,0)}
 	
 	                /* AGGIORNA IL GRAFICO CON NUOVI DATI */
-	                MiniChart_{{ nickname }}.setOption({
+	                miniChart.setOption({
 	                    xAxis: [{ data: timestamps }],
 	                    series: [{
 	                        data: potenza,
@@ -121,10 +122,11 @@
 	            });
 				      /* AGGIORNAMENTO DATI OGNI 5 MINUTI */
 				      {# ANCHE SE LA PAGINA FA UN REFRESH IN AUTOMATICO #}
-				      setTimeout(ajax_{{ nickname }}, 5*60000);
+				      setTimeout(ajaxPlant, 5*60000);
 		      })()
 	    })
 	  </script>
+		{% endwith %}
 	{% endif %}
 {% endfor %}
 
