@@ -31,6 +31,16 @@ PLANT_DEVICE_OVERRIDES = {
         "api_response_field_for_instantaneous_power_watts": "totalPVPower",
         "api_response_field_for_energy_produced_today_kwh": "todayPvEnergy",
     },
+    #example of another plant configuration for future reference in case u need to add one  
+    # "plant_name_formatted": {
+    #     "device_serial_numbers_to_query": [
+    #         "inverter_device_id_1",
+    #         "inverter_device_id_2",
+    #         "..."
+    #     ],
+    #     "api_response_field_for_instantaneous_power_watts": "pvPower",
+    #     "api_response_field_for_energy_produced_today_kwh": "todayPvEnergy",
+    # },
 }
 
 
