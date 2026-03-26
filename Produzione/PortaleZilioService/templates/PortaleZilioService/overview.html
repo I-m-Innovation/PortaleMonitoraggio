@@ -1,0 +1,111 @@
+{% extends "base_layout.html" %}
+{% load static %}
+
+{% block title %}Portale Zilio Service - Overview{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/style_overview_page.css' %}">
+    <link rel="stylesheet" href="{% static 'PortaleZilioService/css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+    <main>
+        <header class="page-header">
+            <div class="page-header-copy">
+                <p class="page-kicker">Portale Zilio Service</p>
+                <h1>Overview impianti <span class="h1-work-in-progress">IN LAVORAZIONE</span></h1>
+                <div class="page-header-actions">
+                    <a class="overview-link-button" href="{% url 'PortaleZilioService:home' %}">Torna alla home</a>
+                </div>
+            </div>
+            <div class="page-header-brand">
+                <img
+                    src="{% static 'PortaleZilioService/images/zilio_service_logo_alta_risoluzione.svg' %}"
+                    alt="Logo Zilio Service"
+                    class="page-header-logo"
+                >
+            </div>
+        </header>
+        <section
+            id="isc-sync-banner"
+            class="sync-banner"
+            data-sync-banner
+            data-sync-url="{% url 'PortaleZilioService:sync-isc' %}"
+            hidden
+        ></section>
+        <section class="energy-section" id="section-zilio-service">
+            <h2>Fotovoltaico</h2>
+
+            <header class="category-header-fotovoltaico" data-group="fv">
+                <div class="fv-header-tabs">
+                    <button class="category-button" type="button" data-group="fv" data-target="fv-clienti" aria-controls="fv-clienti" aria-pressed="false" id="clienti-tab-button">O&amp;M FV Clienti</button>
+                    <button class="category-button" type="button" data-group="fv" data-target="fv-proprieta" aria-controls="fv-proprieta" aria-pressed="false" id="proprieta-tab-button">O&amp;M FV Proprieta</button>
+                    <button class="category-button" type="button" data-group="fv" data-target="fv-agrivoltaico" aria-controls="fv-agrivoltaico" aria-pressed="false" id="agrivoltaico-tab-button">O&amp;M Agrivoltaico</button>
+                    <button class="category-button" type="button" data-group="fv" data-target="fv-ppu" aria-controls="fv-ppu" aria-pressed="false" id="ppu-tab-button">PPU FV</button>
+                    <button class="category-button" type="button" data-group="fv" data-target="fv-costruzione" aria-controls="fv-costruzione" aria-pressed="false" id="costruzione-tab-button">FV In Costruzione</button>
+                </div>
+            </header>
+
+            <section class="category-panel" id="fv-empty" data-panel data-group="fv">
+                <p class="empty-state">Seleziona una categoria per visualizzare i dati.</p>
+            </section>
+
+            <section class="category-panel" id="fv-clienti" data-panel data-group="fv" hidden>
+                <div class="table-panel-actions">
+                    <button type="button" class="table-action-button" id="fv-clienti-action-button">Aggiungi record</button>
+                </div>
+                {% include "PortaleZilioService/partials/_table_fotovoltaico_clienti.html" with rows=fv_clienti_rows %}
+            </section>
+
+            <section class="category-panel" id="fv-proprieta" data-panel data-group="fv" hidden>
+                <div class="table-panel-actions">
+                    <button type="button" class="table-action-button" id="fv-proprieta-action-button">Aggiungi record</button>
+                </div>
+                {% include "PortaleZilioService/partials/_table_fotovoltaico_proprieta.html" with rows=fv_proprieta_rows %}
+            </section>
+
+            <section class="category-panel" id="fv-agrivoltaico" data-panel data-group="fv" hidden>
+                {% include "PortaleZilioService/partials/_table_fotovoltaico_agrivoltaico.html" with rows=fv_agrivoltaico_rows %}
+            </section>
+
+            <section class="category-panel" id="fv-costruzione" data-panel data-group="fv" hidden>
+                <div class="table-panel-actions">
+                    <button type="button" class="table-action-button" id="fv-costruzione-action-button">Aggiungi record</button>
+                </div>
+                {% include "PortaleZilioService/partials/_table_fotovoltaico_in_costruzione.html" with rows=fv_in_costruzione_rows %}
+            </section>
+
+            <section class="category-panel" id="fv-ppu" data-panel data-group="fv" hidden>
+                <div class="table-panel-actions">
+                    <button type="button" class="table-action-button" id="fv-ppu-action-button">Aggiungi record</button>
+                </div>
+                {% include "PortaleZilioService/partials/_table_fotovoltaico_PPU.html" with rows=fv_ppu_rows %}
+            </section>
+        </section>
+
+        <section>
+            <h2>Idroelettrico</h2>
+
+            <header class="category-header-idroelettrico" data-group="idr">
+                <button class="category-button" type="button" data-group="idr" data-target="idr-proprieta" aria-controls="idr-proprieta" aria-pressed="false" id="idr-proprieta-tab-button">O&amp;M IDR Proprieta</button>
+                <button class="category-button" type="button" data-group="idr" data-target="idr-gse" aria-controls="idr-gse" aria-pressed="false" id="idr-gse-tab-button">IDR GSE</button>
+            </header>
+
+            <section class="category-panel" id="idr-empty" data-panel data-group="idr">
+                <p class="empty-state">Seleziona una categoria per visualizzare i dati.</p>
+            </section>
+
+            <section class="category-panel" id="idr-proprieta" data-panel data-group="idr" hidden>
+                {% include "PortaleZilioService/partials/_table_idroelettrico_proprieta.html" with rows=idr_proprieta_rows %}
+            </section>
+
+            <section class="category-panel" id="idr-gse" data-panel data-group="idr" hidden>
+                {% include "PortaleZilioService/partials/_table_idroelettrico_gse.html" with rows=idr_gse_rows %}
+            </section>
+        </section>
+
+    </main>
+
+    <script src="{% static 'PortaleZilioService/js/homeTables.js' %}" defer></script>
+    <script src="{% static 'PortaleZilioService/js/homePrHighlights.js' %}" defer></script>
+{% endblock %}

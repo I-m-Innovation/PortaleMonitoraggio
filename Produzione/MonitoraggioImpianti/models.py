@@ -72,6 +72,7 @@ letture_dati = (
 	('API_HIGECO', 'API_HIGECO'),
 	('API_LEO', 'API_LEO'),
 	('API_ISC', 'API_ISC'),
+	('API_SAJ', 'API_SAJ'),
 	('---', '---')
 )
 

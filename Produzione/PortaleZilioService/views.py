@@ -5,6 +5,7 @@ from django.views.decorators.http import require_POST
 
 from PortaleZilioService.API_inverter.API_iSolarCloud import get_all_devices, login_ISC
 
+from .models import ImpiantoAnagrafica
 from .services.sync import MetricsSyncService
 
 from .services.rows_builder import (
@@ -30,6 +31,63 @@ def _build_home_context():
         "idr_gse_rows": build_idroelettrico_gse_rows(),
         "idr_proprieta_rows": build_idroelettrico_proprieta_rows(),
     }
+
+
+def _build_contracts_home_context():
+    impianti = (
+        ImpiantoAnagrafica.objects.select_related(
+            "fotovoltaico_stato_economico",
+            "fotovoltaico_metadata",
+        )
+        .filter(attivo_portale=True)
+        .order_by("tipo_impianto", "nome_impianto")
+    )
+
+    def _fmt_contract_date(value):
+        return value.strftime("%d/%m/%Y") if value else ""
+
+    def _fmt_contract_years(data_inizio, data_fine):
+        if not data_inizio or not data_fine:
+            return ""
+        return f"{((data_fine - data_inizio).days / 365.25):.1f}"
+
+    def _contract_type(impianto):
+        if impianto.tipo_impianto != ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO:
+            return ""
+        metadata = getattr(impianto, "fotovoltaico_metadata", None)
+        if metadata is None:
+            return ""
+        return "PPU" if metadata.is_ppu else "O&M"
+
+    rows = [
+        {
+            "tipo_impianto": impianto.tipo_impianto,
+            "nome_impianto": impianto.nome_impianto or "",
+            "tipo_contratto": _contract_type(impianto),
+            "inizio_contratto": (
+                _fmt_contract_date(data_inizio)
+                if impianto.tipo_impianto == ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO
+                else ""
+            ),
+            "fine_contratto": (
+                _fmt_contract_date(data_fine)
+                if impianto.tipo_impianto == ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO
+                else ""
+            ),
+            "anni_contratto": (
+                _fmt_contract_years(data_inizio, data_fine)
+                if impianto.tipo_impianto == ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO
+                else ""
+            ),
+            "importo_annuo_stimato": "",
+            "importo_totale": "",
+        }
+        for impianto in impianti
+        for stato_economico in [getattr(impianto, "fotovoltaico_stato_economico", None)]
+        for data_inizio in [getattr(stato_economico, "data_inizio_contratto", None)]
+        for data_fine in [getattr(stato_economico, "data_fine_contratto", None)]
+    ]
+    return {"contract_rows": rows}
 
 
 def _build_tables_payload(request):
@@ -74,7 +132,11 @@ def _build_tables_payload(request):
 
 
 def home_view(request):
-    return render(request, "PortaleZilioService/home.html", _build_home_context())
+    return render(request, "PortaleZilioService/home.html", _build_contracts_home_context())
+
+
+def overview_view(request):
+    return render(request, "PortaleZilioService/overview.html", _build_home_context())
 
 
 @require_POST

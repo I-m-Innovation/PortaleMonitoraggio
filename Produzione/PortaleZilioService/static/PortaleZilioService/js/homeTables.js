@@ -136,6 +136,38 @@ document.addEventListener("DOMContentLoaded", () => {
             state.lastTs = 0;
         };
 
+        const moveScroll = (delta) => {
+            if (!state.hasOverflow || !Number.isFinite(delta) || delta === 0) {
+                return false;
+            }
+
+            const prev = track.scrollLeft;
+            const next = Math.max(0, Math.min(state.maxScroll, prev + delta));
+            track.scrollLeft = next;
+
+            if (Math.abs(next - prev) < 0.5) {
+                return false;
+            }
+
+            state.direction = delta > 0 ? 1 : -1;
+            state.edgePauseUntil = 0;
+            return true;
+        };
+
+        const handleWheel = (event) => {
+            pauseForUser();
+
+            const dominantDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY)
+                ? event.deltaX
+                : event.deltaY;
+
+            if (!moveScroll(dominantDelta)) {
+                return;
+            }
+
+            event.preventDefault();
+        };
+
         const tick = (now) => {
             const isVisible = !panel || !panel.hidden;
             if (!state.hasOverflow || !isVisible || state.isStopped) {
@@ -173,7 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
             state.rafId = requestAnimationFrame(tick);
         };
 
-        track.addEventListener("wheel", pauseForUser, { passive: true });
+        track.addEventListener("wheel", handleWheel, { passive: false });
         track.addEventListener("touchstart", pauseForUser, { passive: true });
         track.addEventListener("mousedown", pauseForUser);
         track.addEventListener("focusin", pauseForUser);
@@ -265,7 +297,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        setBannerState("Recupero dati ISC in corso...", "is-pending");
+        setBannerState("Recupero dati ISC, SAJ in corso...", "is-pending");
 
         try {
             const response = await fetch(syncBanner.dataset.syncUrl, {
