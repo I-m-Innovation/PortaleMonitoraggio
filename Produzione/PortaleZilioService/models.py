@@ -151,6 +151,7 @@ class FotovoltaicoMetadata(models.Model):
         related_name="fotovoltaico_metadata",
     )
     categoria_fv = models.CharField(max_length=30, choices=CategoriaFV.choices)
+    is_oem = models.BooleanField(default=False)
     is_ppu = models.BooleanField(default=False)
     is_agrivoltaico = models.BooleanField(default=False)
     pr_contrattuale = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)

@@ -112,11 +112,12 @@ class FotovoltaicoMetadataAdmin(admin.ModelAdmin):
         "id",
         "impianto",
         "categoria_fv",
+        "is_oem",
         "is_ppu",
         "is_agrivoltaico",
         "pr_contrattuale",
     )
-    list_filter = ("categoria_fv", "is_ppu", "is_agrivoltaico")
+    list_filter = ("categoria_fv", "is_oem", "is_ppu", "is_agrivoltaico")
     search_fields = ("impianto__nome_impianto", "impianto__tag_impianto")
     list_select_related = ("impianto",)
 
