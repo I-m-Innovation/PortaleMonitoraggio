@@ -79,7 +79,11 @@ def _build_contracts_home_context():
                 if impianto.tipo_impianto == ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO
                 else ""
             ),
-            "importo_annuo_stimato": "",
+            "importo_annuo_stimato": (
+                getattr(stato_economico, "importo_stimato_contratto_annuo", "")
+                if impianto.tipo_impianto == ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO
+                else ""
+            ),
             "importo_totale": "",
         }
         for impianto in impianti

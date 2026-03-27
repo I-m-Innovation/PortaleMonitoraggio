@@ -184,6 +184,7 @@ class FotovoltaicoStatoEconomico(models.Model):
     # Dati manuali
     data_inizio_contratto = models.DateField(blank=True, null=True)
     data_fine_contratto = models.DateField(blank=True, null=True)
+    importo_stimato_contratto_annuo = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     totale_contratto = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
 
     # Dati persistiti per dashboard / calcolo
