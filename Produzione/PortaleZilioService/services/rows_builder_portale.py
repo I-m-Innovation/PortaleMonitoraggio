@@ -114,7 +114,9 @@ def build_fotovoltaico_clienti_rows_portale():
                     getattr(stato_economico, "data_inizio_contratto", None),
                     getattr(stato_economico, "data_fine_contratto", None),
                 ),
-                totale_contratto="--",
+                totale_contratto=_fmt_decimal(
+                    getattr(stato_economico, "totale_contratto", None)
+                ),
                 totale_annuale_su_MW=_fmt_decimal(
                     getattr(stato_economico, "totale_annuale_su_mw", None)
                 ),
@@ -167,7 +169,9 @@ def build_fotovoltaico_proprieta_rows_portale():
                     getattr(stato_economico, "data_inizio_contratto", None),
                     getattr(stato_economico, "data_fine_contratto", None),
                 ),
-                totale_contratto="--",
+                totale_contratto=_fmt_decimal(
+                    getattr(stato_economico, "totale_contratto", None)
+                ),
                 totale_annuale_su_MW=_fmt_decimal(
                     getattr(stato_economico, "totale_annuale_su_mw", None)
                 ),
@@ -220,7 +224,9 @@ def build_fotovoltaico_in_costruzione_rows_portale():
                     getattr(stato_economico, "data_inizio_contratto", None),
                     getattr(stato_economico, "data_fine_contratto", None),
                 ),
-                totale_contratto="--",
+                totale_contratto=_fmt_decimal(
+                    getattr(stato_economico, "totale_contratto", None)
+                ),
                 totale_annuale_su_MW=_fmt_decimal(
                     getattr(stato_economico, "totale_annuale_su_mw", None)
                 ),
@@ -287,7 +293,9 @@ def build_agrivoltaico_rows_portale():
                     getattr(stato_economico, "data_inizio_contratto", None),
                     getattr(stato_economico, "data_fine_contratto", None),
                 ),
-                totale_contratto="--",
+                totale_contratto=_fmt_decimal(
+                    getattr(stato_economico, "totale_contratto", None)
+                ),
                 totale_annuale_su_MW=_fmt_decimal(
                     getattr(stato_economico, "totale_annuale_su_mw", None)
                 ),
