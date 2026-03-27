@@ -9,20 +9,7 @@ import requests
 from PortaleZilioService.API_inverter import saj_client
 
 
-TIME_KEYS = (
-    "dataTime",
-    "time",
-    "collectTime",
-    "createTime",
-    "recordTime",
-    "timestamp",
-)
-
-POWER_KEYS = (
-    "totalPVPower",
-    "totalPvPower",
-    "pvPower",
-)
+TIME_KEYS = ("dataTime", "time", "collectTime", "createTime", "recordTime", "timestamp")
 
 PLANT_DEVICE_OVERRIDES = {
     "colroigo50kwp": {
@@ -48,17 +35,7 @@ PLANT_DEVICE_OVERRIDES = {
         "power_field_name": "parallMeterPower",
         "energy_source": "ems_history",
         "energy_field_name": "parallTodayPVEnergy",
-    }
-    #example of another plant configuration for future reference in case u need to add one  
-    # "plant_name_formatted": {
-    #     "device_serial_numbers_to_query": [
-    #         "inverter_device_id_1",
-    #         "inverter_device_id_2",
-    #         "..."
-    #     ],
-    #     "api_response_field_for_instantaneous_power_watts": "pvPower",
-    #     "api_response_field_for_energy_produced_today_kwh": "todayPvEnergy",
-    # },
+    },
 }
 
 
@@ -79,18 +56,6 @@ def _extract_timestamp(record: dict) -> datetime | None:
     return None
 
 
-def _extract_numeric_value(record: dict, keys: tuple[str, ...]) -> float | None:
-    for key in keys:
-        raw_value = record.get(key)
-        if raw_value in (None, ""):
-            continue
-        try:
-            return float(raw_value)
-        except (TypeError, ValueError):
-            continue
-    return None
-
-
 def _parse_float(value) -> float | None:
     try:
         if value in (None, ""):
@@ -104,31 +69,11 @@ def _round_timestamp_to_5min(timestamp: datetime) -> datetime:
     return pd.Timestamp(timestamp).round("5min").to_pydatetime()
 
 
-def _sum_pv_channels(record: dict) -> float | None:
-    total = 0.0
-    found = False
-    for idx in range(1, 17):
-        value = _parse_float(record.get(f"pv{idx}power"))
-        if value is None:
-            continue
-        total += value
-        found = True
-    return total if found else None
-
-
 def _extract_power_watts(record: dict, config: dict) -> float | None:
-    mode = config.get("power_extraction_mode", "field")
-
-    if mode in {"sum_pv_channels", "c6_minus_s12"}:
-        return _sum_pv_channels(record)
-
-    if mode == "field":
-        field_name = config.get("power_field_name")
-        if not field_name:
-            return None
-        return _parse_float(record.get(field_name))
-
-    raise ValueError(f"Unsupported SAJ power extraction mode: {mode}")
+    field_name = config.get("power_field_name")
+    if not field_name:
+        return None
+    return _parse_float(record.get(field_name))
 
 
 def _get_history_records(headers: dict[str, str], device_sn: str, start: datetime, end: datetime) -> list[dict]:
@@ -307,20 +252,6 @@ def _aggregate_device_timeseries(device_dataframes: list[pd.DataFrame]) -> pd.Da
     return aggregated_df
 
 
-def _aggregate_last_value_per_bucket(device_dataframes: list[pd.DataFrame]) -> pd.DataFrame:
-    if not device_dataframes:
-        return pd.DataFrame(columns=["t", "P"])
-
-    merged_df = pd.concat(device_dataframes, ignore_index=True)
-    aggregated_df = (
-        merged_df.sort_values("timestamp")
-        .drop_duplicates(subset=["timestamp"], keep="last")
-        .reset_index(drop=True)
-    )
-    aggregated_df.columns = ["t", "P"]
-    return aggregated_df
-
-
 def _sample_nearest_to_5min_grid(
     device_dataframes: list[pd.DataFrame],
     start: datetime,
@@ -375,42 +306,7 @@ def _fill_small_internal_gaps(df_time_series: pd.DataFrame, max_missing_points: 
         limit_area="inside",
     )
     missing_after = int(reindexed_df["P"].isna().sum())
-    print(
-        f"SAJ DEBUG gap_fill input_points={len(working_df)} "
-        f"grid_points={len(reindexed_df)} missing_before={missing_before} missing_after={missing_after}"
-    )
     return reindexed_df
-
-
-def _subtract_device_timeseries(
-    positive_device_dataframes: list[pd.DataFrame],
-    negative_device_dataframes: list[pd.DataFrame],
-) -> pd.DataFrame:
-    frames = []
-
-    for df in positive_device_dataframes:
-        if df.empty:
-            continue
-        frames.append(df.assign(sign=1.0))
-
-    for df in negative_device_dataframes:
-        if df.empty:
-            continue
-        frames.append(df.assign(sign=-1.0))
-
-    if not frames:
-        return pd.DataFrame(columns=["t", "P"])
-
-    merged_df = pd.concat(frames, ignore_index=True)
-    merged_df["signed_power_kw"] = merged_df["power_kw"] * merged_df["sign"]
-    aggregated_df = (
-        merged_df.groupby("timestamp", as_index=False)["signed_power_kw"]
-        .sum()
-        .sort_values("timestamp")
-        .reset_index(drop=True)
-    )
-    aggregated_df.columns = ["t", "P"]
-    return aggregated_df
 
 
 def get_saj_day_data(impianto, start: datetime, end: datetime) -> tuple[pd.DataFrame, str, float | None]:
@@ -463,11 +359,6 @@ def get_saj_day_data(impianto, start: datetime, end: datetime) -> tuple[pd.DataF
             end=end,
         )
         ems_df = _build_device_timeseries_dataframe(ems_records, config)
-        print(
-            f"SAJ DEBUG {impianto.nickname} ems_sn={ems_sn} "
-            f"records_raw={len(ems_records)} points_parsed={len(ems_df)} "
-            f"power_field={config.get('power_field_name')}"
-        )
         if not ems_df.empty:
             device_dataframes.append(ems_df)
 
@@ -475,15 +366,8 @@ def get_saj_day_data(impianto, start: datetime, end: datetime) -> tuple[pd.DataF
         records = _get_history_records(headers, device_sn, start, end)
         if config.get("power_source") != "ems_history":
             device_df = _build_device_timeseries_dataframe(records, config)
-            print(
-                f"SAJ DEBUG {impianto.nickname} device={device_sn} "
-                f"records_raw={len(records)} points_parsed={len(device_df)} "
-                f"power_field={config.get('power_field_name')}"
-            )
             if not device_df.empty:
                 device_dataframes.append(device_df)
-        else:
-            print(f"SAJ DEBUG {impianto.nickname} energy_device={device_sn} records_raw={len(records)}")
 
         last_today_energy = _extract_last_today_energy_kwh(records, energy_field_name)
         if last_today_energy is not None:
@@ -491,30 +375,21 @@ def get_saj_day_data(impianto, start: datetime, end: datetime) -> tuple[pd.DataF
 
     if config.get("bucket_aggregation") == "nearest_grid":
         df_time_series = _sample_nearest_to_5min_grid(device_dataframes, start=start, end=end)
-    elif config.get("bucket_aggregation") == "last":
-        df_time_series = _aggregate_last_value_per_bucket(device_dataframes)
     else:
         df_time_series = _aggregate_device_timeseries(device_dataframes)
     if config.get("power_source") == "ems_history" and not df_time_series.empty:
         df_time_series = _fill_small_internal_gaps(df_time_series, max_missing_points=2)
-    print(
-        f"SAJ DEBUG {impianto.nickname} selected_devices={len(selected_device_serials)} "
-        f"devices_with_points={len(device_dataframes)} aggregated_points={len(df_time_series)} "
-        f"bucket_aggregation={config.get('bucket_aggregation', 'sum')}"
-    )
     if not df_time_series.empty:
         df_time_series = df_time_series[(df_time_series["t"] >= start) & (df_time_series["t"] <= end)]
         df_time_series = df_time_series.sort_values("t").reset_index(drop=True)
-        print(
-            f"SAJ DEBUG {impianto.nickname} filtered_points={len(df_time_series)} "
-            f"first_t={df_time_series['t'].iloc[0]} last_t={df_time_series['t'].iloc[-1]}"
-        )
-    else:
-        print(f"SAJ DEBUG {impianto.nickname} filtered_points=0")
     today_energy_kwh = _extract_today_energy_from_source(config, ems_records, device_today_energy_values)
     print(
-        f"SAJ DEBUG {impianto.nickname} today_energy_kwh={today_energy_kwh} "
-        f"energy_source={config.get('energy_source', 'devices')} "
+        f"SAJ DEBUG {impianto.nickname} power_source={config.get('power_source', 'devices')} "
+        f"power_field={config.get('power_field_name')} "
+        f"bucket_aggregation={config.get('bucket_aggregation', 'sum')} "
+        f"selected_devices={len(selected_device_serials)} power_series={len(device_dataframes)} "
+        f"points={len(df_time_series)} "
+        f"today_energy_kwh={today_energy_kwh} energy_source={config.get('energy_source', 'devices')} "
         f"energy_field={config.get('energy_field_name')}"
     )
     led = _build_led_from_devices(devices)
