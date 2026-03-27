@@ -151,6 +151,7 @@ class FotovoltaicoMetadata(models.Model):
         related_name="fotovoltaico_metadata",
     )
     categoria_fv = models.CharField(max_length=30, choices=CategoriaFV.choices)
+    is_oem = models.BooleanField(default=False)
     is_ppu = models.BooleanField(default=False)
     is_agrivoltaico = models.BooleanField(default=False)
     pr_contrattuale = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
@@ -184,6 +185,7 @@ class FotovoltaicoStatoEconomico(models.Model):
     # Dati manuali
     data_inizio_contratto = models.DateField(blank=True, null=True)
     data_fine_contratto = models.DateField(blank=True, null=True)
+    importo_stimato_contratto_annuo = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     totale_contratto = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
 
     # Dati persistiti per dashboard / calcolo

@@ -1,3 +1,5 @@
+from collections import Counter
+
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.template.loader import render_to_string
@@ -34,14 +36,10 @@ def _build_home_context():
 
 
 def _build_contracts_home_context():
-    impianti = (
-        ImpiantoAnagrafica.objects.select_related(
-            "fotovoltaico_stato_economico",
-            "fotovoltaico_metadata",
-        )
-        .filter(attivo_portale=True)
-        .order_by("tipo_impianto", "nome_impianto")
-    )
+    impianti = ImpiantoAnagrafica.objects.select_related(
+        "fotovoltaico_stato_economico",
+        "fotovoltaico_metadata",
+    ).filter(attivo_portale=True)
 
     def _fmt_contract_date(value):
         return value.strftime("%d/%m/%Y") if value else ""
@@ -57,11 +55,53 @@ def _build_contracts_home_context():
         metadata = getattr(impianto, "fotovoltaico_metadata", None)
         if metadata is None:
             return ""
-        return "PPU" if metadata.is_ppu else "O&M"
+        if metadata.is_ppu:
+            return "PPU"
+        if metadata.is_oem:
+            return "O&M"
+        return ""
+
+    def _contract_group(impianto):
+        if impianto.tipo_impianto != ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO:
+            return "other"
+        metadata = getattr(impianto, "fotovoltaico_metadata", None)
+        if metadata is None:
+            return "fv_other"
+        if metadata.is_oem and not metadata.is_ppu:
+            return "fv_oem_only"
+        if metadata.is_oem and metadata.is_ppu:
+            return "fv_oem_ppu"
+        if (not metadata.is_oem) and metadata.is_ppu:
+            return "fv_ppu_only"
+        return "fv_other"
+
+    def _contract_group_label(group):
+        labels = {
+            "fv_oem_only": "Impianti O&M",
+            "fv_oem_ppu": "Impianti sia O&M che PPU",
+            "fv_ppu_only": "Impianti PPU",
+            "fv_other": "Altri impianti fotovoltaici",
+            "other": "Altri impianti",
+        }
+        return labels.get(group, "")
+
+    def _sort_key(impianto):
+        if impianto.tipo_impianto == ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO:
+            group_order = {
+                "fv_oem_only": 0,
+                "fv_oem_ppu": 1,
+                "fv_ppu_only": 2,
+                "fv_other": 3,
+            }
+            group = _contract_group(impianto)
+            return (0, group_order[group], impianto.nome_impianto or "")
+        return (1, 0, impianto.nome_impianto or "")
 
     rows = [
         {
             "tipo_impianto": impianto.tipo_impianto,
+            "contract_group": _contract_group(impianto),
+            "contract_group_label": _contract_group_label(_contract_group(impianto)),
             "nome_impianto": impianto.nome_impianto or "",
             "tipo_contratto": _contract_type(impianto),
             "inizio_contratto": (
@@ -79,14 +119,29 @@ def _build_contracts_home_context():
                 if impianto.tipo_impianto == ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO
                 else ""
             ),
-            "importo_annuo_stimato": "",
-            "importo_totale": "",
+            "importo_annuo_stimato": (
+                getattr(stato_economico, "importo_stimato_contratto_annuo", "")
+                if impianto.tipo_impianto == ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO
+                else ""
+            ),
+            "importo_totale": (
+                getattr(stato_economico, "totale_contratto", "")
+                if impianto.tipo_impianto == ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO
+                else ""
+            ),
         }
-        for impianto in impianti
+        for impianto in sorted(impianti, key=_sort_key)
         for stato_economico in [getattr(impianto, "fotovoltaico_stato_economico", None)]
         for data_inizio in [getattr(stato_economico, "data_inizio_contratto", None)]
         for data_fine in [getattr(stato_economico, "data_fine_contratto", None)]
     ]
+    group_counts = Counter(row["contract_group"] for row in rows)
+    for index, row in enumerate(rows):
+        row["contract_group_count"] = group_counts[row["contract_group"]]
+        previous_group = rows[index - 1]["contract_group"] if index > 0 else None
+        next_group = rows[index + 1]["contract_group"] if index + 1 < len(rows) else None
+        row["is_group_start"] = row["contract_group"] != previous_group
+        row["is_group_end"] = row["contract_group"] != next_group
     return {"contract_rows": rows}
 
 

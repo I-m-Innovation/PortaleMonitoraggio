@@ -112,11 +112,12 @@ class FotovoltaicoMetadataAdmin(admin.ModelAdmin):
         "id",
         "impianto",
         "categoria_fv",
+        "is_oem",
         "is_ppu",
         "is_agrivoltaico",
         "pr_contrattuale",
     )
-    list_filter = ("categoria_fv", "is_ppu", "is_agrivoltaico")
+    list_filter = ("categoria_fv", "is_oem", "is_ppu", "is_agrivoltaico")
     search_fields = ("impianto__nome_impianto", "impianto__tag_impianto")
     list_select_related = ("impianto",)
 
@@ -128,6 +129,7 @@ class FotovoltaicoStatoEconomicoAdmin(admin.ModelAdmin):
         "impianto",
         "data_inizio_contratto",
         "data_fine_contratto",
+        "importo_stimato_contratto_annuo",
         "totale_contratto",
         "api_sync_status",
         "last_api_sync_at",
@@ -165,6 +167,7 @@ class FotovoltaicoStatoEconomicoAdmin(admin.ModelAdmin):
         "impianto",
         "data_inizio_contratto",
         "data_fine_contratto",
+        "importo_stimato_contratto_annuo",
         "totale_contratto",
         "anni_contratto",
         "totale_annuale_su_mw",

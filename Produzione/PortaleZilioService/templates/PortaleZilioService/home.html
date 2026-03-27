@@ -31,6 +31,7 @@
                 <table class="contracts-table">
                     <thead>
                         <tr>
+                            <th>Categoria</th>
                             <th>Nome impianto</th>
                             <th>Tipo di contratto</th>
                             <th>Inizio contratto</th>
@@ -42,14 +43,12 @@
                     </thead>
                     <tbody>
                         {% for row in contract_rows %}
-                            {% ifchanged row.tipo_impianto %}
-                                {% if not forloop.first %}
-                                    <tr class="contracts-group-divider" aria-hidden="true">
-                                        <td colspan="7"></td>
-                                    </tr>
+                            <tr class="{% if row.is_group_start %}contracts-group-start {% endif %}{% if row.is_group_end %}contracts-group-end{% endif %}">
+                                {% if row.is_group_start %}
+                                    <td class="contracts-group-side" rowspan="{{ row.contract_group_count }}">
+                                        <span class="contracts-group-side-label">{{ row.contract_group_label }}</span>
+                                    </td>
                                 {% endif %}
-                            {% endifchanged %}
-                            <tr>
                                 <td>{{ row.nome_impianto|default:"--" }}</td>
                                 <td>{{ row.tipo_contratto|default:"--" }}</td>
                                 <td>{{ row.inizio_contratto|default:"--" }}</td>
@@ -60,7 +59,7 @@
                             </tr>
                         {% empty %}
                             <tr>
-                                <td colspan="7" class="contracts-empty">Nessun impianto disponibile.</td>
+                                <td colspan="8" class="contracts-empty">Nessun impianto disponibile.</td>
                             </tr>
                         {% endfor %}
                     </tbody>

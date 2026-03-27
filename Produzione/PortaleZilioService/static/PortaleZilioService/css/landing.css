@@ -114,11 +114,44 @@ body {
     min-height: 48px;
 }
 
-.contracts-group-divider td {
-    padding: 0;
-    height: 10px;
-    border-bottom: 0;
-    background: #eef3f7;
+.contracts-group-side {
+    position: relative;
+    width: 140px;
+    min-width: 140px;
+    padding: 0.9rem 0.75rem;
+    border-left: 1px solid #dfe8ef;
+    border-right: 1px solid #dfe8ef;
+    border-top: 1px solid #dfe8ef;
+    border-bottom: 1px solid #dfe8ef;
+    background: linear-gradient(180deg, #f8fbfd 0%, #eef4f8 100%);
+    vertical-align: top;
+    text-align: left;
+}
+
+.contracts-group-side-label {
+    position: absolute;
+    top: 0.9rem;
+    left: 0.75rem;
+    right: 0.75rem;
+    color: var(--contracts-primary);
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.35;
+    text-align: left;
+}
+
+.contracts-group-start td:not(.contracts-group-side) {
+    border-top: 1px solid #dfe8ef;
+}
+
+.contracts-group-end td {
+    border-bottom: 1px solid #dfe8ef;
+}
+
+.contracts-group-start td:last-child,
+.contracts-group-end td:last-child,
+.contracts-table tbody tr td:last-child {
+    border-right: 1px solid #dfe8ef;
 }
 
 .contracts-table tbody tr:hover {
