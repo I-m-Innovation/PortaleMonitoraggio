@@ -358,16 +358,7 @@ class DayChartData(APIView):
 				df_time_series = df_time_series.copy()
 				df_time_series['t'] = pd.to_datetime(df_time_series['t'])
 				df_time_series = df_time_series.sort_values('t').reset_index(drop=True)
-				display_index = pd.DataFrame({'t_tick': pd.date_range(start=t_start, end=t_end_display, freq='5min')})
-				df_plot = pd.merge_asof(
-					display_index,
-					df_time_series[['t', 'P']],
-					left_on='t_tick',
-					right_on='t',
-					direction='nearest',
-					tolerance=pd.Timedelta(minutes=2, seconds=30),
-				)
-				last_real_tick = df_plot.loc[df_plot['P'].notna(), 't_tick'].iloc[-1]
+				display_index = pd.DataFrame({'t': pd.date_range(start=t_start, end=t_end_display, freq='5min')})
 				t_last = df_time_series['t'].iloc[-1].strftime('%Y-%m-%d %H:%M:%S')
 				energy = float(today_energy_kwh) if today_energy_kwh is not None else None
 				co2_kg = energy * 0.457 if energy is not None else None
@@ -379,16 +370,20 @@ class DayChartData(APIView):
 					alberi = 0
 					case = 0
 				df_display = (
-					df_plot.set_index('t_tick')[['P']]
-					.reindex(pd.date_range(start=t_start, end=t_end_display, freq='5min'))
+					display_index
+					.merge(df_time_series[['t', 'P']], on='t', how='left')
 					.reset_index()
 				)
-				df_display.columns = ['t', 'P']
+				df_display = df_display[['t', 'P']]
 				df_display.loc[df_display['t'] > Now, 'P'] = None
-				last_matches = df_display.index[df_display['t'] == last_real_tick].tolist()
-				k_last = last_matches[-1] if last_matches else None
-				last_plot_value = df_plot.loc[df_plot['P'].notna(), 'P'].iloc[-1]
-				p_last = round(float(last_plot_value), 2)
+				valid_points = df_display.index[df_display['P'].notna()].tolist()
+				k_last = valid_points[-1] if valid_points else None
+				last_plot_value = df_display.loc[k_last, 'P'] if k_last is not None else 0
+				p_last = round(float(last_plot_value), 2) if k_last is not None else 0
+				print(
+					f"SAJ DEBUG {nickname} chart_points={len(df_display)} "
+					f"chart_non_empty={len(valid_points)} k_last={k_last} p_last={p_last}"
+				)
 				df_display['t'] = pd.to_datetime(df_display['t']).dt.strftime('%H:%M')
 				df_display['P'] = df_display['P'].where(df_display['P'].notna(), '')
 			else:
@@ -396,6 +391,7 @@ class DayChartData(APIView):
 				t_last = None
 				energy = alberi = case = co2_kg = None
 				p_last = 0
+				print(f"SAJ DEBUG {nickname} chart_points=0 chart_non_empty=0 k_last=None p_last=0")
 				df_display = pd.DataFrame({
 					't': pd.date_range(start=t_start, end=t_end_display, freq='5min').strftime('%H:%M'),
 					'P': [''] * len(pd.date_range(start=t_start, end=t_end_display, freq='5min'))
