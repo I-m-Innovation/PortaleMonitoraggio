@@ -5,27 +5,26 @@
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/style_overview_page.css' %}">
+    <link rel="stylesheet" href="{% static 'PortaleZilioService/css/landing.css' %}">
     <link rel="stylesheet" href="{% static 'PortaleZilioService/css/home.css' %}">
 {% endblock %}
 
 {% block content %}
-    <main>
-        <header class="page-header">
-            <div class="page-header-copy">
-                <p class="page-kicker">Portale Zilio Service</p>
-                <h1>Overview impianti <span class="h1-work-in-progress">IN LAVORAZIONE</span></h1>
-                <div class="page-header-actions">
-                    <a class="overview-link-button" href="{% url 'PortaleZilioService:home' %}">Torna alla home</a>
-                </div>
+    <main class="contracts-page">
+        <section class="contracts-header-card">
+            <div>
+                <p class="contracts-eyebrow">Portale Zilio Service <span class="h1-work-in-progress">IN LAVORAZIONE</span></p>
+                <h1>Overview impianti</h1>
             </div>
-            <div class="page-header-brand">
+            <div class="contracts-header-brand">
                 <img
                     src="{% static 'PortaleZilioService/images/zilio_service_logo_alta_risoluzione.svg' %}"
                     alt="Logo Zilio Service"
-                    class="page-header-logo"
+                    class="contracts-header-logo"
                 >
             </div>
-        </header>
+            <a class="contracts-overview-link" href="{% url 'PortaleZilioService:home' %}">Torna alla home</a>
+        </section>
         <section
             id="isc-sync-banner"
             class="sync-banner"
