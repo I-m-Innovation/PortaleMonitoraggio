@@ -96,7 +96,8 @@ def build_fotovoltaico_clienti_rows_portale():
                 status_class=_status_class_portale(metriche),
                 nome_impianto=impianto.nome_impianto or "--",
                 nome_cliente=_fmt_not_defined(impianto.nome_cliente),
-                potenza=_fmt_power(impianto.potenza_installata_kw),
+                potenza_contratto=_fmt_power(getattr(metadata, "potenza_contratto_kw", None)),
+                potenza_installata=_fmt_power(impianto.potenza_installata_kw),
                 pr_contrattuale=_fmt_decimal(metadata.pr_contrattuale),
                 pr_ultimi_12_mesi=_pr_ultimi_12_mesi_text(impianto, metriche),
                 mancata_produzione="--",
@@ -114,7 +115,9 @@ def build_fotovoltaico_clienti_rows_portale():
                     getattr(stato_economico, "data_fine_contratto", None),
                 ),
                 totale_contratto="--",
-                totale_annuale_su_MW="--",
+                totale_annuale_su_MW=_fmt_decimal(
+                    getattr(stato_economico, "totale_annuale_su_mw", None)
+                ),
                 totale_annuo="--",
                 totale_maturato="--",
                 fatturato="--",
@@ -146,7 +149,8 @@ def build_fotovoltaico_proprieta_rows_portale():
                 status_class=_status_class_portale(metriche),
                 nome_impianto=impianto.nome_impianto or "--",
                 nome_cliente=_fmt_not_defined(impianto.nome_cliente),
-                potenza=_fmt_power(impianto.potenza_installata_kw),
+                potenza_contratto=_fmt_power(getattr(metadata, "potenza_contratto_kw", None)),
+                potenza_installata=_fmt_power(impianto.potenza_installata_kw),
                 pr_contrattuale=_fmt_decimal(metadata.pr_contrattuale),
                 pr_ultimi_12_mesi=_pr_ultimi_12_mesi_text(impianto, metriche),
                 mancata_produzione="--",
@@ -164,7 +168,9 @@ def build_fotovoltaico_proprieta_rows_portale():
                     getattr(stato_economico, "data_fine_contratto", None),
                 ),
                 totale_contratto="--",
-                totale_annuale_su_MW="--",
+                totale_annuale_su_MW=_fmt_decimal(
+                    getattr(stato_economico, "totale_annuale_su_mw", None)
+                ),
                 totale_annuo="--",
                 totale_maturato="--",
                 fatturato="--",
@@ -215,7 +221,9 @@ def build_fotovoltaico_in_costruzione_rows_portale():
                     getattr(stato_economico, "data_fine_contratto", None),
                 ),
                 totale_contratto="--",
-                totale_annuale_su_MW="--",
+                totale_annuale_su_MW=_fmt_decimal(
+                    getattr(stato_economico, "totale_annuale_su_mw", None)
+                ),
                 totale_annuo="--",
                 totale_maturato="--",
                 fatturato="--",
@@ -261,7 +269,8 @@ def build_agrivoltaico_rows_portale():
                 status_class=_status_class_portale(metriche),
                 nome_impianto=impianto.nome_impianto or "--",
                 nome_cliente=_fmt_not_defined(impianto.nome_cliente),
-                potenza=_fmt_power(impianto.potenza_installata_kw),
+                potenza_contratto=_fmt_power(getattr(metadata, "potenza_contratto_kw", None)),
+                potenza_installata=_fmt_power(impianto.potenza_installata_kw),
                 pr_contrattuale=_fmt_decimal(getattr(metadata, "pr_contrattuale", None)),
                 pr_ultimi_12_mesi=_pr_ultimi_12_mesi_text(impianto, metriche),
                 mancata_produzione="--",
@@ -279,7 +288,9 @@ def build_agrivoltaico_rows_portale():
                     getattr(stato_economico, "data_fine_contratto", None),
                 ),
                 totale_contratto="--",
-                totale_annuale_su_MW="--",
+                totale_annuale_su_MW=_fmt_decimal(
+                    getattr(stato_economico, "totale_annuale_su_mw", None)
+                ),
                 totale_annuo="--",
                 totale_maturato="--",
                 fatturato="--",
