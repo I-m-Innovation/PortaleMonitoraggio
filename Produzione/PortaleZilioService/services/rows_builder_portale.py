@@ -42,6 +42,12 @@ def _fmt_decimal(value: Decimal | float | None) -> str:
     return f"{float(value):.2f}"
 
 
+def _fmt_integer(value: int | None) -> str:
+    if value is None:
+        return "--"
+    return str(value)
+
+
 def _fmt_power(value: Decimal | float | None) -> str:
     if value is None:
         return "--"
@@ -100,7 +106,9 @@ def build_fotovoltaico_clienti_rows_portale():
                 potenza_installata=_fmt_power(impianto.potenza_installata_kw),
                 pr_contrattuale=_fmt_decimal(metadata.pr_contrattuale),
                 pr_ultimi_12_mesi=_pr_ultimi_12_mesi_text(impianto, metriche),
-                mancata_produzione="--",
+                mancata_produzione=_fmt_decimal(
+                    getattr(metriche, "mancata_produzione", None)
+                ),
                 ore_equivalenti=_fmt_equivalent_hours(
                     getattr(metriche, "ore_equivalenti_ultimi_12_mesi", None)
                 ),
@@ -120,17 +128,39 @@ def build_fotovoltaico_clienti_rows_portale():
                 totale_annuale_su_MW=_fmt_decimal(
                     getattr(stato_economico, "totale_annuale_su_mw", None)
                 ),
-                totale_annuo="--",
-                totale_maturato="--",
-                fatturato="--",
-                totale_incassato="--",
-                data_prossima_fattura="--",
-                importo_prossima_fattura="--",
-                totale_ordinato_straordinario="--",
-                totale_fatturato_straordinario="--",
-                margine_straordinario="--",
-                numero_fatture_straordinarie_annuo="--",
-                numero_fatture_straordinarie_totali="--",
+                totale_annuo=_fmt_decimal(
+                    getattr(stato_economico, "totale_annuo", None)
+                ),
+                totale_maturato=_fmt_decimal(
+                    getattr(stato_economico, "maturato", None)
+                ),
+                fatturato=_fmt_decimal(
+                    getattr(stato_economico, "fatturato", None)
+                ),
+                totale_incassato=_fmt_decimal(
+                    getattr(stato_economico, "incassato", None)
+                ),
+                data_prossima_fattura=_fmt_date(
+                    getattr(stato_economico, "data_prossima_fattura", None)
+                ),
+                importo_prossima_fattura=_fmt_decimal(
+                    getattr(stato_economico, "importo_prossima_fattura", None)
+                ),
+                totale_ordinato_straordinario=_fmt_decimal(
+                    getattr(stato_economico, "costo_sostenuto_straordinario", None)
+                ),
+                totale_fatturato_straordinario=_fmt_decimal(
+                    getattr(stato_economico, "totale_fatturato_straordinario", None)
+                ),
+                margine_straordinario=_fmt_decimal(
+                    getattr(stato_economico, "margine_straordinario", None)
+                ),
+                numero_fatture_straordinarie_annuo=_fmt_integer(
+                    getattr(stato_economico, "numero_fatture_straordinarie_annuo", None)
+                ),
+                numero_fatture_straordinarie_totali=_fmt_integer(
+                    getattr(stato_economico, "numero_fatture_straordinarie_totali", None)
+                ),
             )
         )
 
@@ -155,7 +185,9 @@ def build_fotovoltaico_proprieta_rows_portale():
                 potenza_installata=_fmt_power(impianto.potenza_installata_kw),
                 pr_contrattuale=_fmt_decimal(metadata.pr_contrattuale),
                 pr_ultimi_12_mesi=_pr_ultimi_12_mesi_text(impianto, metriche),
-                mancata_produzione="--",
+                mancata_produzione=_fmt_decimal(
+                    getattr(metriche, "mancata_produzione", None)
+                ),
                 ore_equivalenti=_fmt_equivalent_hours(
                     getattr(metriche, "ore_equivalenti_ultimi_12_mesi", None)
                 ),
@@ -175,17 +207,39 @@ def build_fotovoltaico_proprieta_rows_portale():
                 totale_annuale_su_MW=_fmt_decimal(
                     getattr(stato_economico, "totale_annuale_su_mw", None)
                 ),
-                totale_annuo="--",
-                totale_maturato="--",
-                fatturato="--",
-                totale_incassato="--",
-                data_prossima_fattura="--",
-                importo_prossima_fattura="--",
-                totale_ordinato_straordinario="--",
-                totale_fatturato_straordinario="--",
-                margine_straordinario="--",
-                numero_fatture_straordinarie_annuo="--",
-                numero_fatture_straordinarie_totali="--",
+                totale_annuo=_fmt_decimal(
+                    getattr(stato_economico, "totale_annuo", None)
+                ),
+                totale_maturato=_fmt_decimal(
+                    getattr(stato_economico, "maturato", None)
+                ),
+                fatturato=_fmt_decimal(
+                    getattr(stato_economico, "fatturato", None)
+                ),
+                totale_incassato=_fmt_decimal(
+                    getattr(stato_economico, "incassato", None)
+                ),
+                data_prossima_fattura=_fmt_date(
+                    getattr(stato_economico, "data_prossima_fattura", None)
+                ),
+                importo_prossima_fattura=_fmt_decimal(
+                    getattr(stato_economico, "importo_prossima_fattura", None)
+                ),
+                totale_ordinato_straordinario=_fmt_decimal(
+                    getattr(stato_economico, "costo_sostenuto_straordinario", None)
+                ),
+                totale_fatturato_straordinario=_fmt_decimal(
+                    getattr(stato_economico, "totale_fatturato_straordinario", None)
+                ),
+                margine_straordinario=_fmt_decimal(
+                    getattr(stato_economico, "margine_straordinario", None)
+                ),
+                numero_fatture_straordinarie_annuo=_fmt_integer(
+                    getattr(stato_economico, "numero_fatture_straordinarie_annuo", None)
+                ),
+                numero_fatture_straordinarie_totali=_fmt_integer(
+                    getattr(stato_economico, "numero_fatture_straordinarie_totali", None)
+                ),
             )
         )
 
@@ -210,7 +264,9 @@ def build_fotovoltaico_in_costruzione_rows_portale():
                 potenza=_fmt_power(impianto.potenza_installata_kw),
                 pr_contrattuale=_fmt_decimal(getattr(metadata, "pr_contrattuale", None)),
                 pr_ultimi_12_mesi=_pr_ultimi_12_mesi_text(impianto, metriche),
-                mancata_produzione="--",
+                mancata_produzione=_fmt_decimal(
+                    getattr(metriche, "mancata_produzione", None)
+                ),
                 ore_equivalenti=_fmt_equivalent_hours(
                     getattr(metriche, "ore_equivalenti_ultimi_12_mesi", None)
                 ),
@@ -230,17 +286,39 @@ def build_fotovoltaico_in_costruzione_rows_portale():
                 totale_annuale_su_MW=_fmt_decimal(
                     getattr(stato_economico, "totale_annuale_su_mw", None)
                 ),
-                totale_annuo="--",
-                totale_maturato="--",
-                fatturato="--",
-                totale_incassato="--",
-                data_prossima_fattura="--",
-                importo_prossima_fattura="--",
-                totale_ordinato_straordinario="--",
-                totale_fatturato_straordinario="--",
-                margine_straordinario="--",
-                numero_fatture_straordinarie_annuo="--",
-                numero_fatture_straordinarie_totali="--",
+                totale_annuo=_fmt_decimal(
+                    getattr(stato_economico, "totale_annuo", None)
+                ),
+                totale_maturato=_fmt_decimal(
+                    getattr(stato_economico, "maturato", None)
+                ),
+                fatturato=_fmt_decimal(
+                    getattr(stato_economico, "fatturato", None)
+                ),
+                totale_incassato=_fmt_decimal(
+                    getattr(stato_economico, "incassato", None)
+                ),
+                data_prossima_fattura=_fmt_date(
+                    getattr(stato_economico, "data_prossima_fattura", None)
+                ),
+                importo_prossima_fattura=_fmt_decimal(
+                    getattr(stato_economico, "importo_prossima_fattura", None)
+                ),
+                totale_ordinato_straordinario=_fmt_decimal(
+                    getattr(stato_economico, "costo_sostenuto_straordinario", None)
+                ),
+                totale_fatturato_straordinario=_fmt_decimal(
+                    getattr(stato_economico, "totale_fatturato_straordinario", None)
+                ),
+                margine_straordinario=_fmt_decimal(
+                    getattr(stato_economico, "margine_straordinario", None)
+                ),
+                numero_fatture_straordinarie_annuo=_fmt_integer(
+                    getattr(stato_economico, "numero_fatture_straordinarie_annuo", None)
+                ),
+                numero_fatture_straordinarie_totali=_fmt_integer(
+                    getattr(stato_economico, "numero_fatture_straordinarie_totali", None)
+                ),
             )
         )
 
@@ -279,7 +357,9 @@ def build_agrivoltaico_rows_portale():
                 potenza_installata=_fmt_power(impianto.potenza_installata_kw),
                 pr_contrattuale=_fmt_decimal(getattr(metadata, "pr_contrattuale", None)),
                 pr_ultimi_12_mesi=_pr_ultimi_12_mesi_text(impianto, metriche),
-                mancata_produzione="--",
+                mancata_produzione=_fmt_decimal(
+                    getattr(metriche, "mancata_produzione", None)
+                ),
                 ore_equivalenti=_fmt_equivalent_hours(
                     getattr(metriche, "ore_equivalenti_ultimi_12_mesi", None)
                 ),
@@ -299,17 +379,39 @@ def build_agrivoltaico_rows_portale():
                 totale_annuale_su_MW=_fmt_decimal(
                     getattr(stato_economico, "totale_annuale_su_mw", None)
                 ),
-                totale_annuo="--",
-                totale_maturato="--",
-                fatturato="--",
-                totale_incassato="--",
-                data_prossima_fattura="--",
-                importo_prossima_fattura="--",
-                totale_ordinato_straordinario="--",
-                totale_fatturato_straordinario="--",
-                margine_straordinario="--",
-                numero_fatture_straordinarie_annuo="--",
-                numero_fatture_straordinarie_totali="--",
+                totale_annuo=_fmt_decimal(
+                    getattr(stato_economico, "totale_annuo", None)
+                ),
+                totale_maturato=_fmt_decimal(
+                    getattr(stato_economico, "maturato", None)
+                ),
+                fatturato=_fmt_decimal(
+                    getattr(stato_economico, "fatturato", None)
+                ),
+                totale_incassato=_fmt_decimal(
+                    getattr(stato_economico, "incassato", None)
+                ),
+                data_prossima_fattura=_fmt_date(
+                    getattr(stato_economico, "data_prossima_fattura", None)
+                ),
+                importo_prossima_fattura=_fmt_decimal(
+                    getattr(stato_economico, "importo_prossima_fattura", None)
+                ),
+                totale_ordinato_straordinario=_fmt_decimal(
+                    getattr(stato_economico, "costo_sostenuto_straordinario", None)
+                ),
+                totale_fatturato_straordinario=_fmt_decimal(
+                    getattr(stato_economico, "totale_fatturato_straordinario", None)
+                ),
+                margine_straordinario=_fmt_decimal(
+                    getattr(stato_economico, "margine_straordinario", None)
+                ),
+                numero_fatture_straordinarie_annuo=_fmt_integer(
+                    getattr(stato_economico, "numero_fatture_straordinarie_annuo", None)
+                ),
+                numero_fatture_straordinarie_totali=_fmt_integer(
+                    getattr(stato_economico, "numero_fatture_straordinarie_totali", None)
+                ),
             )
         )
 
