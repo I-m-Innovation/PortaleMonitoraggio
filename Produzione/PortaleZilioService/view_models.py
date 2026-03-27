@@ -14,7 +14,8 @@ class FotovoltaicoClientiRow:
     status_class: str
     nome_impianto: str
     nome_cliente: str
-    potenza: str
+    potenza_contratto: str
+    potenza_installata: str
     pr_contrattuale: str  # 78% di solito secondo nicola e comunque lo deve inserire lui 
     pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  
     mancata_produzione: str
@@ -46,7 +47,8 @@ class FotovoltaicoProprietaRow:
     status_class: str
     nome_impianto: str
     nome_cliente: str
-    potenza: str
+    potenza_contratto: str
+    potenza_installata: str
     pr_contrattuale: str  # 78% di solito secondo nicola e comunque lo deve inserire lui 
     pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  
     mancata_produzione: str
@@ -110,7 +112,8 @@ class AgrivoltaicoRow:
     status_class: str
     nome_impianto: str
     nome_cliente: str
-    potenza: str
+    potenza_contratto: str
+    potenza_installata: str
     pr_contrattuale: str  # 78% di solito secondo nicola e comunque lo deve inserire lui 
     pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  
     mancata_produzione: str

@@ -82,6 +82,25 @@ class ImpiantoAnagraficaAdmin(admin.ModelAdmin):
     list_filter = ("tipo_impianto", "stato_impianto", "attivo_portale")
     search_fields = ("nome_impianto", "tag_impianto", "nome_proprietario", "nome_cliente")
     ordering = ("nome_impianto",)
+    fields = (
+        "nome_impianto",
+        "tag_impianto",
+        "codice_impianto",
+        "tipo_impianto",
+        "stato_impianto",
+        "potenza_installata_kw",
+        "data_entrata_esercizio",
+        "latitudine",
+        "longitudine",
+        "indirizzo",
+        "localita",
+        "provincia",
+        "regione",
+        "nome_proprietario",
+        "nome_cliente",
+        "attivo_portale",
+        "note",
+    )
 
 
 @admin.register(ImpiantoSorgenteDati)
@@ -112,6 +131,7 @@ class FotovoltaicoMetadataAdmin(admin.ModelAdmin):
         "id",
         "impianto",
         "categoria_fv",
+        "potenza_contratto_kw",
         "is_oem",
         "is_ppu",
         "is_agrivoltaico",
@@ -120,6 +140,25 @@ class FotovoltaicoMetadataAdmin(admin.ModelAdmin):
     list_filter = ("categoria_fv", "is_oem", "is_ppu", "is_agrivoltaico")
     search_fields = ("impianto__nome_impianto", "impianto__tag_impianto")
     list_select_related = ("impianto",)
+    readonly_fields = ("potenza_installata_kw_readonly",)
+    fields = (
+        "impianto",
+        "categoria_fv",
+        "potenza_contratto_kw",
+        "potenza_installata_kw_readonly",
+        "is_oem",
+        "is_ppu",
+        "is_agrivoltaico",
+        "pr_contrattuale",
+        "note_fotovoltaico",
+    )
+
+    @admin.display(description="Potenza installata (kW)")
+    def potenza_installata_kw_readonly(self, obj):
+        if not obj or not obj.impianto:
+            return "--"
+        value = getattr(obj.impianto, "potenza_installata_kw", None)
+        return value if value is not None else "--"
 
 
 @admin.register(FotovoltaicoStatoEconomico)
@@ -131,6 +170,7 @@ class FotovoltaicoStatoEconomicoAdmin(admin.ModelAdmin):
         "data_fine_contratto",
         "importo_stimato_contratto_annuo",
         "totale_contratto",
+        "totale_annuale_su_mw",
         "api_sync_status",
         "last_api_sync_at",
         "updated_at",
@@ -145,7 +185,6 @@ class FotovoltaicoStatoEconomicoAdmin(admin.ModelAdmin):
     ordering = ("impianto__nome_impianto",)
     readonly_fields = (
         "anni_contratto",
-        "totale_annuale_su_mw",
         "totale_annuo",
         "maturato",
         "fatturato",
