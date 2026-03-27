@@ -170,21 +170,8 @@ class FotovoltaicoStatoEconomicoAdmin(admin.ModelAdmin):
         "data_fine_contratto",
         "importo_stimato_contratto_annuo",
         "totale_contratto",
-        "totale_annuale_su_mw",
-        "api_sync_status",
-        "last_api_sync_at",
-        "updated_at",
-    )
-    list_filter = ("api_sync_status",)
-    search_fields = (
-        "impianto__nome_impianto",
-        "impianto__tag_impianto",
-        "impianto__codice_impianto",
-    )
-    list_select_related = ("impianto",)
-    ordering = ("impianto__nome_impianto",)
-    readonly_fields = (
         "anni_contratto",
+        "totale_annuale_su_mw",
         "totale_annuo",
         "maturato",
         "fatturato",
@@ -196,6 +183,21 @@ class FotovoltaicoStatoEconomicoAdmin(admin.ModelAdmin):
         "margine_straordinario",
         "numero_fatture_straordinarie_annuo",
         "numero_fatture_straordinarie_totali",
+        "api_sync_status",
+        "api_sync_note",
+        "last_api_sync_at",
+        "updated_at",
+        "created_at",
+    )
+    list_filter = ("api_sync_status",)
+    search_fields = (
+        "impianto__nome_impianto",
+        "impianto__tag_impianto",
+        "impianto__codice_impianto",
+    )
+    list_select_related = ("impianto",)
+    ordering = ("impianto__nome_impianto",)
+    readonly_fields = (
         "last_api_sync_at",
         "api_sync_status",
         "api_sync_note",
