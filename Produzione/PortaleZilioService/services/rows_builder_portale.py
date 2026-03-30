@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from ..models import ImpiantoAnagrafica, ImpiantoDispositivo
+from ..models import FotovoltaicoMetadata, ImpiantoAnagrafica, ImpiantoDispositivo
 from ..view_models import (
     AgrivoltaicoRow,
     FotovoltaicoClientiRow,
@@ -87,9 +87,7 @@ def _status_class_portale(metriche) -> str:
 
 
 def build_fotovoltaico_clienti_rows_portale():
-    queryset = (
-        _build_fotovoltaico_portale_queryset(categoria_fv="cliente")
-    )
+    queryset = _build_fotovoltaico_clienti_portale_queryset()
 
     rows: list[FotovoltaicoClientiRow] = []
     for impianto in queryset:
@@ -168,7 +166,7 @@ def build_fotovoltaico_clienti_rows_portale():
 
 
 def build_fotovoltaico_proprieta_rows_portale():
-    queryset = _build_fotovoltaico_portale_queryset(categoria_fv="proprieta")
+    queryset = _build_fotovoltaico_proprieta_portale_queryset()
 
     rows: list[FotovoltaicoProprietaRow] = []
     for impianto in queryset:
@@ -326,21 +324,7 @@ def build_fotovoltaico_in_costruzione_rows_portale():
 
 
 def build_agrivoltaico_rows_portale():
-    queryset = (
-        ImpiantoAnagrafica.objects.select_related(
-            "fotovoltaico_metadata",
-            "fotovoltaico_stato_economico",
-            "fotovoltaico_metriche_tecniche",
-        )
-        .prefetch_related("dispositivi")
-        .filter(
-            tipo_impianto=ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO,
-            fotovoltaico_metadata__is_agrivoltaico=True,
-            fotovoltaico_metadata__is_ppu=False,
-        )
-        .exclude(stato_impianto=ImpiantoAnagrafica.StatoImpianto.IN_COSTRUZIONE)
-        .order_by("nome_cliente", "nome_impianto")
-    )
+    queryset = _build_fotovoltaico_agrivoltaico_portale_queryset()
 
     rows: list[AgrivoltaicoRow] = []
     for impianto in queryset:
@@ -419,18 +403,7 @@ def build_agrivoltaico_rows_portale():
 
 
 def build_fotovoltaico_ppu_rows_portale():
-    queryset = (
-        ImpiantoAnagrafica.objects.select_related(
-            "fotovoltaico_metadata",
-            "fotovoltaico_stato_economico",
-            "fotovoltaico_metriche_tecniche",
-        )
-        .filter(
-            tipo_impianto=ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO,
-            fotovoltaico_metadata__is_ppu=True,
-        )
-        .order_by("nome_cliente", "nome_impianto")
-    )
+    queryset = _build_fotovoltaico_ppu_portale_queryset()
 
     rows: list[FotovoltaicoPPURow] = []
     for impianto in queryset:
@@ -466,7 +439,7 @@ def build_fotovoltaico_ppu_rows_portale():
     return rows
 
 
-def _build_fotovoltaico_portale_queryset(*, categoria_fv: str):
+def _build_fotovoltaico_overview_base_queryset():
     return (
         ImpiantoAnagrafica.objects.select_related(
             "fotovoltaico_metadata",
@@ -476,10 +449,50 @@ def _build_fotovoltaico_portale_queryset(*, categoria_fv: str):
         .prefetch_related("dispositivi")
         .filter(
             tipo_impianto=ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO,
-            fotovoltaico_metadata__categoria_fv=categoria_fv,
-            fotovoltaico_metadata__is_ppu=False,
         )
         .exclude(stato_impianto=ImpiantoAnagrafica.StatoImpianto.IN_COSTRUZIONE)
+    )
+
+
+def _build_fotovoltaico_clienti_portale_queryset():
+    return (
+        _build_fotovoltaico_overview_base_queryset()
+        .filter(
+            fotovoltaico_metadata__categoria_fv=FotovoltaicoMetadata.CategoriaFV.CLIENTE,
+            fotovoltaico_metadata__is_oem=True,
+        )
+        .order_by("nome_cliente", "nome_impianto")
+    )
+
+
+def _build_fotovoltaico_proprieta_portale_queryset():
+    return (
+        _build_fotovoltaico_overview_base_queryset()
+        .filter(
+            fotovoltaico_metadata__categoria_fv=FotovoltaicoMetadata.CategoriaFV.PROPRIETA,
+            fotovoltaico_metadata__is_oem=True,
+        )
+        .order_by("nome_cliente", "nome_impianto")
+    )
+
+
+def _build_fotovoltaico_agrivoltaico_portale_queryset():
+    return (
+        _build_fotovoltaico_overview_base_queryset()
+        .filter(
+            fotovoltaico_metadata__is_agrivoltaico=True,
+            fotovoltaico_metadata__is_oem=True,
+        )
+        .order_by("nome_cliente", "nome_impianto")
+    )
+
+
+def _build_fotovoltaico_ppu_portale_queryset():
+    return (
+        _build_fotovoltaico_overview_base_queryset()
+        .filter(
+            fotovoltaico_metadata__is_ppu=True,
+        )
         .order_by("nome_cliente", "nome_impianto")
     )
 

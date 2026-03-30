@@ -195,7 +195,7 @@ def overview_view(request):
 
 
 @require_POST
-def sync_isc_metrics_view(request):
+def sync_provider_metrics_view(request):
     try:
         service = MetricsSyncService()
         portale_outcome = service.sync_portale_fotovoltaico_isc_metrics()
@@ -226,7 +226,7 @@ def sync_isc_metrics_view(request):
         return JsonResponse(
             {
                 "ok": False,
-                "message": f"Errore durante il recupero dati ISC: {error}",
+                "message": f"Errore durante la sincronizzazione delle metriche provider: {error}",
             },
             status=500,
         )

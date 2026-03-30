@@ -292,12 +292,12 @@ document.addEventListener("DOMContentLoaded", () => {
         document.dispatchEvent(new CustomEvent("portalezilio:tables-updated"));
     };
 
-    const triggerIscSync = async () => {
+    const triggerProviderMetricsSync = async () => {
         if (!syncBanner || !syncBanner.dataset.syncUrl) {
             return;
         }
 
-        setBannerState("Recupero dati ISC, SAJ in corso...", "is-pending");
+        setBannerState("Aggiornamento metriche provider in corso...", "is-pending");
 
         try {
             const response = await fetch(syncBanner.dataset.syncUrl, {
@@ -312,13 +312,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const payload = await response.json();
             if (!response.ok || !payload.ok) {
-                throw new Error(payload.message || "Sync ISC non riuscito.");
+                throw new Error(payload.message || "Sync metriche provider non riuscito.");
             }
 
             applyUpdatedTables(payload.tables || {});
-            setBannerState(payload.message || "Aggiornamento dati completato.", "is-success");
+            setBannerState(payload.message || "Aggiornamento metriche provider completato.", "is-success");
         } catch (error) {
-            setBannerState(error.message || "Errore durante il recupero dati ISC.", "is-error");
+            setBannerState(error.message || "Errore durante l'aggiornamento delle metriche provider.", "is-error");
         }
     };
 
@@ -374,5 +374,5 @@ document.addEventListener("DOMContentLoaded", () => {
     rebuildTableControllers();
     refreshTables();
     window.addEventListener("resize", refreshTables);
-    triggerIscSync();
+    triggerProviderMetricsSync();
 });
