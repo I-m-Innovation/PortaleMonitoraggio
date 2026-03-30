@@ -25,11 +25,11 @@ commit di prova per git
 
 ## Overview Tables Logic
 
-The FV tables shown in `PortaleZilioService/overview.html` are currently built in:
+Le tabelle FV mostrate in `PortaleZilioService/overview.html` sono attualmente costruite in:
 
 - `Produzione/PortaleZilioService/services/rows_builder_portale.py`
 
-The table assignment logic is based on these fields:
+La logica di appartenenza alle tabelle si basa su questi campi:
 
 - `ImpiantoAnagrafica.tipo_impianto`
 - `ImpiantoAnagrafica.stato_impianto`
@@ -38,101 +38,101 @@ The table assignment logic is based on these fields:
 - `FotovoltaicoMetadata.is_ppu`
 - `FotovoltaicoMetadata.is_agrivoltaico`
 
-Important rule:
+Regola importante:
 
-- if a FV plant is `IN_COSTRUZIONE`, it must appear only in the `FV In Costruzione` table
-- it must be excluded from all the other FV tables
+- se un impianto FV è `IN_COSTRUZIONE`, deve comparire solo nella tabella `FV In Costruzione`
+- deve essere escluso da tutte le altre tabelle FV
 
 ### FV Table Matrix
 
 | Table | tipo_impianto | stato_impianto | categoria_fv | is_oem | is_ppu | is_agrivoltaico | Notes |
 |---|---|---|---|---|---|---|---|
-| FV In Costruzione | `FOTOVOLTAICO` | `IN_COSTRUZIONE` | any | any | any | any | dominant rule: if a plant is in construction, it goes only here |
-| O&M FV Clienti | `FOTOVOLTAICO` | `!= IN_COSTRUZIONE` | `CLIENTE` | `True` | any | any | can coexist with `PPU FV` and `O&M Agrivoltaico` |
-| O&M FV Proprieta | `FOTOVOLTAICO` | `!= IN_COSTRUZIONE` | `PROPRIETA` | `True` | any | any | can coexist with `PPU FV` and `O&M Agrivoltaico` |
-| O&M Agrivoltaico | `FOTOVOLTAICO` | `!= IN_COSTRUZIONE` | any | `True` | any | `True` | can coexist with `Clienti`, `Proprieta`, `PPU` |
-| PPU FV | `FOTOVOLTAICO` | `!= IN_COSTRUZIONE` | any | any | `True` | any | can coexist with O&M and Agrivoltaico |
+| FV In Costruzione | `FOTOVOLTAICO` | `IN_COSTRUZIONE` | qualsiasi | qualsiasi | qualsiasi | qualsiasi | regola dominante: se un impianto è in costruzione, va solo qui |
+| O&M FV Clienti | `FOTOVOLTAICO` | `!= IN_COSTRUZIONE` | `CLIENTE` | `True` | qualsiasi | qualsiasi | può convivere con `PPU FV` e `O&M Agrivoltaico` |
+| O&M FV Proprieta | `FOTOVOLTAICO` | `!= IN_COSTRUZIONE` | `PROPRIETA` | `True` | qualsiasi | qualsiasi | può convivere con `PPU FV` e `O&M Agrivoltaico` |
+| O&M Agrivoltaico | `FOTOVOLTAICO` | `!= IN_COSTRUZIONE` | qualsiasi | `True` | qualsiasi | `True` | può convivere con `Clienti`, `Proprieta`, `PPU` |
+| PPU FV | `FOTOVOLTAICO` | `!= IN_COSTRUZIONE` | qualsiasi | qualsiasi | `True` | qualsiasi | può convivere con O&M e Agrivoltaico |
 
-### Practical Consequences
+### Conseguenze pratiche
 
 - `CLIENTE + is_oem=True` -> `O&M FV Clienti`
 - `CLIENTE + is_oem=True + is_ppu=True` -> `O&M FV Clienti` + `PPU FV`
 - `PROPRIETA + is_oem=True + is_agrivoltaico=True` -> `O&M FV Proprieta` + `O&M Agrivoltaico`
 - `PROPRIETA + is_oem=True + is_ppu=True + is_agrivoltaico=True` -> `O&M FV Proprieta` + `O&M Agrivoltaico` + `PPU FV`
-- any FV plant with `stato_impianto = IN_COSTRUZIONE` -> only `FV In Costruzione`
+- qualsiasi impianto FV con `stato_impianto = IN_COSTRUZIONE` -> solo `FV In Costruzione`
 
-## How To Configure A New FV Plant
+## Come configurare un nuovo impianto FV
 
-When inserting or updating a new FV plant, keep these rules in mind.
+Quando si inserisce o si aggiorna un nuovo impianto FV, bisogna tenere presenti queste regole.
 
-### 1. Set the business category correctly
+### 1. Impostare correttamente la categoria business
 
-`categoria_fv` is exclusive and must represent the plant business category:
+`categoria_fv` è esclusivo e deve rappresentare la categoria business dell'impianto:
 
 - `CLIENTE`
 - `PROPRIETA`
 
-Do not duplicate this logic with extra booleans such as `is_cliente` or `is_di_proprieta`.
+Non bisogna duplicare questa logica con boolean aggiuntivi come `is_cliente` o `is_di_proprieta`.
 
-### 2. Mark the transversal flags independently
+### 2. Impostare i flag trasversali in modo indipendente
 
-Use these flags to decide in which additional tables the plant can appear:
+Questi flag servono a decidere in quali tabelle aggiuntive l'impianto può comparire:
 
-- `is_oem=True` if the plant must appear in one of the O&M tables
-- `is_ppu=True` if the plant must also appear in `PPU FV`
-- `is_agrivoltaico=True` if the plant must also appear in `O&M Agrivoltaico`
+- `is_oem=True` se l'impianto deve comparire in una delle tabelle O&M
+- `is_ppu=True` se l'impianto deve comparire anche in `PPU FV`
+- `is_agrivoltaico=True` se l'impianto deve comparire anche in `O&M Agrivoltaico`
 
-These flags are independent and can coexist.
+Questi flag sono indipendenti e possono coesistere.
 
-### 3. Treat `IN_COSTRUZIONE` as dominant
+### 3. Trattare `IN_COSTRUZIONE` come stato dominante
 
-If the plant is still under construction:
+Se l'impianto è ancora in costruzione:
 
-- set `stato_impianto = IN_COSTRUZIONE`
-- the plant must appear only in `FV In Costruzione`
-- it must not appear in `O&M FV Clienti`
-- it must not appear in `O&M FV Proprieta`
-- it must not appear in `O&M Agrivoltaico`
-- it must not appear in `PPU FV`
+- impostare `stato_impianto = IN_COSTRUZIONE`
+- l'impianto deve comparire solo in `FV In Costruzione`
+- non deve comparire in `O&M FV Clienti`
+- non deve comparire in `O&M FV Proprieta`
+- non deve comparire in `O&M Agrivoltaico`
+- non deve comparire in `PPU FV`
 
-### 4. Make sure `FotovoltaicoMetadata` exists
+### 4. Verificare che esista `FotovoltaicoMetadata`
 
-The tables `O&M FV Clienti`, `O&M FV Proprieta`, `O&M Agrivoltaico`, and `PPU FV` rely on `FotovoltaicoMetadata`.
+Le tabelle `O&M FV Clienti`, `O&M FV Proprieta`, `O&M Agrivoltaico` e `PPU FV` dipendono da `FotovoltaicoMetadata`.
 
-If the metadata record is missing, the plant will not appear in those tables even if the anagrafica exists.
+Se il record di metadata manca, l'impianto non comparirà in quelle tabelle anche se l'anagrafica esiste.
 
-### 5. Use coherent combinations
+### 5. Usare combinazioni coerenti
 
-Recommended examples:
+Esempi consigliati:
 
-- client O&M plant:
+- impianto cliente O&M:
   - `categoria_fv = CLIENTE`
   - `is_oem = True`
   - `is_ppu = False`
   - `is_agrivoltaico = False`
 
-- proprietary O&M agrivoltaic plant:
+- impianto di proprietà O&M agrivoltaico:
   - `categoria_fv = PROPRIETA`
   - `is_oem = True`
   - `is_agrivoltaico = True`
 
-- client PPU + O&M plant:
+- impianto cliente PPU + O&M:
   - `categoria_fv = CLIENTE`
   - `is_oem = True`
   - `is_ppu = True`
 
-- plant under construction:
+- impianto in costruzione:
   - `stato_impianto = IN_COSTRUZIONE`
-  - other flags may remain set, but table visibility is overridden by the construction state
+  - gli altri flag possono anche restare valorizzati, ma la visibilità nelle tabelle viene comunque sovrascritta dallo stato di costruzione
 
-### 6. Verify expected visibility after insert/update
+### 6. Verificare la visibilità attesa dopo inserimento o aggiornamento
 
-After saving a new plant, check whether it appears in the expected table set:
+Dopo il salvataggio di un nuovo impianto, bisogna controllare se compare nell'insieme di tabelle atteso:
 
-- only `FV In Costruzione` if it is in construction
-- one or more O&M / PPU / Agrivoltaico tables if it is not in construction
+- solo `FV In Costruzione` se è in costruzione
+- una o più tabelle O&M / PPU / Agrivoltaico se non è in costruzione
 
-This is especially important for plants that should intentionally appear in more than one table.
+Questo è particolarmente importante per gli impianti che devono comparire intenzionalmente in più di una tabella.
 
 ## Image Reference
 
