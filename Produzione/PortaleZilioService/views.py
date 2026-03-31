@@ -39,7 +39,7 @@ def _build_contracts_home_context():
     impianti = ImpiantoAnagrafica.objects.select_related(
         "fotovoltaico_stato_economico",
         "fotovoltaico_metadata",
-    ).filter(attivo_portale=True)
+    )
 
     def _fmt_contract_date(value):
         return value.strftime("%d/%m/%Y") if value else ""

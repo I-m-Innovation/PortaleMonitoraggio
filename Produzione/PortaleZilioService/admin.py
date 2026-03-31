@@ -19,19 +19,20 @@ class ImpiantoAnagraficaAdmin(admin.ModelAdmin):
         "tag_impianto",
         "tipo_impianto",
         "codice_impianto",
+        "codice_riferimento_commessa",
         "stato_impianto",
         "potenza_installata_kw",
         "nome_proprietario",
         "nome_cliente",
-        "attivo_portale",
     )
-    list_filter = ("tipo_impianto", "stato_impianto", "attivo_portale")
+    list_filter = ("tipo_impianto", "stato_impianto")
     search_fields = ("nome_impianto", "tag_impianto", "nome_proprietario", "nome_cliente")
     ordering = ("nome_impianto",)
     fields = (
         "nome_impianto",
         "tag_impianto",
         "codice_impianto",
+        "codice_riferimento_commessa",
         "tipo_impianto",
         "stato_impianto",
         "potenza_installata_kw",
@@ -44,7 +45,6 @@ class ImpiantoAnagraficaAdmin(admin.ModelAdmin):
         "regione",
         "nome_proprietario",
         "nome_cliente",
-        "attivo_portale",
         "note",
     )
 

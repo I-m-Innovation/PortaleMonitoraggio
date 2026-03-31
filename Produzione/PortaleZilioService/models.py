@@ -30,6 +30,12 @@ class ImpiantoAnagrafica(models.Model):
     nome_impianto = models.CharField(max_length=150)
     tag_impianto = models.CharField(max_length=30, unique=True)
     codice_impianto = models.CharField(max_length=30, unique=True, blank=True, null=True)
+    codice_riferimento_commessa = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text="Codice usato per associare fatture e riferimenti di commessa all'impianto.",
+    )
     tipo_impianto = models.CharField(max_length=50, choices=TipoImpianto.choices)
     stato_impianto = models.CharField(
         max_length=50,
@@ -50,7 +56,6 @@ class ImpiantoAnagrafica(models.Model):
     nome_proprietario = models.CharField(max_length=150, blank=True, null=True)
     nome_cliente = models.CharField(max_length=150, blank=True, null=True)
 
-    attivo_portale = models.BooleanField(default=True)
     note = models.TextField(blank=True, null=True)
 
     class Meta:
