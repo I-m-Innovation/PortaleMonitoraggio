@@ -6,7 +6,6 @@ Run:
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
@@ -20,41 +19,43 @@ from PortaleZilioService.API_inverter import saj_client
 def main() -> None:
     token = saj_client.get_token()
     headers = saj_client.build_headers(token)
+    
+    # ENDPOINTS:
     plants = saj_client.get_plants(headers)
-
+    plants_ids = [str(plant.get("plantId", "")).strip() for plant in plants if str(plant.get("plantId", "")).strip()]
+    devices = saj_client.get_devices(headers, plant_id=plants_ids[0]) if plants_ids else []
+    
+    
+    
     print("== SAJ devices probe ==")
     print(f"plants_found: {len(plants)}")
-
-    for plant in plants:
-        plant_id = str(plant.get("plantId", "")).strip()
-        plant_name = str(plant.get("plantName", "")).strip() or "<unnamed plant>"
-        if not plant_id:
-            print("")
-            print(f"plant_name: {plant_name}")
-            print("plant_id: <missing>")
-            print("devices_found: skipped, plantId missing")
-            continue
-
-        devices = saj_client.get_devices(headers, plant_id=plant_id)
-        print("")
-        print(f"plant_name: {plant_name}")
-        print(f"plant_id: {plant_id}")
-        print(f"devices_found: {len(devices)}")
-
+    i = 1
+    for plant in plants: 
+        print(  f"{i}) plantId: {plant.get('plantId')}, "
+                f"plantNo: {plant.get('plantNo')}, "
+                f"plantName: {plant.get('plantName')}")
+        i += 1
+    
+    print(f"plants_ids: {plants_ids}")
+    
+    
+    print("------------------------------------------------------------------------------------------------")
+    for plant in plants_ids: 
+        # print actual name of the plant correlated to the plant id 
+        plant_name = next((p.get("plantName") for p in plants if p.get("plantId") == plant), "Unknown")
+        print(f"plant name: {plant_name} (id: {plant})")
         for device in devices:
-            excerpt = {
-                "deviceSn": device.get("deviceSn"),
-                "deviceType": device.get("deviceType"),
-                "deviceName": device.get("deviceName"),
-                "isOnline": device.get("isOnline"),
-                "isAlarm": device.get("isAlarm"),
-                "plantId": device.get("plantId"),
-            }
-            print(json.dumps(excerpt, ensure_ascii=False))
+            if device.get('plantId') == plant:
+                print(f"deviceSn: {device.get('deviceSn')}, "
+                        f"deviceType: {device.get('deviceType')}, "
+                        f"plantId: {device.get('plantId')}, "
+                        f"plantName: {device.get('plantName')}, "
+                        f"isOnline: {device.get('isOnline')}, "
+                        f"isAlarm: {device.get('isAlarm')}, "
+                        f"country: {device.get('country')}")
+        print("------------------------------------------------------------------------------------------------")
+    
 
-        if devices:
-            print("first_device_full:")
-            print(json.dumps(devices[0], ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
