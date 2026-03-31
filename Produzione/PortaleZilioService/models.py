@@ -41,6 +41,7 @@ class ImpiantoAnagrafica(models.Model):
         max_length=50,
         choices=StatoImpianto.choices,
         default=StatoImpianto.UNKNOWN,
+        help_text="Al momento questo campo serve solo a collocare l'impianto nella tabella 'In Costruzione' quando il valore e' 'in_costruzione'.",
     )
 
     latitudine = models.DecimalField(max_digits=11, decimal_places=8, blank=True, null=True)
