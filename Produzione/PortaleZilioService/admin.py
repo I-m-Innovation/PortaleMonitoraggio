@@ -4,65 +4,11 @@ from .models import (
     FotovoltaicoMetadata,
     FotovoltaicoMetricheTecniche,
     FotovoltaicoStatoEconomico,
-    FvMetadata,
     IdroelettricoMetadata,
     ImpiantoAnagrafica,
     ImpiantoDispositivo,
     ImpiantoSorgenteDati,
 )
-
-
-@admin.register(FvMetadata)
-class FvMetadataAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "nome_impianto",
-        "nome_proprietario",
-        "nome_cliente",
-        "categoria_fv",
-        "is_ppu",
-        "is_in_costruzione",
-        "data_inizio_contratto",
-        "data_fine_contratto",
-        "pr_contrattuale",
-        "totale_contratto",
-        "totale_annuo_su_mv",
-        "totale_annuo",
-        "potenza",
-        "updated_at",
-    )
-    list_filter = ("categoria_fv", "is_ppu", "is_in_costruzione")
-    search_fields = (
-        "nome_impianto",
-        "nome_proprietario",
-        "nome_cliente",
-        "impianto__nickname",
-        "impianto__nome_impianto",
-        "impianto__societa",
-    )
-    ordering = ("nome_impianto",)
-    raw_id_fields = ("impianto",)
-    list_select_related = ("impianto",)
-    readonly_fields = ("created_at", "updated_at")
-    fields = (
-        "nome_impianto",
-        "nome_proprietario",
-        "nome_cliente",
-        "categoria_fv",
-        "is_ppu",
-        "is_in_costruzione",
-        "data_inizio_contratto",
-        "data_fine_contratto",
-        "pr_contrattuale",
-        "totale_contratto",
-        "totale_annuo_su_mv",
-        "totale_annuo",
-        "potenza",
-        "note",
-        "impianto",
-        "created_at",
-        "updated_at",
-    )
 
 
 @admin.register(ImpiantoAnagrafica)
@@ -73,19 +19,20 @@ class ImpiantoAnagraficaAdmin(admin.ModelAdmin):
         "tag_impianto",
         "tipo_impianto",
         "codice_impianto",
+        "codice_riferimento_commessa",
         "stato_impianto",
         "potenza_installata_kw",
         "nome_proprietario",
         "nome_cliente",
-        "attivo_portale",
     )
-    list_filter = ("tipo_impianto", "stato_impianto", "attivo_portale")
+    list_filter = ("tipo_impianto", "stato_impianto")
     search_fields = ("nome_impianto", "tag_impianto", "nome_proprietario", "nome_cliente")
     ordering = ("nome_impianto",)
     fields = (
         "nome_impianto",
         "tag_impianto",
         "codice_impianto",
+        "codice_riferimento_commessa",
         "tipo_impianto",
         "stato_impianto",
         "potenza_installata_kw",
@@ -98,7 +45,6 @@ class ImpiantoAnagraficaAdmin(admin.ModelAdmin):
         "regione",
         "nome_proprietario",
         "nome_cliente",
-        "attivo_portale",
         "note",
     )
 

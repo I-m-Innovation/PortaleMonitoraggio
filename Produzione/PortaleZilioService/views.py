@@ -10,11 +10,11 @@ from PortaleZilioService.API_inverter.API_iSolarCloud import get_all_devices, lo
 from .models import ImpiantoAnagrafica
 from .services.sync import MetricsSyncService
 
-from .services.rows_builder import (
+from .services.rows_builder_idroelettrico import (
     build_idroelettrico_gse_rows,
     build_idroelettrico_proprieta_rows,
 )
-from .services.rows_builder_portale import (
+from .services.rows_builder_fotovoltaico import (
     build_agrivoltaico_rows_portale,
     build_fotovoltaico_clienti_rows_portale,
     build_fotovoltaico_in_costruzione_rows_portale,
@@ -39,7 +39,7 @@ def _build_contracts_home_context():
     impianti = ImpiantoAnagrafica.objects.select_related(
         "fotovoltaico_stato_economico",
         "fotovoltaico_metadata",
-    ).filter(attivo_portale=True)
+    )
 
     def _fmt_contract_date(value):
         return value.strftime("%d/%m/%Y") if value else ""
@@ -230,36 +230,3 @@ def sync_provider_metrics_view(request):
             },
             status=500,
         )
-
-
-def test_view(request):
-    return render(request, "PortaleZilioService/test.html")
-
-
-
-# iSolarCloud views
-def _get_data_from_isc():
-    login_resp = login_ISC()
-    token = login_resp.get("result_data", {}).get("token")
-    if not token:
-        print("Login failed: missing iSolarCloud token")
-        return 2
-    devices = get_all_devices(token=token)
-    for device in devices:
-        print(f"Device: {device.get('device_name')} (type: {device.get('device_type')})")
-    
-    
-    
-    pass
-
-
-# saj - elekeeper views
-def _get_data_from_saj():
-    pass
-
-
-# myleo views 
-def _get_data_from_myleo():
-    pass
-
-

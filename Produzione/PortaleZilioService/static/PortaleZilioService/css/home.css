@@ -275,27 +275,6 @@ p.empty-state {
     margin: 0 0 8px;
 }
 
-.table-action-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 32px;
-    padding: 0 12px;
-    border-radius: 6px;
-    border: 1px solid var(--accent);
-    background-color: var(--accent);
-    color: #ffffff;
-    font-size: 0.95rem;
-    font-weight: 600;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-.table-action-button:hover,
-.table-action-button:focus {
-    filter: brightness(0.92);
-}
-
 .status-dot-gray {
     display: inline-block;
     width: 10px;
