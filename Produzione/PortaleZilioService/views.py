@@ -10,11 +10,11 @@ from PortaleZilioService.API_inverter.API_iSolarCloud import get_all_devices, lo
 from .models import ImpiantoAnagrafica
 from .services.sync import MetricsSyncService
 
-from .services.rows_builder import (
+from .services.rows_builder_idroelettrico import (
     build_idroelettrico_gse_rows,
     build_idroelettrico_proprieta_rows,
 )
-from .services.rows_builder_portale import (
+from .services.rows_builder_fotovoltaico import (
     build_agrivoltaico_rows_portale,
     build_fotovoltaico_clienti_rows_portale,
     build_fotovoltaico_in_costruzione_rows_portale,

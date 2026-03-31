@@ -27,7 +27,7 @@ commit di prova per git
 
 Le tabelle FV mostrate in `PortaleZilioService/overview.html` sono attualmente costruite in:
 
-- `Produzione/PortaleZilioService/services/rows_builder_portale.py`
+- `Produzione/PortaleZilioService/services/rows_builder_fotovoltaico.py`
 
 La logica di appartenenza alle tabelle si basa su questi campi:
 

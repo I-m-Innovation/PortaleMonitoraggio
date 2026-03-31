@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const syncPanelMap = {
         fv_clienti: "fv-clienti",
         fv_proprieta: "fv-proprieta",
+        fv_agrivoltaico: "fv-agrivoltaico",
         fv_costruzione: "fv-costruzione",
         fv_ppu: "fv-ppu",
         idr_gse: "idr-gse",
@@ -59,17 +60,19 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        if (!track.dataset.autoScrollToggleBound) {
-            const toolbar = document.createElement("div");
+        let toolbar = controlsRow.querySelector(":scope > .table-scroll-toolbar");
+        if (!toolbar) {
+            toolbar = document.createElement("div");
             toolbar.className = "table-scroll-toolbar";
+            controlsRow.appendChild(toolbar);
+        }
 
+        if (!track.dataset.autoScrollToggleBound) {
             const button = document.createElement("button");
             button.type = "button";
             button.className = "table-scroll-toggle";
             button.dataset.autoScrollToggle = "true";
             toolbar.appendChild(button);
-
-            controlsRow.appendChild(toolbar);
             track.dataset.autoScrollToggleBound = "true";
         }
 
