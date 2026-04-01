@@ -408,5 +408,7 @@ def get_saj_day_data(impianto, start: datetime, end: datetime) -> tuple[pd.DataF
         f"today_energy_kwh={today_energy_kwh} energy_source={config.get('energy_source', 'devices')} "
         f"energy_field={config.get('energy_field_name')}"
     )
-    led = _build_led_from_devices(devices)
+    selected_serials_set = set(selected_device_serials)
+    selected_devices = [d for d in devices if str(d.get("deviceSn")) in selected_serials_set]
+    led = _build_led_from_devices(selected_devices)
     return df_time_series, led, today_energy_kwh
