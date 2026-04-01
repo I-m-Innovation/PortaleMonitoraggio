@@ -36,6 +36,22 @@ PLANT_DEVICE_OVERRIDES = {
         "energy_source": "ems_history",
         "energy_field_name": "parallTodayPVEnergy",
     },
+
+
+    "rctbramante": {
+        "device_serial_numbers_to_query": [
+            "C6VC125J2430E03394", # inverter
+            "CSV6503J2506E00137", # S12
+            "CSV6503J2506E00141", # S12
+        ],
+        "power_source": "ems_history",
+        "ems_sn": "M5530J2428000023",
+        "power_extraction_mode": "field",
+        "power_field_name": "parallMeterPower",
+        "energy_source": "ems_history",
+        "energy_field_name": "parallTodayPVEnergy",
+    },
+    
 }
 
 
@@ -392,5 +408,7 @@ def get_saj_day_data(impianto, start: datetime, end: datetime) -> tuple[pd.DataF
         f"today_energy_kwh={today_energy_kwh} energy_source={config.get('energy_source', 'devices')} "
         f"energy_field={config.get('energy_field_name')}"
     )
-    led = _build_led_from_devices(devices)
+    selected_serials_set = set(selected_device_serials)
+    selected_devices = [d for d in devices if str(d.get("deviceSn")) in selected_serials_set]
+    led = _build_led_from_devices(selected_devices)
     return df_time_series, led, today_energy_kwh
