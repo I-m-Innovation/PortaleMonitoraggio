@@ -36,6 +36,22 @@ PLANT_DEVICE_OVERRIDES = {
         "energy_source": "ems_history",
         "energy_field_name": "parallTodayPVEnergy",
     },
+
+
+    "rctbramante": {
+        "device_serial_numbers_to_query": [
+            "C6VC125J2430E03394", # inverter
+            "CSV6503J2506E00137", # S12
+            "CSV6503J2506E00141", # S12
+        ],
+        "power_source": "ems_history",
+        "ems_sn": "M5530J2428000023",
+        "power_extraction_mode": "field",
+        "power_field_name": "parallMeterPower",
+        "energy_source": "ems_history",
+        "energy_field_name": "parallTodayPVEnergy",
+    },
+    
 }
 
 
