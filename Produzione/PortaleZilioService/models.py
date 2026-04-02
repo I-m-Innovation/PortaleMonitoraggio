@@ -30,12 +30,6 @@ class ImpiantoAnagrafica(models.Model):
     nome_impianto = models.CharField(max_length=150)
     tag_impianto = models.CharField(max_length=30, unique=True)
     codice_impianto = models.CharField(max_length=30, unique=True, blank=True, null=True)
-    codice_riferimento_commessa = models.CharField(
-        max_length=50,
-        blank=True,
-        null=True,
-        help_text="Codice usato per associare fatture e riferimenti di commessa all'impianto.",
-    )
     tipo_impianto = models.CharField(max_length=50, choices=TipoImpianto.choices)
     stato_impianto = models.CharField(
         max_length=50,
@@ -317,3 +311,28 @@ class ImpiantoDispositivo(models.Model):
 
     def __str__(self):
         return f"{self.impianto.nome_impianto} - {self.tipo_dispositivo} - {self.codice_dispositivo}"
+
+
+class ImpiantoCommessa(models.Model):
+    class TipoCommessa(models.TextChoices):
+        OEM = "oem", "O&M"
+        PPU = "ppu", "PPU"
+        STR = "str", "Straordinario"
+
+    impianto = models.ForeignKey(
+        ImpiantoAnagrafica,
+        on_delete=models.CASCADE,
+        related_name="commesse",
+    )
+    tipo_commessa = models.CharField(max_length=20, choices=TipoCommessa.choices)
+    codice_commessa = models.CharField(max_length=50)
+    note = models.TextField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ("impianto", "tipo_commessa", "codice_commessa")
+        verbose_name = "Commessa impianto"
+        verbose_name_plural = "Commesse impianto"
+        ordering = ["impianto__nome_impianto", "tipo_commessa"]
+
+    def __str__(self):
+        return f"{self.impianto} - {self.get_tipo_commessa_display()} - {self.codice_commessa}"

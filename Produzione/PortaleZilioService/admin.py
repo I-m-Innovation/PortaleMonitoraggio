@@ -6,6 +6,7 @@ from .models import (
     FotovoltaicoStatoEconomico,
     IdroelettricoMetadata,
     ImpiantoAnagrafica,
+    ImpiantoCommessa,
     ImpiantoDispositivo,
     ImpiantoSorgenteDati,
 )
@@ -19,7 +20,6 @@ class ImpiantoAnagraficaAdmin(admin.ModelAdmin):
         "tag_impianto",
         "tipo_impianto",
         "codice_impianto",
-        "codice_riferimento_commessa",
         "stato_impianto",
         "potenza_installata_kw",
         "nome_proprietario",
@@ -32,7 +32,6 @@ class ImpiantoAnagraficaAdmin(admin.ModelAdmin):
         "nome_impianto",
         "tag_impianto",
         "codice_impianto",
-        "codice_riferimento_commessa",
         "tipo_impianto",
         "stato_impianto",
         "potenza_installata_kw",
@@ -263,3 +262,23 @@ class ImpiantoDispositivoAdmin(admin.ModelAdmin):
         "codice_dispositivo",
     )
     list_select_related = ("impianto",)
+
+
+@admin.register(ImpiantoCommessa)
+class ImpiantoCommessaAdmin(admin.ModelAdmin):
+    autocomplete_fields = ("impianto",)
+    list_display = (
+        "id",
+        "impianto",
+        "tipo_commessa",
+        "codice_commessa",
+    )
+    list_filter = ("tipo_commessa",)
+    search_fields = (
+        "impianto__nome_impianto",
+        "impianto__tag_impianto",
+        "impianto__codice_impianto",
+        "codice_commessa",
+    )
+    list_select_related = ("impianto",)
+    ordering = ("impianto__nome_impianto", "tipo_commessa")
