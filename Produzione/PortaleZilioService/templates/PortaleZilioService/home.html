@@ -54,8 +54,8 @@
                                 <td>{{ row.inizio_contratto|default:"--" }}</td>
                                 <td>{{ row.fine_contratto|default:"--" }}</td>
                                 <td>{{ row.anni_contratto|default:"--" }}</td>
-                                <td>{{ row.importo_annuo_stimato|default:"--" }}</td>
-                                <td>{{ row.importo_totale|default:"--" }}</td>
+                                <td data-currency="{{ row.importo_annuo_stimato }}">{{ row.importo_annuo_stimato|default:"--" }}</td>
+                                <td data-currency="{{ row.importo_totale }}">{{ row.importo_totale|default:"--" }}</td>
                             </tr>
                         {% empty %}
                             <tr>
@@ -67,4 +67,8 @@
             </div>
         </section>
     </main>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'PortaleZilioService/js/homeContractFormatting.js' %}" defer></script>
 {% endblock %}
