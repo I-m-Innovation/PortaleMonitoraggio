@@ -142,10 +142,37 @@ Come viene usata oggi:
 - calcolo energia finestra mobile 12 mesi fino a ieri
 - calcolo irraggiamento solo se la weather station e' presente
 - PR calcolabile solo quando energia, potenza e irraggiamento sono tutti disponibili
+- per `3F - Plastica` viene usato l'irraggiamento di `3F - Ferro`
+
+### Logica `mancata_produzione`
+
+La `mancata_produzione` viene calcolata solo nel flusso FV `iSolarCloud`.
+
+Dati usati:
+
+- `energia_reale_kwh`: somma energia ultimi 12 mesi letta da ISC
+- `potenza_installata_kw`: `ImpiantoAnagrafica.potenza_installata_kw`
+- `pr_contrattuale`: `FotovoltaicoMetadata.pr_contrattuale`
+- `irraggiamento_kwh_m2`: somma `p2005` ultimi 12 mesi da weather station ISC
+
+Formula:
+
+- `energia_attesa_kwh = potenza_installata_kw * irraggiamento_kwh_m2 * pr_contrattuale`
+- `mancata_produzione = energia_attesa_kwh - energia_reale_kwh`
+
+Note:
+
+- il valore e' espresso in `kWh`
+- il valore mantiene il segno
+- valore positivo = energia mancata
+- valore negativo = energia prodotta in eccesso rispetto all'atteso
+- se manca la weather station, `mancata_produzione` non viene calcolata e resta `NULL`
+- se manca il `pr_contrattuale`, `mancata_produzione` non viene calcolata e resta `NULL`
 
 Output salvato oggi in `FotovoltaicoMetricheTecniche`:
 
 - `pr_ultimi_12_mesi`
+- `mancata_produzione`
 - `ore_equivalenti_ultimi_12_mesi`
 - `stato_operativo`
 - `last_sync_at`
@@ -214,11 +241,27 @@ Il calcolo condiviso passa da `DefaultMetricsCalculator`:
 Le metriche tecniche attualmente persistite nel portale sono:
 
 - PR ultimi 12 mesi
+- mancata produzione
 - ore equivalenti ultimi 12 mesi
 - stato operativo
 - metadata di sync
 
-`mancata_produzione` e' presente nel modello e nelle tabelle, ma oggi non viene popolata dal flusso di sync corrente.
+## Logica di visualizzazione in tabella
+
+La colonna `Mancata Produzione` mantiene il nome storico, ma la resa visuale e' semantica.
+
+Regole:
+
+- valore positivo -> testo rosso con freccia giu': `↓ 24.802,36 kWh`
+- valore negativo -> testo verde con freccia su: `↑ 8.636,85 kWh`
+- valore zero -> testo grigio: `0,00 kWh`
+- valore non calcolabile (`WSM`, `ERR`, `--`) -> testo grigio senza unita'
+
+Dettagli:
+
+- i numeri sono mostrati in formato italiano: `.` per le migliaia e `,` per i decimali
+- per i valori negativi in tabella viene mostrato il valore assoluto dopo la freccia
+- `kWh` viene mostrato accanto al valore con colore neutro, separato dal colore del delta
 
 ## Stato reale di alcune sezioni
 
