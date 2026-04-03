@@ -23,6 +23,20 @@ class DefaultMetricsCalculator:
                 snapshot.peak_power_kw * snapshot.window_irradiation_kwh_m2
             )
 
+        missed_production_kwh = None
+        if (
+            snapshot.window_energy_kwh is not None
+            and snapshot.window_irradiation_kwh_m2 is not None
+            and snapshot.peak_power_kw
+            and snapshot.window_irradiation_kwh_m2 > 0
+            and snapshot.contractual_pr is not None
+            and snapshot.contractual_pr > 0
+        ):
+            expected_energy_kwh = (
+                snapshot.peak_power_kw * snapshot.window_irradiation_kwh_m2 * snapshot.contractual_pr
+            )
+            missed_production_kwh = expected_energy_kwh - snapshot.window_energy_kwh
+
         return ComputedPlantMetrics(
             source_name=snapshot.source_name,
             plant_name=snapshot.plant_name,
@@ -35,6 +49,7 @@ class DefaultMetricsCalculator:
             total_equivalent_hours=snapshot.total_equivalent_hours,
             irradiation_kwh_m2=snapshot.window_irradiation_kwh_m2,
             performance_ratio=round(performance_ratio, 4) if performance_ratio is not None else None,
+            missed_production_kwh=round(missed_production_kwh, 2) if missed_production_kwh is not None else None,
             has_weather_station=snapshot.has_weather_station,
             inverters_count=snapshot.inverters_count,
             inverters_ok=snapshot.inverters_ok,

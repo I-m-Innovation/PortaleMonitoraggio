@@ -31,6 +31,9 @@ class IscMetricsProvider:
     """
 
     source_name = "API_ISC"
+    IRRADIATION_ALIAS_BY_PLANT_NAME = {
+        "3F - Plastica": "3F - Ferro",
+    }
 
     def fetch_snapshot(self, impianto, window: MetricsWindow) -> ProviderPlantSnapshot:
         token = self._login()
@@ -77,6 +80,7 @@ class IscMetricsProvider:
             total_equivalent_hours=total_equivalent_hours,
             window_energy_kwh=energy_kwh,
             window_irradiation_kwh_m2=irradiation_kwh_m2,
+            contractual_pr=None,
             has_weather_station=weather_station is not None,
             inverters_count=None,
             inverters_ok=None,
@@ -102,6 +106,7 @@ class IscMetricsProvider:
         peak_power_kw = self._safe_float(api_plant.get("installed_power")) or self._safe_float(
             impianto.potenza_installata_kw
         )
+        contractual_pr = self._extract_contractual_pr(impianto)
         status = "online" if api_plant.get("ps_status") == 1 else "offline"
 
         devices = get_all_devices(token=token, plant_id=plant_id)
@@ -121,10 +126,10 @@ class IscMetricsProvider:
             plant_id=plant_id,
             window=window,
         )
-        weather_station = find_weather_station_device(token=token, plant_id=plant_id)
-        irradiation_kwh_m2 = self._fetch_irradiation_kwh_m2(
+        irradiation_kwh_m2, irradiation_source_name = self._fetch_portale_irradiation_kwh_m2(
             token=token,
-            weather_station=weather_station,
+            impianto=impianto,
+            plant_id=plant_id,
             window=window,
         )
 
@@ -145,7 +150,8 @@ class IscMetricsProvider:
             total_equivalent_hours=None,
             window_energy_kwh=energy_kwh,
             window_irradiation_kwh_m2=irradiation_kwh_m2,
-            has_weather_station=weather_station is not None,
+            contractual_pr=contractual_pr,
+            has_weather_station=irradiation_kwh_m2 is not None,
             inverters_count=local_inverters_count,
             inverters_ok=inverters_ok,
             coverage=coverage,
@@ -153,7 +159,7 @@ class IscMetricsProvider:
             raw_payload={
                 "api_plant": api_plant,
                 "source_identifier": getattr(sorgente, "identificativo_esterno", None),
-                "weather_station": weather_station,
+                "irradiation_source_name": irradiation_source_name,
             },
         )
 
@@ -252,6 +258,54 @@ class IscMetricsProvider:
             )
 
         return total_irradiation_wh_m2 / 1000.0
+
+    def _fetch_portale_irradiation_kwh_m2(
+        self,
+        token: str,
+        impianto,
+        plant_id: int,
+        window: MetricsWindow,
+    ) -> tuple[float | None, str | None]:
+        source_name = self.IRRADIATION_ALIAS_BY_PLANT_NAME.get(impianto.nome_impianto, impianto.nome_impianto)
+        source_plant_id = plant_id
+        if source_name != impianto.nome_impianto:
+            alias_plant = self._find_plant_by_name(token, source_name)
+            if alias_plant is None:
+                return None, source_name
+            source_plant_id = int(alias_plant["ps_id"])
+
+        weather_station = find_weather_station_device(token=token, plant_id=source_plant_id)
+        irradiation_kwh_m2 = self._fetch_irradiation_kwh_m2(
+            token=token,
+            weather_station=weather_station,
+            window=window,
+        )
+        alias_name = source_name if source_name != impianto.nome_impianto else None
+        return irradiation_kwh_m2, alias_name
+
+    def _find_plant_by_name(self, token: str, plant_name: str):
+        plants = get_all_plants(token=token, size=PAGE_SIZE)
+        needle = self._normalize(plant_name)
+        for plant in plants:
+            plant_keys = {
+                self._normalize(plant.get("ps_name")),
+                self._normalize(str(plant.get("ps_id"))),
+            }
+            if needle in plant_keys or any(needle in key for key in plant_keys if key):
+                return plant
+        return None
+
+    @staticmethod
+    def _extract_contractual_pr(impianto) -> float | None:
+        metadata = getattr(impianto, "fotovoltaico_metadata", None)
+        if metadata is None:
+            return None
+        pr_value = IscMetricsProvider._safe_float(getattr(metadata, "pr_contrattuale", None))
+        if pr_value is None or pr_value <= 0:
+            return None
+        if pr_value > 1:
+            return pr_value / 100.0
+        return pr_value
 
     @staticmethod
     def _normalize(value: str | None) -> str:
