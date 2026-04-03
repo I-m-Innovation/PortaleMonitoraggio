@@ -19,6 +19,7 @@ class FotovoltaicoClientiRow:
     pr_contrattuale: str  # 78% di solito secondo nicola e comunque lo deve inserire lui 
     pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  
     mancata_produzione: str
+    mancata_produzione_class: str
     ore_equivalenti: str   # Nicola capisce se sono a contratto o no
     inizio_contratto: str
     fine_contratto: str
@@ -52,6 +53,7 @@ class FotovoltaicoProprietaRow:
     pr_contrattuale: str  # 78% di solito secondo nicola e comunque lo deve inserire lui 
     pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  
     mancata_produzione: str
+    mancata_produzione_class: str
     ore_equivalenti: str   # Nicola capisce se sono a contratto o no
     inizio_contratto: str
     fine_contratto: str
@@ -85,6 +87,7 @@ class FotovoltaicoInCostruzioneRow:
     pr_contrattuale: str  # 78% di solito secondo nicola e comunque lo deve inserire lui 
     pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  
     mancata_produzione: str
+    mancata_produzione_class: str
     ore_equivalenti: str   # Nicola capisce se sono a contratto o no
     inizio_contratto: str
     fine_contratto: str
@@ -117,6 +120,7 @@ class AgrivoltaicoRow:
     pr_contrattuale: str  # 78% di solito secondo nicola e comunque lo deve inserire lui 
     pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  
     mancata_produzione: str
+    mancata_produzione_class: str
     ore_equivalenti: str   # Nicola capisce se sono a contratto o no
     inizio_contratto: str
     fine_contratto: str

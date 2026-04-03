@@ -9,12 +9,12 @@
             <th aria-label="Stato"></th>
             <th>Impianto</th>
             <th>Cliente</th>
-            <th>Potenza Contratto</th>
-            <th>Potenza Installata</th>
-            <th>PR Contrattuale</th>
-            <th>PR Ultimi 12 Mesi</th>
-            <th>Mancata Produzione</th>
-            <th>Ore Equivalenti ultimi 12 mesi</th>
+            <th class="table-align-right">Potenza Contratto</th>
+            <th class="table-align-right">Potenza Installata</th>
+            <th class="table-align-right">PR Contrattuale</th>
+            <th class="table-align-right">PR Ultimi 12 Mesi</th>
+            <th class="table-align-right">Mancata Produzione</th>
+            <th class="table-align-right">Ore Equivalenti ultimi 12 mesi</th>
             <th>Inizio Contratto</th>
             <th>Fine Contratto</th>
             <th>Anni Contratto</th>
@@ -39,18 +39,23 @@
                 <td><span class="{{ row.status_class }}" aria-hidden="true"></span></td>
                 <td>{{ row.nome_impianto }}</td>
                 <td>{{ row.nome_cliente }}</td>
-                <td>{{ row.potenza_contratto }}</td>
-                <td>{{ row.potenza_installata }}</td>
-                <td>{{ row.pr_contrattuale }}</td>
-                <td class="js-pr-ultimi-12-mesi">
+                <td class="table-align-right">{{ row.potenza_contratto }}</td>
+                <td class="table-align-right">{{ row.potenza_installata }}</td>
+                <td class="table-align-right">{{ row.pr_contrattuale }}</td>
+                <td class="js-pr-ultimi-12-mesi table-align-right">
                     {% if row.pr_ultimi_12_mesi == "WSM" or row.pr_ultimi_12_mesi == "ERR" %}
                         <span class="pr-placeholder-muted">{{ row.pr_ultimi_12_mesi }}</span>
                     {% else %}
                         {{ row.pr_ultimi_12_mesi }}
                     {% endif %}
                 </td>
-                <td>{{ row.mancata_produzione }}</td>
-                <td>{{ row.ore_equivalenti }}</td> <!-- Ore Equivalenti ultimi 12 mesi -->
+                <td class="table-align-right">
+                    <span class="{{ row.mancata_produzione_class }}">{{ row.mancata_produzione }}</span>
+                    {% if row.mancata_produzione != "WSM" and row.mancata_produzione != "ERR" and row.mancata_produzione != "--" %}
+                        <span class="metric-unit">kWh</span>
+                    {% endif %}
+                </td>
+                <td class="table-align-right">{{ row.ore_equivalenti }}</td> <!-- Ore Equivalenti ultimi 12 mesi -->
                 <td>{{ row.inizio_contratto }}</td>
                 <td>{{ row.fine_contratto }}</td>
                 <td>{{ row.totale_anni_contratto }}</td>

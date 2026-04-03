@@ -288,6 +288,44 @@ p.empty-state {
     font-weight: 500;
 }
 
+.table-align-right {
+    text-align: right;
+}
+
+.metric-delta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.metric-delta-loss {
+    color: #b42318;
+}
+
+.metric-delta-gain {
+    color: #067647;
+}
+
+.metric-delta-neutral,
+.metric-delta-muted {
+    color: #8f98a3;
+}
+
+.metric-unit {
+    margin-left: 0.3rem;
+    color: #5b7180;
+    font-size: 0.9em;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.metric-unit-strong {
+    font-size: 1em;
+    font-weight: 700;
+}
+
 .overview-info-button {
     position: fixed;
     right: 22px;
