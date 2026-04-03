@@ -15,8 +15,7 @@ from PortaleCorrispettivi.utils import functions as fn
 from PortaleCorrispettivi.utils import graphics as gf
 
 from .models import *
-
-from .models import DiarioLetture
+# from .models import DiarioLetture
 
 
 impianti_m3s = ['ionico_foresta', 'ionico_SA3']
@@ -106,7 +105,8 @@ def impianto(request, nickname):
     dz_impianto = dz_impianti[nickname]
 
     # Ottieni gli anni disponibili per questo impianto
-    anni_disponibili = list(DiarioLetture.objects.filter(impianto=impianto).values_list('anno', flat=True).distinct())
+    # anni_disponibili = list(DiarioLetture.objects.filter(impianto=impianto).values_list('anno', flat=True).distinct())
+    anni_disponibili = list(range(2021, datetime.now().year + 1))
     print(anni_disponibili)
     
     # Passa l'anno al template
