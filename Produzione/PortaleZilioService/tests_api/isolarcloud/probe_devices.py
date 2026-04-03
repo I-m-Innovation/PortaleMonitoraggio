@@ -31,6 +31,11 @@ def _normalize(value: str | None) -> str:
     return "".join(ch for ch in str(value).lower() if ch.isalnum())
 
 
+def _ensure_utf8_stdout() -> None:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+
 def _match_plants(plants: list[dict], search_term: str | None) -> list[dict]:
     if not search_term:
         return plants
@@ -47,6 +52,8 @@ def _match_plants(plants: list[dict], search_term: str | None) -> list[dict]:
 
 
 def main() -> None:
+    _ensure_utf8_stdout()
+
     search_term = sys.argv[1] if len(sys.argv) > 1 else None
 
     login_response = login_ISC()

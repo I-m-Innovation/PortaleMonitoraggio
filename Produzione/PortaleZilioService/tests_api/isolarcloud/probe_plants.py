@@ -18,7 +18,14 @@ from PortaleZilioService.API_inverter.API_iSolarCloud import get_all_plants, log
 from PortaleZilioService.API_inverter.api_config import PAGE_SIZE
 
 
+def _ensure_utf8_stdout() -> None:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+
 def main() -> None:
+    _ensure_utf8_stdout()
+
     login_response = login_ISC()
     token = login_response.get("result_data", {}).get("token")
     if not token:
