@@ -11,6 +11,8 @@ from .models import ImpiantoAnagrafica
 from .services.fatturato import (
     get_fatturato_ordinario_anno_corrente_per_impianto,
     get_fatturato_straordinario_totale_per_impianto,
+    get_numero_fatture_straordinarie_anno_corrente_per_impianto,
+    get_numero_fatture_straordinarie_totali_per_impianto,
 )
 from .services.sync import MetricsSyncService
 
@@ -30,22 +32,36 @@ from .services.rows_builder_fotovoltaico import (
 def _build_home_context():
     fatturato_by_impianto = get_fatturato_ordinario_anno_corrente_per_impianto()
     fatturato_straordinario_by_impianto = get_fatturato_straordinario_totale_per_impianto()
+    fatture_straordinarie_annuo_by_impianto = (
+        get_numero_fatture_straordinarie_anno_corrente_per_impianto()
+    )
+    fatture_straordinarie_totali_by_impianto = (
+        get_numero_fatture_straordinarie_totali_per_impianto()
+    )
     return {
         "fv_clienti_rows": build_fotovoltaico_clienti_rows_portale(
             fatturato_by_impianto,
             fatturato_straordinario_by_impianto,
+            fatture_straordinarie_annuo_by_impianto,
+            fatture_straordinarie_totali_by_impianto,
         ),
         "fv_proprieta_rows": build_fotovoltaico_proprieta_rows_portale(
             fatturato_by_impianto,
             fatturato_straordinario_by_impianto,
+            fatture_straordinarie_annuo_by_impianto,
+            fatture_straordinarie_totali_by_impianto,
         ),
         "fv_agrivoltaico_rows": build_agrivoltaico_rows_portale(
             fatturato_by_impianto,
             fatturato_straordinario_by_impianto,
+            fatture_straordinarie_annuo_by_impianto,
+            fatture_straordinarie_totali_by_impianto,
         ),
         "fv_in_costruzione_rows": build_fotovoltaico_in_costruzione_rows_portale(
             fatturato_by_impianto,
             fatturato_straordinario_by_impianto,
+            fatture_straordinarie_annuo_by_impianto,
+            fatture_straordinarie_totali_by_impianto,
         ),
         "fv_ppu_rows": build_fotovoltaico_ppu_rows_portale(),
         "idr_gse_rows": build_idroelettrico_gse_rows(),

@@ -102,6 +102,30 @@ def _resolve_totale_fatturato_straordinario_value(
     return getattr(stato_economico, "totale_fatturato_straordinario", None)
 
 
+def _resolve_numero_fatture_straordinarie_annuo_value(
+    impianto,
+    stato_economico,
+    fatture_straordinarie_annuo_by_impianto: dict[str, int] | None,
+):
+    if fatture_straordinarie_annuo_by_impianto:
+        normalized_name = _normalize_plant_name(impianto.nome_impianto)
+        if normalized_name in fatture_straordinarie_annuo_by_impianto:
+            return fatture_straordinarie_annuo_by_impianto[normalized_name]
+    return getattr(stato_economico, "numero_fatture_straordinarie_annuo", None)
+
+
+def _resolve_numero_fatture_straordinarie_totali_value(
+    impianto,
+    stato_economico,
+    fatture_straordinarie_totali_by_impianto: dict[str, int] | None,
+):
+    if fatture_straordinarie_totali_by_impianto:
+        normalized_name = _normalize_plant_name(impianto.nome_impianto)
+        if normalized_name in fatture_straordinarie_totali_by_impianto:
+            return fatture_straordinarie_totali_by_impianto[normalized_name]
+    return getattr(stato_economico, "numero_fatture_straordinarie_totali", None)
+
+
 def _calcola_anni_contratto(data_inizio: date | None, data_fine: date | None) -> str:
     if not data_inizio or not data_fine:
         return "--"
@@ -156,6 +180,8 @@ def _status_class_portale(metriche) -> str:
 def build_fotovoltaico_clienti_rows_portale(
     fatturato_by_impianto: dict[str, Decimal] | None = None,
     fatturato_straordinario_by_impianto: dict[str, Decimal] | None = None,
+    fatture_straordinarie_annuo_by_impianto: dict[str, int] | None = None,
+    fatture_straordinarie_totali_by_impianto: dict[str, int] | None = None,
 ):
     queryset = _build_fotovoltaico_clienti_portale_queryset()
 
@@ -228,10 +254,18 @@ def build_fotovoltaico_clienti_rows_portale(
                     getattr(stato_economico, "margine_straordinario", None)
                 ),
                 numero_fatture_straordinarie_annuo=_fmt_integer(
-                    getattr(stato_economico, "numero_fatture_straordinarie_annuo", None)
+                    _resolve_numero_fatture_straordinarie_annuo_value(
+                        impianto,
+                        stato_economico,
+                        fatture_straordinarie_annuo_by_impianto,
+                    )
                 ),
                 numero_fatture_straordinarie_totali=_fmt_integer(
-                    getattr(stato_economico, "numero_fatture_straordinarie_totali", None)
+                    _resolve_numero_fatture_straordinarie_totali_value(
+                        impianto,
+                        stato_economico,
+                        fatture_straordinarie_totali_by_impianto,
+                    )
                 ),
             )
         )
@@ -242,6 +276,8 @@ def build_fotovoltaico_clienti_rows_portale(
 def build_fotovoltaico_proprieta_rows_portale(
     fatturato_by_impianto: dict[str, Decimal] | None = None,
     fatturato_straordinario_by_impianto: dict[str, Decimal] | None = None,
+    fatture_straordinarie_annuo_by_impianto: dict[str, int] | None = None,
+    fatture_straordinarie_totali_by_impianto: dict[str, int] | None = None,
 ):
     queryset = _build_fotovoltaico_proprieta_portale_queryset()
 
@@ -314,10 +350,18 @@ def build_fotovoltaico_proprieta_rows_portale(
                     getattr(stato_economico, "margine_straordinario", None)
                 ),
                 numero_fatture_straordinarie_annuo=_fmt_integer(
-                    getattr(stato_economico, "numero_fatture_straordinarie_annuo", None)
+                    _resolve_numero_fatture_straordinarie_annuo_value(
+                        impianto,
+                        stato_economico,
+                        fatture_straordinarie_annuo_by_impianto,
+                    )
                 ),
                 numero_fatture_straordinarie_totali=_fmt_integer(
-                    getattr(stato_economico, "numero_fatture_straordinarie_totali", None)
+                    _resolve_numero_fatture_straordinarie_totali_value(
+                        impianto,
+                        stato_economico,
+                        fatture_straordinarie_totali_by_impianto,
+                    )
                 ),
             )
         )
@@ -328,6 +372,8 @@ def build_fotovoltaico_proprieta_rows_portale(
 def build_fotovoltaico_in_costruzione_rows_portale(
     fatturato_by_impianto: dict[str, Decimal] | None = None,
     fatturato_straordinario_by_impianto: dict[str, Decimal] | None = None,
+    fatture_straordinarie_annuo_by_impianto: dict[str, int] | None = None,
+    fatture_straordinarie_totali_by_impianto: dict[str, int] | None = None,
 ):
     queryset = _build_fotovoltaico_in_costruzione_portale_queryset()
 
@@ -400,10 +446,18 @@ def build_fotovoltaico_in_costruzione_rows_portale(
                     getattr(stato_economico, "margine_straordinario", None)
                 ),
                 numero_fatture_straordinarie_annuo=_fmt_integer(
-                    getattr(stato_economico, "numero_fatture_straordinarie_annuo", None)
+                    _resolve_numero_fatture_straordinarie_annuo_value(
+                        impianto,
+                        stato_economico,
+                        fatture_straordinarie_annuo_by_impianto,
+                    )
                 ),
                 numero_fatture_straordinarie_totali=_fmt_integer(
-                    getattr(stato_economico, "numero_fatture_straordinarie_totali", None)
+                    _resolve_numero_fatture_straordinarie_totali_value(
+                        impianto,
+                        stato_economico,
+                        fatture_straordinarie_totali_by_impianto,
+                    )
                 ),
             )
         )
@@ -414,6 +468,8 @@ def build_fotovoltaico_in_costruzione_rows_portale(
 def build_agrivoltaico_rows_portale(
     fatturato_by_impianto: dict[str, Decimal] | None = None,
     fatturato_straordinario_by_impianto: dict[str, Decimal] | None = None,
+    fatture_straordinarie_annuo_by_impianto: dict[str, int] | None = None,
+    fatture_straordinarie_totali_by_impianto: dict[str, int] | None = None,
 ):
     queryset = _build_fotovoltaico_agrivoltaico_portale_queryset()
 
@@ -486,10 +542,18 @@ def build_agrivoltaico_rows_portale(
                     getattr(stato_economico, "margine_straordinario", None)
                 ),
                 numero_fatture_straordinarie_annuo=_fmt_integer(
-                    getattr(stato_economico, "numero_fatture_straordinarie_annuo", None)
+                    _resolve_numero_fatture_straordinarie_annuo_value(
+                        impianto,
+                        stato_economico,
+                        fatture_straordinarie_annuo_by_impianto,
+                    )
                 ),
                 numero_fatture_straordinarie_totali=_fmt_integer(
-                    getattr(stato_economico, "numero_fatture_straordinarie_totali", None)
+                    _resolve_numero_fatture_straordinarie_totali_value(
+                        impianto,
+                        stato_economico,
+                        fatture_straordinarie_totali_by_impianto,
+                    )
                 ),
             )
         )
