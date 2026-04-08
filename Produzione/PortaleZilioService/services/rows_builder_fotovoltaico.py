@@ -76,6 +76,32 @@ def _fmt_currency_accounting(value: Decimal | float | None) -> str:
     return f"€ {_fmt_number_it(numeric_value, decimals=2)}"
 
 
+def _normalize_plant_name(value: str | None) -> str:
+    if value is None:
+        return ""
+    return " ".join(value.strip().split()).casefold()
+
+
+def _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto: dict[str, Decimal] | None):
+    if fatturato_by_impianto:
+        normalized_name = _normalize_plant_name(impianto.nome_impianto)
+        if normalized_name in fatturato_by_impianto:
+            return fatturato_by_impianto[normalized_name]
+    return getattr(stato_economico, "fatturato", None)
+
+
+def _resolve_totale_fatturato_straordinario_value(
+    impianto,
+    stato_economico,
+    fatturato_straordinario_by_impianto: dict[str, Decimal] | None,
+):
+    if fatturato_straordinario_by_impianto:
+        normalized_name = _normalize_plant_name(impianto.nome_impianto)
+        if normalized_name in fatturato_straordinario_by_impianto:
+            return fatturato_straordinario_by_impianto[normalized_name]
+    return getattr(stato_economico, "totale_fatturato_straordinario", None)
+
+
 def _calcola_anni_contratto(data_inizio: date | None, data_fine: date | None) -> str:
     if not data_inizio or not data_fine:
         return "--"
@@ -127,7 +153,10 @@ def _status_class_portale(metriche) -> str:
     return "status-dot-gray"
 
 
-def build_fotovoltaico_clienti_rows_portale():
+def build_fotovoltaico_clienti_rows_portale(
+    fatturato_by_impianto: dict[str, Decimal] | None = None,
+    fatturato_straordinario_by_impianto: dict[str, Decimal] | None = None,
+):
     queryset = _build_fotovoltaico_clienti_portale_queryset()
 
     rows: list[FotovoltaicoClientiRow] = []
@@ -173,8 +202,8 @@ def build_fotovoltaico_clienti_rows_portale():
                 totale_maturato=_fmt_decimal(
                     getattr(stato_economico, "maturato", None)
                 ),
-                fatturato=_fmt_decimal(
-                    getattr(stato_economico, "fatturato", None)
+                fatturato=_fmt_currency_accounting(
+                    _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
                 ),
                 totale_incassato=_fmt_decimal(
                     getattr(stato_economico, "incassato", None)
@@ -188,8 +217,12 @@ def build_fotovoltaico_clienti_rows_portale():
                 totale_ordinato_straordinario=_fmt_decimal(
                     getattr(stato_economico, "costo_sostenuto_straordinario", None)
                 ),
-                totale_fatturato_straordinario=_fmt_decimal(
-                    getattr(stato_economico, "totale_fatturato_straordinario", None)
+                totale_fatturato_straordinario=_fmt_currency_accounting(
+                    _resolve_totale_fatturato_straordinario_value(
+                        impianto,
+                        stato_economico,
+                        fatturato_straordinario_by_impianto,
+                    )
                 ),
                 margine_straordinario=_fmt_decimal(
                     getattr(stato_economico, "margine_straordinario", None)
@@ -206,7 +239,10 @@ def build_fotovoltaico_clienti_rows_portale():
     return rows
 
 
-def build_fotovoltaico_proprieta_rows_portale():
+def build_fotovoltaico_proprieta_rows_portale(
+    fatturato_by_impianto: dict[str, Decimal] | None = None,
+    fatturato_straordinario_by_impianto: dict[str, Decimal] | None = None,
+):
     queryset = _build_fotovoltaico_proprieta_portale_queryset()
 
     rows: list[FotovoltaicoProprietaRow] = []
@@ -252,8 +288,8 @@ def build_fotovoltaico_proprieta_rows_portale():
                 totale_maturato=_fmt_decimal(
                     getattr(stato_economico, "maturato", None)
                 ),
-                fatturato=_fmt_decimal(
-                    getattr(stato_economico, "fatturato", None)
+                fatturato=_fmt_currency_accounting(
+                    _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
                 ),
                 totale_incassato=_fmt_decimal(
                     getattr(stato_economico, "incassato", None)
@@ -267,8 +303,12 @@ def build_fotovoltaico_proprieta_rows_portale():
                 totale_ordinato_straordinario=_fmt_decimal(
                     getattr(stato_economico, "costo_sostenuto_straordinario", None)
                 ),
-                totale_fatturato_straordinario=_fmt_decimal(
-                    getattr(stato_economico, "totale_fatturato_straordinario", None)
+                totale_fatturato_straordinario=_fmt_currency_accounting(
+                    _resolve_totale_fatturato_straordinario_value(
+                        impianto,
+                        stato_economico,
+                        fatturato_straordinario_by_impianto,
+                    )
                 ),
                 margine_straordinario=_fmt_decimal(
                     getattr(stato_economico, "margine_straordinario", None)
@@ -285,7 +325,10 @@ def build_fotovoltaico_proprieta_rows_portale():
     return rows
 
 
-def build_fotovoltaico_in_costruzione_rows_portale():
+def build_fotovoltaico_in_costruzione_rows_portale(
+    fatturato_by_impianto: dict[str, Decimal] | None = None,
+    fatturato_straordinario_by_impianto: dict[str, Decimal] | None = None,
+):
     queryset = _build_fotovoltaico_in_costruzione_portale_queryset()
 
     rows: list[FotovoltaicoInCostruzioneRow] = []
@@ -331,8 +374,8 @@ def build_fotovoltaico_in_costruzione_rows_portale():
                 totale_maturato=_fmt_decimal(
                     getattr(stato_economico, "maturato", None)
                 ),
-                fatturato=_fmt_decimal(
-                    getattr(stato_economico, "fatturato", None)
+                fatturato=_fmt_currency_accounting(
+                    _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
                 ),
                 totale_incassato=_fmt_decimal(
                     getattr(stato_economico, "incassato", None)
@@ -346,8 +389,12 @@ def build_fotovoltaico_in_costruzione_rows_portale():
                 totale_ordinato_straordinario=_fmt_decimal(
                     getattr(stato_economico, "costo_sostenuto_straordinario", None)
                 ),
-                totale_fatturato_straordinario=_fmt_decimal(
-                    getattr(stato_economico, "totale_fatturato_straordinario", None)
+                totale_fatturato_straordinario=_fmt_currency_accounting(
+                    _resolve_totale_fatturato_straordinario_value(
+                        impianto,
+                        stato_economico,
+                        fatturato_straordinario_by_impianto,
+                    )
                 ),
                 margine_straordinario=_fmt_decimal(
                     getattr(stato_economico, "margine_straordinario", None)
@@ -364,7 +411,10 @@ def build_fotovoltaico_in_costruzione_rows_portale():
     return rows
 
 
-def build_agrivoltaico_rows_portale():
+def build_agrivoltaico_rows_portale(
+    fatturato_by_impianto: dict[str, Decimal] | None = None,
+    fatturato_straordinario_by_impianto: dict[str, Decimal] | None = None,
+):
     queryset = _build_fotovoltaico_agrivoltaico_portale_queryset()
 
     rows: list[AgrivoltaicoRow] = []
@@ -410,8 +460,8 @@ def build_agrivoltaico_rows_portale():
                 totale_maturato=_fmt_decimal(
                     getattr(stato_economico, "maturato", None)
                 ),
-                fatturato=_fmt_decimal(
-                    getattr(stato_economico, "fatturato", None)
+                fatturato=_fmt_currency_accounting(
+                    _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
                 ),
                 totale_incassato=_fmt_decimal(
                     getattr(stato_economico, "incassato", None)
@@ -425,8 +475,12 @@ def build_agrivoltaico_rows_portale():
                 totale_ordinato_straordinario=_fmt_decimal(
                     getattr(stato_economico, "costo_sostenuto_straordinario", None)
                 ),
-                totale_fatturato_straordinario=_fmt_decimal(
-                    getattr(stato_economico, "totale_fatturato_straordinario", None)
+                totale_fatturato_straordinario=_fmt_currency_accounting(
+                    _resolve_totale_fatturato_straordinario_value(
+                        impianto,
+                        stato_economico,
+                        fatturato_straordinario_by_impianto,
+                    )
                 ),
                 margine_straordinario=_fmt_decimal(
                     getattr(stato_economico, "margine_straordinario", None)

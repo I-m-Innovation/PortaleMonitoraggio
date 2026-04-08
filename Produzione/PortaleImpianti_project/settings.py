@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -151,3 +152,18 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Configurazione opzionale per l'intervallo di controllo dei dati PUN
 PUN_CHECK_INTERVAL = timedelta(hours=6)  # Controlla ogni 6 ore
+
+ZILIO_FATTURATO_ORDINARIO_URL = os.getenv(
+    "ZILIO_FATTURATO_ORDINARIO_URL",
+    "http://127.0.0.1:1234/fatturato-ordinario-anno-corrente-per-impianto/",
+)
+ZILIO_FATTURATO_ORDINARIO_TIMEOUT = float(
+    os.getenv("ZILIO_FATTURATO_ORDINARIO_TIMEOUT", "3")
+)
+ZILIO_FATTURATO_STRAORDINARIO_URL = os.getenv(
+    "ZILIO_FATTURATO_STRAORDINARIO_URL",
+    "http://127.0.0.1:1234/fatturato-totale-straordinario-per-impianto/",
+)
+ZILIO_FATTURATO_STRAORDINARIO_TIMEOUT = float(
+    os.getenv("ZILIO_FATTURATO_STRAORDINARIO_TIMEOUT", "3")
+)
