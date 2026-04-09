@@ -145,6 +145,24 @@ class FotovoltaicoStatoEconomico(models.Model):
     anni_contratto = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
     totale_annuale_su_mw = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     totale_annuo = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    periodicita_canone_mesi = models.PositiveSmallIntegerField(
+        blank=True,
+        null=True,
+        help_text=(
+            "Periodicita del canone espressa in mesi. "
+            "Ad esempio: 1=mensile, 3=trimestrale, 6=semestrale, 12=annuale."
+        ),
+    )
+    importo_canone_periodico = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text=(
+            "Importo del singolo canone relativo alla periodicita indicata in "
+            "'periodicita_canone_mesi'."
+        ),
+    )
 
     # Dati da API gestionale
     maturato = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
@@ -186,6 +204,20 @@ class FotovoltaicoStatoEconomico(models.Model):
                     | Q(data_fine_contratto__gte=F("data_inizio_contratto"))
                 ),
                 name="ck_fv_stato_economico_contract_dates",
+            ),
+            models.CheckConstraint(
+                check=(
+                    Q(periodicita_canone_mesi__isnull=True)
+                    | Q(periodicita_canone_mesi__gt=0)
+                ),
+                name="ck_fv_stato_economico_periodicita_canone_positive",
+            ),
+            models.CheckConstraint(
+                check=(
+                    Q(importo_canone_periodico__isnull=True)
+                    | Q(importo_canone_periodico__gte=0)
+                ),
+                name="ck_fv_stato_economico_importo_canone_non_negative",
             ),
         ]
 

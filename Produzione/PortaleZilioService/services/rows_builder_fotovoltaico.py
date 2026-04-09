@@ -182,6 +182,40 @@ def _calcola_anni_contratto(data_inizio: date | None, data_fine: date | None) ->
     return f"{anni:.1f}"
 
 
+def _maturato_value(stato_economico) -> Decimal | None:
+    if stato_economico is None:
+        return None
+
+    data_inizio = getattr(stato_economico, "data_inizio_contratto", None)
+    periodicita_mesi = getattr(stato_economico, "periodicita_canone_mesi", None)
+    importo_canone_periodico = getattr(stato_economico, "importo_canone_periodico", None)
+
+    if not data_inizio or periodicita_mesi in (None, 0) or importo_canone_periodico is None:
+        return None
+
+    today = date.today()
+    if data_inizio > today:
+        return Decimal("0")
+
+    data_fine = getattr(stato_economico, "data_fine_contratto", None)
+    effective_end = min(today, data_fine) if data_fine else today
+    if effective_end < data_inizio:
+        return Decimal("0")
+
+    elapsed_months = (
+        (effective_end.year - data_inizio.year) * 12
+        + (effective_end.month - data_inizio.month)
+    )
+    if effective_end.day < data_inizio.day:
+        elapsed_months -= 1
+
+    if elapsed_months < periodicita_mesi:
+        return Decimal("0")
+
+    numero_canoni_maturati = elapsed_months // periodicita_mesi
+    return Decimal(numero_canoni_maturati) * Decimal(str(importo_canone_periodico))
+
+
 def _pr_ultimi_12_mesi_text(impianto, metriche) -> str:
     pr_value = getattr(metriche, "pr_ultimi_12_mesi", None)
     if pr_value is not None:
@@ -281,9 +315,7 @@ def build_fotovoltaico_clienti_rows_portale(
                 totale_annuo=_fmt_decimal(
                     getattr(stato_economico, "totale_annuo", None)
                 ),
-                totale_maturato=_fmt_decimal(
-                    getattr(stato_economico, "maturato", None)
-                ),
+                totale_maturato=_fmt_decimal(_maturato_value(stato_economico)),
                 fatturato=_fmt_currency_accounting(
                     _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
                 ),
@@ -387,9 +419,7 @@ def build_fotovoltaico_proprieta_rows_portale(
                 totale_annuo=_fmt_decimal(
                     getattr(stato_economico, "totale_annuo", None)
                 ),
-                totale_maturato=_fmt_decimal(
-                    getattr(stato_economico, "maturato", None)
-                ),
+                totale_maturato=_fmt_decimal(_maturato_value(stato_economico)),
                 fatturato=_fmt_currency_accounting(
                     _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
                 ),
@@ -493,9 +523,7 @@ def build_fotovoltaico_in_costruzione_rows_portale(
                 totale_annuo=_fmt_decimal(
                     getattr(stato_economico, "totale_annuo", None)
                 ),
-                totale_maturato=_fmt_decimal(
-                    getattr(stato_economico, "maturato", None)
-                ),
+                totale_maturato=_fmt_decimal(_maturato_value(stato_economico)),
                 fatturato=_fmt_currency_accounting(
                     _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
                 ),
@@ -599,9 +627,7 @@ def build_agrivoltaico_rows_portale(
                 totale_annuo=_fmt_decimal(
                     getattr(stato_economico, "totale_annuo", None)
                 ),
-                totale_maturato=_fmt_decimal(
-                    getattr(stato_economico, "maturato", None)
-                ),
+                totale_maturato=_fmt_decimal(_maturato_value(stato_economico)),
                 fatturato=_fmt_currency_accounting(
                     _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
                 ),
