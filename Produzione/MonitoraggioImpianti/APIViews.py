@@ -17,6 +17,7 @@ import pandas as pd
 from . import API_ISC as ISC
 from . import API_HIGECO as HIGECO
 from . import API_MyLeo as LEO
+from . import API_SAJ as SAJ
 from MonitoraggioImpianti.utils import functions as fn
 
 
@@ -339,6 +340,76 @@ class DayChartData(APIView):
 			}
 			return Response(chart_data)
 
-        # ---------------------------------------- SAJ - Elekeeper (DA IMPLEMENTARE) ----------------------------
-        
-        
+		# ---------------------------------------- SAJ - Elekeeper -----------------------------------------------
+		elif impianto.lettura_dati == 'API_SAJ':
+			nome_impianto = impianto.nome_impianto
+			t_start = datetime(Now.year, Now.month, Now.day, 0, 0, 0)
+			t_end_display = datetime(Now.year, Now.month, Now.day, 23, 55, 0)
+
+			try:
+				df_time_series, led, today_energy_kwh = SAJ.get_saj_day_data(impianto, start=t_start, end=Now)
+			except Exception as error:
+				df_time_series = pd.DataFrame({'t': [], 'P': []})
+				led = 'led-gray'
+				today_energy_kwh = None
+				print(f'Errore get_saj_day_data {nome_impianto}', type(error).__name__, "â€“", error)
+
+			if not df_time_series.empty:
+				df_time_series = df_time_series.copy()
+				df_time_series['t'] = pd.to_datetime(df_time_series['t'])
+				df_time_series = df_time_series.sort_values('t').reset_index(drop=True)
+				display_index = pd.DataFrame({'t': pd.date_range(start=t_start, end=t_end_display, freq='5min')})
+				t_last = df_time_series['t'].iloc[-1].strftime('%Y-%m-%d %H:%M:%S')
+				energy = float(today_energy_kwh) if today_energy_kwh is not None else None
+				co2_kg = energy * 0.457 if energy is not None else None
+				tdelta = Now - datetime(Now.year, Now.month, Now.day, 0, 0, 0)
+				if energy is not None and tdelta.total_seconds() > 0:
+					alberi = int(co2_kg / (tdelta.total_seconds() / 3600) * 24 * 365 / 1000)
+					case = int(energy / 9.5)
+				else:
+					alberi = 0
+					case = 0
+				df_display = (
+					display_index
+					.merge(df_time_series[['t', 'P']], on='t', how='left')
+					.reset_index()
+				)
+				df_display = df_display[['t', 'P']]
+				df_display.loc[df_display['t'] > Now, 'P'] = None
+				valid_points = df_display.index[df_display['P'].notna()].tolist()
+				k_last = valid_points[-1] if valid_points else None
+				last_plot_value = df_display.loc[k_last, 'P'] if k_last is not None else 0
+				p_last = round(float(last_plot_value), 2) if k_last is not None else 0
+				print(
+					f"SAJ DEBUG {nickname} chart_points={len(df_display)} "
+					f"chart_non_empty={len(valid_points)} k_last={k_last} p_last={p_last}"
+				)
+				df_display['t'] = pd.to_datetime(df_display['t']).dt.strftime('%H:%M')
+				df_display['P'] = df_display['P'].where(df_display['P'].notna(), '')
+			else:
+				k_last = None
+				t_last = None
+				energy = alberi = case = co2_kg = None
+				p_last = 0
+				print(f"SAJ DEBUG {nickname} chart_points=0 chart_non_empty=0 k_last=None p_last=0")
+				df_display = pd.DataFrame({
+					't': pd.date_range(start=t_start, end=t_end_display, freq='5min').strftime('%H:%M'),
+					'P': [''] * len(pd.date_range(start=t_start, end=t_end_display, freq='5min'))
+				})
+
+			chart_data = {
+				'time': df_display.t,
+				'pot': df_display.P,
+				'k_last': k_last,
+				't_last': t_last,
+				'led': led,
+				'PLast': p_last,
+				'info': {
+					'co2': co2_kg,
+					'case': case,
+					'alberi': alberi,
+					'energy': round(energy, 2) if energy is not None else None,
+				}
+			}
+
+			return Response(chart_data)

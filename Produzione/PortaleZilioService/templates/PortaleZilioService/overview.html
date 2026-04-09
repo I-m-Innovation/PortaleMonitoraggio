@@ -1,0 +1,156 @@
+{% extends "base_layout.html" %}
+{% load static %}
+
+{% block title %}Portale Zilio Service - Overview{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/style_overview_page.css' %}">
+    <link rel="stylesheet" href="{% static 'PortaleZilioService/css/landing.css' %}">
+    <link rel="stylesheet" href="{% static 'PortaleZilioService/css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+    <main class="contracts-page">
+        <section class="contracts-header-card">
+            <div>
+                <p class="contracts-eyebrow">Portale Zilio Service <span class="h1-work-in-progress">IN LAVORAZIONE</span></p>
+                <h1>Overview impianti</h1>
+            </div>
+            <div class="contracts-header-brand">
+                <img
+                    src="{% static 'PortaleZilioService/images/zilio_service_logo_alta_risoluzione.svg' %}"
+                    alt="Logo Zilio Service"
+                    class="contracts-header-logo"
+                >
+            </div>
+            <a class="contracts-overview-link" href="{% url 'PortaleZilioService:home' %}">Torna alla home</a>
+        </section>
+        <section
+            id="isc-sync-banner"
+            class="sync-banner"
+            data-sync-banner
+            data-sync-url="{% url 'PortaleZilioService:sync-provider-metrics' %}"
+            hidden
+        ></section>
+        <section class="energy-section" id="section-zilio-service">
+            <h2>Fotovoltaico</h2>
+
+            <header class="category-header-fotovoltaico" data-group="fv">
+                <div class="fv-header-tabs">
+                    <button class="category-button" type="button" data-group="fv" data-target="fv-clienti" aria-controls="fv-clienti" aria-pressed="false" id="clienti-tab-button">O&amp;M FV Clienti</button>
+                    <button class="category-button" type="button" data-group="fv" data-target="fv-proprieta" aria-controls="fv-proprieta" aria-pressed="false" id="proprieta-tab-button">O&amp;M FV Proprieta</button>
+                    <button class="category-button" type="button" data-group="fv" data-target="fv-agrivoltaico" aria-controls="fv-agrivoltaico" aria-pressed="false" id="agrivoltaico-tab-button">O&amp;M Agrivoltaico</button>
+                    <button class="category-button" type="button" data-group="fv" data-target="fv-ppu" aria-controls="fv-ppu" aria-pressed="false" id="ppu-tab-button">PPU FV</button>
+                    <button class="category-button" type="button" data-group="fv" data-target="fv-costruzione" aria-controls="fv-costruzione" aria-pressed="false" id="costruzione-tab-button">FV In Costruzione</button>
+                </div>
+            </header>
+
+            <section class="category-panel" id="fv-empty" data-panel data-group="fv">
+                <p class="empty-state">Seleziona una categoria per visualizzare i dati.</p>
+            </section>
+
+            <section class="category-panel" id="fv-clienti" data-panel data-group="fv" hidden>
+                {% include "PortaleZilioService/partials/_table_fotovoltaico_clienti.html" with rows=fv_clienti_rows %}
+            </section>
+
+            <section class="category-panel" id="fv-proprieta" data-panel data-group="fv" hidden>
+                {% include "PortaleZilioService/partials/_table_fotovoltaico_proprieta.html" with rows=fv_proprieta_rows %}
+            </section>
+
+            <section class="category-panel" id="fv-agrivoltaico" data-panel data-group="fv" hidden>
+                {% include "PortaleZilioService/partials/_table_fotovoltaico_agrivoltaico.html" with rows=fv_agrivoltaico_rows %}
+            </section>
+
+            <section class="category-panel" id="fv-costruzione" data-panel data-group="fv" hidden>
+                {% include "PortaleZilioService/partials/_table_fotovoltaico_in_costruzione.html" with rows=fv_in_costruzione_rows %}
+            </section>
+
+            <section class="category-panel" id="fv-ppu" data-panel data-group="fv" hidden>
+                {% include "PortaleZilioService/partials/_table_fotovoltaico_PPU.html" with rows=fv_ppu_rows %}
+            </section>
+        </section>
+
+        <section>
+            <h2>Idroelettrico</h2>
+
+            <header class="category-header-idroelettrico" data-group="idr">
+                <button class="category-button" type="button" data-group="idr" data-target="idr-proprieta" aria-controls="idr-proprieta" aria-pressed="false" id="idr-proprieta-tab-button">O&amp;M IDR Proprieta</button>
+                <button class="category-button" type="button" data-group="idr" data-target="idr-gse" aria-controls="idr-gse" aria-pressed="false" id="idr-gse-tab-button">IDR GSE</button>
+            </header>
+
+            <section class="category-panel" id="idr-empty" data-panel data-group="idr">
+                <p class="empty-state">Seleziona una categoria per visualizzare i dati.</p>
+            </section>
+
+            <section class="category-panel" id="idr-proprieta" data-panel data-group="idr" hidden>
+                {% include "PortaleZilioService/partials/_table_idroelettrico_proprieta.html" with rows=idr_proprieta_rows %}
+            </section>
+
+            <section class="category-panel" id="idr-gse" data-panel data-group="idr" hidden>
+                {% include "PortaleZilioService/partials/_table_idroelettrico_gse.html" with rows=idr_gse_rows %}
+            </section>
+        </section>
+
+        <button
+            type="button"
+            class="overview-info-button"
+            data-overview-info-toggle
+            aria-expanded="false"
+            aria-controls="overview-info-panel"
+            title="Mostra la logica di appartenenza alle tabelle"
+        >
+            <span class="overview-info-button-icon">i</span>
+            <span class="overview-info-button-label">Logica tabelle</span>
+        </button>
+
+        <aside
+            id="overview-info-panel"
+            class="overview-info-panel"
+            data-overview-info-panel
+            hidden
+        >
+            <div class="overview-info-panel-header">
+                <div>
+                    <p class="overview-info-eyebrow">Overview FV</p>
+                    <h3>Logica tabelle FV</h3>
+                </div>
+                <button type="button" class="overview-info-close" data-overview-info-close aria-label="Chiudi pannello informazioni">×</button>
+            </div>
+            <p class="overview-info-intro">
+                Un impianto FV può comparire in più tabelle. L'unica eccezione è lo stato
+                <strong>IN_COSTRUZIONE</strong>, che ha priorità assoluta.
+            </p>
+            <div class="overview-info-rules">
+                <div class="overview-info-rule">
+                    <span class="overview-info-rule-title">O&amp;M FV Clienti</span>
+                    <span class="overview-info-rule-body"><code>categoria_fv = CLIENTE</code> e <code>is_oem = True</code></span>
+                </div>
+                <div class="overview-info-rule">
+                    <span class="overview-info-rule-title">O&amp;M FV Proprieta</span>
+                    <span class="overview-info-rule-body"><code>categoria_fv = PROPRIETA</code> e <code>is_oem = True</code></span>
+                </div>
+                <div class="overview-info-rule">
+                    <span class="overview-info-rule-title">O&amp;M Agrivoltaico</span>
+                    <span class="overview-info-rule-body"><code>is_agrivoltaico = True</code> e <code>is_oem = True</code></span>
+                </div>
+                <div class="overview-info-rule">
+                    <span class="overview-info-rule-title">PPU FV</span>
+                    <span class="overview-info-rule-body"><code>is_ppu = True</code></span>
+                </div>
+                <div class="overview-info-rule is-critical">
+                    <span class="overview-info-rule-title">FV In Costruzione</span>
+                    <span class="overview-info-rule-body"><code>stato_impianto = IN_COSTRUZIONE</code> e esclusione da tutte le altre tabelle</span>
+                </div>
+            </div>
+            <p class="overview-info-note">
+                <code>categoria_fv</code> resta esclusiva tra <code>CLIENTE</code> e <code>PROPRIETA</code>.
+                I flag <code>is_oem</code>, <code>is_ppu</code> e <code>is_agrivoltaico</code> sono indipendenti.
+            </p>
+        </aside>
+
+    </main>
+
+    <script src="{% static 'PortaleZilioService/js/overviewInfo.js' %}" defer></script>
+    <script src="{% static 'PortaleZilioService/js/homeTables.js' %}" defer></script>
+    <script src="{% static 'PortaleZilioService/js/homePrHighlights.js' %}" defer></script>
+{% endblock %}

@@ -31,13 +31,12 @@
 						],
 						title: [{text: 'Potenza impianto', left:'50%', textAlign: 'center'}],
             tooltip: {trigger: 'axis'},
-            toolbox: {right: '10%', top: 0,
-			          feature: {
-					          dataView: { show: true, readOnly: false },
-					          restore: {show: true},
-					          saveAsImage: {show: true}
-                }
-			      },
+            toolbox: {right: '10%', top: 0, feature: {
+						dataView: { show: true, readOnly: false },
+						restore: {show: true},
+					    saveAsImage: {show: true}
+               			}
+					},
             dataZoom: [{type: 'inside',show: true, realtime: true, start: 0, end: 100, xAxisIndex: [0,1],height: 60}],
             xAxis: [{ data: ['00:00']},],
 						yAxis: [
@@ -102,9 +101,9 @@
 
                 /* AGGIORNAMENTO DATI GRAFICO CON I TIMESTAMPS E LE LINEE DI POTENZA */
 								DayChart.setOption({
-	                  xAxis: [{ data: timestamps }],
-                    series: [{data: potenza, name: 'Potenza'},]
-                })
+									xAxis: [{ data: timestamps }],
+									series: [{data: potenza, name: 'Potenza'},]
+                				})
 
 								/* AGGIORNAMENTO GAUGE */
 								gaugePot.setOption({

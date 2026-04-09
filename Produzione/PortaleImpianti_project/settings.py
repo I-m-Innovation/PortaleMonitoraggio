@@ -10,11 +10,29 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def _load_simple_env_file(env_path: Path) -> None:
+    if not env_path.exists():
+        return
+
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        os.environ.setdefault(key, value)
+
+
+_load_simple_env_file(BASE_DIR.parent / ".env")
 
 
 # Quick-start development settings - unsuitable for production
@@ -151,3 +169,39 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Configurazione opzionale per l'intervallo di controllo dei dati PUN
 PUN_CHECK_INTERVAL = timedelta(hours=6)  # Controlla ogni 6 ore
+
+ZILIO_FATTURATO_ORDINARIO_URL = os.getenv(
+    "ZILIO_FATTURATO_ORDINARIO_URL",
+    "http://127.0.0.1:1234/fatturato-ordinario-anno-corrente-per-impianto/",
+)
+ZILIO_FATTURATO_ORDINARIO_TIMEOUT = float(
+    os.getenv("ZILIO_FATTURATO_ORDINARIO_TIMEOUT", "3")
+)
+ZILIO_FATTURATO_STRAORDINARIO_URL = os.getenv(
+    "ZILIO_FATTURATO_STRAORDINARIO_URL",
+    "http://127.0.0.1:1234/fatturato-totale-straordinario-per-impianto/",
+)
+ZILIO_FATTURATO_STRAORDINARIO_TIMEOUT = float(
+    os.getenv("ZILIO_FATTURATO_STRAORDINARIO_TIMEOUT", "3")
+)
+ZILIO_FATTURE_STRAORDINARIE_ANNUO_URL = os.getenv(
+    "ZILIO_FATTURE_STRAORDINARIE_ANNUO_URL",
+    "http://127.0.0.1:1234/numero-fatture-straordinarie-anno-corrente-per-impianto/",
+)
+ZILIO_FATTURE_STRAORDINARIE_ANNUO_TIMEOUT = float(
+    os.getenv("ZILIO_FATTURE_STRAORDINARIE_ANNUO_TIMEOUT", "3")
+)
+ZILIO_FATTURE_STRAORDINARIE_TOTALI_URL = os.getenv(
+    "ZILIO_FATTURE_STRAORDINARIE_TOTALI_URL",
+    "http://127.0.0.1:1234/numero-fatture-straordinarie-totali-per-impianto/",
+)
+ZILIO_FATTURE_STRAORDINARIE_TOTALI_TIMEOUT = float(
+    os.getenv("ZILIO_FATTURE_STRAORDINARIE_TOTALI_TIMEOUT", "3")
+)
+ZILIO_COSTO_STRAORDINARIO_TOTALE_URL = os.getenv(
+    "ZILIO_COSTO_STRAORDINARIO_TOTALE_URL",
+    "http://127.0.0.1:1234/costo-totale-storico-straordinario-per-impianto/",
+)
+ZILIO_COSTO_STRAORDINARIO_TOTALE_TIMEOUT = float(
+    os.getenv("ZILIO_COSTO_STRAORDINARIO_TOTALE_TIMEOUT", "3")
+)

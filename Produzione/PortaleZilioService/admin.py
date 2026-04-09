@@ -4,65 +4,12 @@ from .models import (
     FotovoltaicoMetadata,
     FotovoltaicoMetricheTecniche,
     FotovoltaicoStatoEconomico,
-    FvMetadata,
     IdroelettricoMetadata,
     ImpiantoAnagrafica,
+    ImpiantoCommessa,
     ImpiantoDispositivo,
     ImpiantoSorgenteDati,
 )
-
-
-@admin.register(FvMetadata)
-class FvMetadataAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "nome_impianto",
-        "nome_proprietario",
-        "nome_cliente",
-        "categoria_fv",
-        "is_ppu",
-        "is_in_costruzione",
-        "data_inizio_contratto",
-        "data_fine_contratto",
-        "pr_contrattuale",
-        "totale_contratto",
-        "totale_annuo_su_mv",
-        "totale_annuo",
-        "potenza",
-        "updated_at",
-    )
-    list_filter = ("categoria_fv", "is_ppu", "is_in_costruzione")
-    search_fields = (
-        "nome_impianto",
-        "nome_proprietario",
-        "nome_cliente",
-        "impianto__nickname",
-        "impianto__nome_impianto",
-        "impianto__societa",
-    )
-    ordering = ("nome_impianto",)
-    raw_id_fields = ("impianto",)
-    list_select_related = ("impianto",)
-    readonly_fields = ("created_at", "updated_at")
-    fields = (
-        "nome_impianto",
-        "nome_proprietario",
-        "nome_cliente",
-        "categoria_fv",
-        "is_ppu",
-        "is_in_costruzione",
-        "data_inizio_contratto",
-        "data_fine_contratto",
-        "pr_contrattuale",
-        "totale_contratto",
-        "totale_annuo_su_mv",
-        "totale_annuo",
-        "potenza",
-        "note",
-        "impianto",
-        "created_at",
-        "updated_at",
-    )
 
 
 @admin.register(ImpiantoAnagrafica)
@@ -77,11 +24,28 @@ class ImpiantoAnagraficaAdmin(admin.ModelAdmin):
         "potenza_installata_kw",
         "nome_proprietario",
         "nome_cliente",
-        "attivo_portale",
     )
-    list_filter = ("tipo_impianto", "stato_impianto", "attivo_portale")
+    list_filter = ("tipo_impianto", "stato_impianto")
     search_fields = ("nome_impianto", "tag_impianto", "nome_proprietario", "nome_cliente")
     ordering = ("nome_impianto",)
+    fields = (
+        "nome_impianto",
+        "tag_impianto",
+        "codice_impianto",
+        "tipo_impianto",
+        "stato_impianto",
+        "potenza_installata_kw",
+        "data_entrata_esercizio",
+        "latitudine",
+        "longitudine",
+        "indirizzo",
+        "localita",
+        "provincia",
+        "regione",
+        "nome_proprietario",
+        "nome_cliente",
+        "note",
+    )
 
 
 @admin.register(ImpiantoSorgenteDati)
@@ -112,13 +76,34 @@ class FotovoltaicoMetadataAdmin(admin.ModelAdmin):
         "id",
         "impianto",
         "categoria_fv",
+        "potenza_contratto_kw",
+        "is_oem",
         "is_ppu",
         "is_agrivoltaico",
         "pr_contrattuale",
     )
-    list_filter = ("categoria_fv", "is_ppu", "is_agrivoltaico")
+    list_filter = ("categoria_fv", "is_oem", "is_ppu", "is_agrivoltaico")
     search_fields = ("impianto__nome_impianto", "impianto__tag_impianto")
     list_select_related = ("impianto",)
+    readonly_fields = ("potenza_installata_kw_readonly",)
+    fields = (
+        "impianto",
+        "categoria_fv",
+        "potenza_contratto_kw",
+        "potenza_installata_kw_readonly",
+        "is_oem",
+        "is_ppu",
+        "is_agrivoltaico",
+        "pr_contrattuale",
+        "note_fotovoltaico",
+    )
+
+    @admin.display(description="Potenza installata (kW)")
+    def potenza_installata_kw_readonly(self, obj):
+        if not obj or not obj.impianto:
+            return "--"
+        value = getattr(obj.impianto, "potenza_installata_kw", None)
+        return value if value is not None else "--"
 
 
 @admin.register(FotovoltaicoStatoEconomico)
@@ -128,23 +113,13 @@ class FotovoltaicoStatoEconomicoAdmin(admin.ModelAdmin):
         "impianto",
         "data_inizio_contratto",
         "data_fine_contratto",
+        "importo_stimato_contratto_annuo",
         "totale_contratto",
-        "api_sync_status",
-        "last_api_sync_at",
-        "updated_at",
-    )
-    list_filter = ("api_sync_status",)
-    search_fields = (
-        "impianto__nome_impianto",
-        "impianto__tag_impianto",
-        "impianto__codice_impianto",
-    )
-    list_select_related = ("impianto",)
-    ordering = ("impianto__nome_impianto",)
-    readonly_fields = (
         "anni_contratto",
         "totale_annuale_su_mw",
         "totale_annuo",
+        "periodicita_canone_mesi",
+        "importo_canone_periodico",
         "maturato",
         "fatturato",
         "incassato",
@@ -155,6 +130,21 @@ class FotovoltaicoStatoEconomicoAdmin(admin.ModelAdmin):
         "margine_straordinario",
         "numero_fatture_straordinarie_annuo",
         "numero_fatture_straordinarie_totali",
+        "api_sync_status",
+        "api_sync_note",
+        "last_api_sync_at",
+        "updated_at",
+        "created_at",
+    )
+    list_filter = ("api_sync_status",)
+    search_fields = (
+        "impianto__nome_impianto",
+        "impianto__tag_impianto",
+        "impianto__codice_impianto",
+    )
+    list_select_related = ("impianto",)
+    ordering = ("impianto__nome_impianto",)
+    readonly_fields = (
         "last_api_sync_at",
         "api_sync_status",
         "api_sync_note",
@@ -165,10 +155,13 @@ class FotovoltaicoStatoEconomicoAdmin(admin.ModelAdmin):
         "impianto",
         "data_inizio_contratto",
         "data_fine_contratto",
+        "importo_stimato_contratto_annuo",
         "totale_contratto",
         "anni_contratto",
         "totale_annuale_su_mw",
         "totale_annuo",
+        "periodicita_canone_mesi",
+        "importo_canone_periodico",
         "maturato",
         "fatturato",
         "incassato",
@@ -273,3 +266,23 @@ class ImpiantoDispositivoAdmin(admin.ModelAdmin):
         "codice_dispositivo",
     )
     list_select_related = ("impianto",)
+
+
+@admin.register(ImpiantoCommessa)
+class ImpiantoCommessaAdmin(admin.ModelAdmin):
+    autocomplete_fields = ("impianto",)
+    list_display = (
+        "id",
+        "impianto",
+        "tipo_commessa",
+        "codice_commessa",
+    )
+    list_filter = ("tipo_commessa",)
+    search_fields = (
+        "impianto__nome_impianto",
+        "impianto__tag_impianto",
+        "impianto__codice_impianto",
+        "codice_commessa",
+    )
+    list_select_related = ("impianto",)
+    ordering = ("impianto__nome_impianto", "tipo_commessa")

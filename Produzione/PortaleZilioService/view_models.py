@@ -14,10 +14,12 @@ class FotovoltaicoClientiRow:
     status_class: str
     nome_impianto: str
     nome_cliente: str
-    potenza: str
+    potenza_contratto: str
+    potenza_installata: str
     pr_contrattuale: str  # 78% di solito secondo nicola e comunque lo deve inserire lui 
     pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  
     mancata_produzione: str
+    mancata_produzione_class: str
     ore_equivalenti: str   # Nicola capisce se sono a contratto o no
     inizio_contratto: str
     fine_contratto: str
@@ -36,6 +38,7 @@ class FotovoltaicoClientiRow:
     totale_ordinato_straordinario: str
     totale_fatturato_straordinario: str
     margine_straordinario: str
+    margine_straordinario_class: str
     numero_fatture_straordinarie_annuo: str
     numero_fatture_straordinarie_totali: str
 
@@ -46,10 +49,12 @@ class FotovoltaicoProprietaRow:
     status_class: str
     nome_impianto: str
     nome_cliente: str
-    potenza: str
+    potenza_contratto: str
+    potenza_installata: str
     pr_contrattuale: str  # 78% di solito secondo nicola e comunque lo deve inserire lui 
     pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  
     mancata_produzione: str
+    mancata_produzione_class: str
     ore_equivalenti: str   # Nicola capisce se sono a contratto o no
     inizio_contratto: str
     fine_contratto: str
@@ -68,6 +73,7 @@ class FotovoltaicoProprietaRow:
     totale_ordinato_straordinario: str
     totale_fatturato_straordinario: str
     margine_straordinario: str
+    margine_straordinario_class: str
     numero_fatture_straordinarie_annuo: str
     numero_fatture_straordinarie_totali: str
 
@@ -83,6 +89,7 @@ class FotovoltaicoInCostruzioneRow:
     pr_contrattuale: str  # 78% di solito secondo nicola e comunque lo deve inserire lui 
     pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  
     mancata_produzione: str
+    mancata_produzione_class: str
     ore_equivalenti: str   # Nicola capisce se sono a contratto o no
     inizio_contratto: str
     fine_contratto: str
@@ -101,6 +108,7 @@ class FotovoltaicoInCostruzioneRow:
     totale_ordinato_straordinario: str
     totale_fatturato_straordinario: str
     margine_straordinario: str
+    margine_straordinario_class: str
     numero_fatture_straordinarie_annuo: str
     numero_fatture_straordinarie_totali: str
     
@@ -110,10 +118,12 @@ class AgrivoltaicoRow:
     status_class: str
     nome_impianto: str
     nome_cliente: str
-    potenza: str
+    potenza_contratto: str
+    potenza_installata: str
     pr_contrattuale: str  # 78% di solito secondo nicola e comunque lo deve inserire lui 
     pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  
     mancata_produzione: str
+    mancata_produzione_class: str
     ore_equivalenti: str   # Nicola capisce se sono a contratto o no
     inizio_contratto: str
     fine_contratto: str
@@ -132,6 +142,7 @@ class AgrivoltaicoRow:
     totale_ordinato_straordinario: str
     totale_fatturato_straordinario: str
     margine_straordinario: str
+    margine_straordinario_class: str
     numero_fatture_straordinarie_annuo: str
     numero_fatture_straordinarie_totali: str
 

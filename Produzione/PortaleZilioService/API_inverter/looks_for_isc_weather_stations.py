@@ -36,7 +36,6 @@ def print_weather_stations() -> int:
     plants = list(
         ImpiantoAnagrafica.objects.filter(
             tipo_impianto=ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO,
-            attivo_portale=True,
         )
         .exclude(codice_impianto__isnull=True)
         .exclude(codice_impianto="")

@@ -1,107 +1,74 @@
 {% extends "base_layout.html" %}
 {% load static %}
 
-{% block title %}Portale Zilio Service - Overview{% endblock %}
+{% block title %}Contratti Impianti{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'css/style_overview_page.css' %}">
-    <link rel="stylesheet" href="{% static 'PortaleZilioService/css/home.css' %}">
+    <link rel="stylesheet" href="{% static 'PortaleZilioService/css/landing.css' %}">
 {% endblock %}
 
 {% block content %}
-    <main>
-        <header class="page-header">
-            <div class="page-header-copy">
-                <h1>Portale Zilio Service <span class="h1-work-in-progress">IN LAVORAZIONE</span></h1>
+    <main class="contracts-page">
+        <section class="contracts-header-card">
+            <div>
+                <p class="contracts-eyebrow">Portale Zilio Service</p>
+                <h1>Contratti Impianti</h1>
             </div>
-            <div class="page-header-brand">
+            <div class="contracts-header-brand">
                 <img
                     src="{% static 'PortaleZilioService/images/zilio_service_logo_alta_risoluzione.svg' %}"
                     alt="Logo Zilio Service"
-                    class="page-header-logo"
+                    class="contracts-header-logo"
                 >
             </div>
-        </header>
-        <section
-            id="isc-sync-banner"
-            class="sync-banner"
-            data-sync-banner
-            data-sync-url="{% url 'PortaleZilioService:sync-isc' %}"
-            hidden
-        ></section>
-        <section class="energy-section" id="section-zilio-service">
-            <h2>Fotovoltaico</h2>
-
-            <header class="category-header-fotovoltaico" data-group="fv">
-                <div class="fv-header-tabs">
-                    <button class="category-button" type="button" data-group="fv" data-target="fv-clienti" aria-controls="fv-clienti" aria-pressed="false" id="clienti-tab-button">O&amp;M FV Clienti</button>
-                    <button class="category-button" type="button" data-group="fv" data-target="fv-proprieta" aria-controls="fv-proprieta" aria-pressed="false" id="proprieta-tab-button">O&amp;M FV Proprieta</button>
-                    <button class="category-button" type="button" data-group="fv" data-target="fv-agrivoltaico" aria-controls="fv-agrivoltaico" aria-pressed="false" id="agrivoltaico-tab-button">O&amp;M Agrivoltaico</button>
-                    <button class="category-button" type="button" data-group="fv" data-target="fv-ppu" aria-controls="fv-ppu" aria-pressed="false" id="ppu-tab-button">PPU FV</button>
-                    <button class="category-button" type="button" data-group="fv" data-target="fv-costruzione" aria-controls="fv-costruzione" aria-pressed="false" id="costruzione-tab-button">FV In Costruzione</button>
-                </div>
-            </header>
-
-            <section class="category-panel" id="fv-empty" data-panel data-group="fv">
-                <p class="empty-state">Seleziona una categoria per visualizzare i dati.</p>
-            </section>
-
-            <section class="category-panel" id="fv-clienti" data-panel data-group="fv" hidden>
-                <div class="table-panel-actions">
-                    <button type="button" class="table-action-button" id="fv-clienti-action-button">Aggiungi record</button>
-                </div>
-                {% include "PortaleZilioService/partials/_table_fotovoltaico_clienti.html" with rows=fv_clienti_rows %}
-            </section>
-
-            <section class="category-panel" id="fv-proprieta" data-panel data-group="fv" hidden>
-                <div class="table-panel-actions">
-                    <button type="button" class="table-action-button" id="fv-proprieta-action-button">Aggiungi record</button>
-                </div>
-                {% include "PortaleZilioService/partials/_table_fotovoltaico_proprieta.html" with rows=fv_proprieta_rows %}
-            </section>
-
-            <section class="category-panel" id="fv-agrivoltaico" data-panel data-group="fv" hidden>
-                {% include "PortaleZilioService/partials/_table_fotovoltaico_agrivoltaico.html" with rows=fv_agrivoltaico_rows %}
-            </section>
-
-            <section class="category-panel" id="fv-costruzione" data-panel data-group="fv" hidden>
-                <div class="table-panel-actions">
-                    <button type="button" class="table-action-button" id="fv-costruzione-action-button">Aggiungi record</button>
-                </div>
-                {% include "PortaleZilioService/partials/_table_fotovoltaico_in_costruzione.html" with rows=fv_in_costruzione_rows %}
-            </section>
-
-            <section class="category-panel" id="fv-ppu" data-panel data-group="fv" hidden>
-                <div class="table-panel-actions">
-                    <button type="button" class="table-action-button" id="fv-ppu-action-button">Aggiungi record</button>
-                </div>
-                {% include "PortaleZilioService/partials/_table_fotovoltaico_PPU.html" with rows=fv_ppu_rows %}
-            </section>
+            <a class="contracts-overview-link" href="{% url 'PortaleZilioService:overview' %}">
+                Vai alla pagina tabelle
+            </a>
         </section>
 
-        <section>
-            <h2>Idroelettrico</h2>
-
-            <header class="category-header-idroelettrico" data-group="idr">
-                <button class="category-button" type="button" data-group="idr" data-target="idr-proprieta" aria-controls="idr-proprieta" aria-pressed="false" id="idr-proprieta-tab-button">O&amp;M IDR Proprieta</button>
-                <button class="category-button" type="button" data-group="idr" data-target="idr-gse" aria-controls="idr-gse" aria-pressed="false" id="idr-gse-tab-button">IDR GSE</button>
-            </header>
-
-            <section class="category-panel" id="idr-empty" data-panel data-group="idr">
-                <p class="empty-state">Seleziona una categoria per visualizzare i dati.</p>
-            </section>
-
-            <section class="category-panel" id="idr-proprieta" data-panel data-group="idr" hidden>
-                {% include "PortaleZilioService/partials/_table_idroelettrico_proprieta.html" with rows=idr_proprieta_rows %}
-            </section>
-
-            <section class="category-panel" id="idr-gse" data-panel data-group="idr" hidden>
-                {% include "PortaleZilioService/partials/_table_idroelettrico_gse.html" with rows=idr_gse_rows %}
-            </section>
+        <section class="contracts-table-card">
+            <div class="contracts-table-scroll">
+                <table class="contracts-table">
+                    <thead>
+                        <tr>
+                            <th>Categoria</th>
+                            <th>Nome impianto</th>
+                            <th>Tipo di contratto</th>
+                            <th>Inizio contratto</th>
+                            <th>Fine contratto</th>
+                            <th>Anni di contratto</th>
+                            <th>Importo stimato di contratto annuo</th>
+                            <th>Importo totale</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in contract_rows %}
+                            <tr class="{% if row.is_group_start %}contracts-group-start {% endif %}{% if row.is_group_end %}contracts-group-end{% endif %}">
+                                {% if row.is_group_start %}
+                                    <td class="contracts-group-side" rowspan="{{ row.contract_group_count }}">
+                                        <span class="contracts-group-side-label">{{ row.contract_group_label }}</span>
+                                    </td>
+                                {% endif %}
+                                <td>{{ row.nome_impianto|default:"--" }}</td>
+                                <td>{{ row.tipo_contratto|default:"--" }}</td>
+                                <td>{{ row.inizio_contratto|default:"--" }}</td>
+                                <td>{{ row.fine_contratto|default:"--" }}</td>
+                                <td>{{ row.anni_contratto|default:"--" }}</td>
+                                <td data-currency="{{ row.importo_annuo_stimato }}">{{ row.importo_annuo_stimato|default:"--" }}</td>
+                                <td data-currency="{{ row.importo_totale }}">{{ row.importo_totale|default:"--" }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="8" class="contracts-empty">Nessun impianto disponibile.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </section>
-
     </main>
+{% endblock %}
 
-    <script src="{% static 'PortaleZilioService/js/homeTables.js' %}" defer></script>
-    <script src="{% static 'PortaleZilioService/js/homePrHighlights.js' %}" defer></script>
+{% block extra_js %}
+    <script src="{% static 'PortaleZilioService/js/homeContractFormatting.js' %}" defer></script>
 {% endblock %}

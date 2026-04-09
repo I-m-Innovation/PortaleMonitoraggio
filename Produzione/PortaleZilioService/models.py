@@ -13,54 +13,6 @@ class MonitoraggioImpianto(Impianto):
         verbose_name = 'Monitoraggio Impianto'
         verbose_name_plural = 'Monitoraggi Impianti'
 
-
-class FvMetadata(models.Model):
-    class CategoriaFv(models.TextChoices):
-        CLIENTE = 'CLIENTE', 'Cliente'
-        PROPRIETA = 'PROPRIETA', 'Proprieta'
-
-    impianto = models.OneToOneField(
-        Impianto,
-        on_delete=models.CASCADE,
-        related_name='fv_metadata',
-        blank=True,
-        null=True,
-    )
-    nome_impianto = models.CharField(max_length=150)
-    nome_proprietario = models.CharField(max_length=150, blank=True, null=True)
-    nome_cliente = models.CharField(max_length=150, blank=True, null=True)
-    potenza = models.DecimalField(max_digits=10, decimal_places=3, blank=True, null=True)
-    categoria_fv = models.CharField(max_length=20, choices=CategoriaFv.choices)
-    is_ppu = models.BooleanField(default=False)
-    is_in_costruzione = models.BooleanField(default=False)
-    data_inizio_contratto = models.DateField(blank=True, null=True)
-    data_fine_contratto = models.DateField(blank=True, null=True)
-    pr_contrattuale = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
-    totale_contratto = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
-    totale_annuo_su_mv = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
-    totale_annuo = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
-    note = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'fv_metadata'
-        verbose_name = 'FV Metadata'
-        verbose_name_plural = 'FV Metadata'
-        constraints = [
-            models.CheckConstraint(
-                check=(
-                    Q(data_fine_contratto__isnull=True)
-                    | Q(data_inizio_contratto__isnull=True)
-                    | Q(data_fine_contratto__gte=F('data_inizio_contratto'))
-                ),
-                name='ck_fv_metadata_contract_dates',
-            ),
-        ]
-
-    def __str__(self):
-        return f'{self.nome_impianto} ({self.categoria_fv})'
-
 #________________________________________________________________________
 
 class ImpiantoAnagrafica(models.Model):
@@ -83,6 +35,7 @@ class ImpiantoAnagrafica(models.Model):
         max_length=50,
         choices=StatoImpianto.choices,
         default=StatoImpianto.UNKNOWN,
+        help_text="Al momento questo campo serve solo a collocare l'impianto nella tabella 'In Costruzione' quando il valore e' 'in_costruzione'.",
     )
 
     latitudine = models.DecimalField(max_digits=11, decimal_places=8, blank=True, null=True)
@@ -98,7 +51,6 @@ class ImpiantoAnagrafica(models.Model):
     nome_proprietario = models.CharField(max_length=150, blank=True, null=True)
     nome_cliente = models.CharField(max_length=150, blank=True, null=True)
 
-    attivo_portale = models.BooleanField(default=True)
     note = models.TextField(blank=True, null=True)
 
     class Meta:
@@ -151,6 +103,8 @@ class FotovoltaicoMetadata(models.Model):
         related_name="fotovoltaico_metadata",
     )
     categoria_fv = models.CharField(max_length=30, choices=CategoriaFV.choices)
+    potenza_contratto_kw = models.DecimalField(max_digits=10, decimal_places=3, blank=True, null=True)
+    is_oem = models.BooleanField(default=False)
     is_ppu = models.BooleanField(default=False)
     is_agrivoltaico = models.BooleanField(default=False)
     pr_contrattuale = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
@@ -184,12 +138,31 @@ class FotovoltaicoStatoEconomico(models.Model):
     # Dati manuali
     data_inizio_contratto = models.DateField(blank=True, null=True)
     data_fine_contratto = models.DateField(blank=True, null=True)
+    importo_stimato_contratto_annuo = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     totale_contratto = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
 
     # Dati persistiti per dashboard / calcolo
     anni_contratto = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
     totale_annuale_su_mw = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     totale_annuo = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    periodicita_canone_mesi = models.PositiveSmallIntegerField(
+        blank=True,
+        null=True,
+        help_text=(
+            "Periodicita del canone espressa in mesi. "
+            "Ad esempio: 1=mensile, 3=trimestrale, 6=semestrale, 12=annuale."
+        ),
+    )
+    importo_canone_periodico = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text=(
+            "Importo del singolo canone relativo alla periodicita indicata in "
+            "'periodicita_canone_mesi'."
+        ),
+    )
 
     # Dati da API gestionale
     maturato = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
@@ -231,6 +204,20 @@ class FotovoltaicoStatoEconomico(models.Model):
                     | Q(data_fine_contratto__gte=F("data_inizio_contratto"))
                 ),
                 name="ck_fv_stato_economico_contract_dates",
+            ),
+            models.CheckConstraint(
+                check=(
+                    Q(periodicita_canone_mesi__isnull=True)
+                    | Q(periodicita_canone_mesi__gt=0)
+                ),
+                name="ck_fv_stato_economico_periodicita_canone_positive",
+            ),
+            models.CheckConstraint(
+                check=(
+                    Q(importo_canone_periodico__isnull=True)
+                    | Q(importo_canone_periodico__gte=0)
+                ),
+                name="ck_fv_stato_economico_importo_canone_non_negative",
             ),
         ]
 
@@ -356,3 +343,28 @@ class ImpiantoDispositivo(models.Model):
 
     def __str__(self):
         return f"{self.impianto.nome_impianto} - {self.tipo_dispositivo} - {self.codice_dispositivo}"
+
+
+class ImpiantoCommessa(models.Model):
+    class TipoCommessa(models.TextChoices):
+        OEM = "oem", "O&M"
+        PPU = "ppu", "PPU"
+        STR = "str", "Straordinario"
+
+    impianto = models.ForeignKey(
+        ImpiantoAnagrafica,
+        on_delete=models.CASCADE,
+        related_name="commesse",
+    )
+    tipo_commessa = models.CharField(max_length=20, choices=TipoCommessa.choices)
+    codice_commessa = models.CharField(max_length=50)
+    note = models.TextField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ("impianto", "tipo_commessa", "codice_commessa")
+        verbose_name = "Commessa impianto"
+        verbose_name_plural = "Commesse impianto"
+        ordering = ["impianto__nome_impianto", "tipo_commessa"]
+
+    def __str__(self):
+        return f"{self.impianto} - {self.get_tipo_commessa_display()} - {self.codice_commessa}"

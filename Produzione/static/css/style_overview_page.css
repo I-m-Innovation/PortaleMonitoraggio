@@ -25,9 +25,24 @@ body {
 h1 {
 	margin-bottom: 20px;
 	letter-spacing: 0.4px;
-	border-bottom: 1px solid var(--accent);
-	padding-bottom: 8px;
 }
+
+span.h1-work-in-progress {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.75rem;
+    padding: 0.16rem 0.5rem;
+    border: 1px solid #e3a1a1;
+    border-radius: 999px;
+    background: #fff1f1;
+    color: #b14d4d;
+    font-size: 0.7em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1;
+}
+
 
 .back-link {
 	display: inline-flex;

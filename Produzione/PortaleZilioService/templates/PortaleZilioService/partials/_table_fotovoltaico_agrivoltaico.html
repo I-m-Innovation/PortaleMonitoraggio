@@ -2,34 +2,35 @@
 <table>
     <thead>
         <tr>
-            <th colspan="19" class="section-header">O&amp;M Ordinaria</th>
+            <th colspan="20" class="section-header">O&amp;M Ordinaria</th>
             <th colspan="5" class="section-header straord-start straord-col">Straordinario</th>
         </tr>
         <tr>
             <th aria-label="Stato"></th>
             <th>Impianto</th>
             <th>Cliente</th>
-            <th>Potenza</th>
-            <th>PR Contrattuale</th>
-            <th>PR Ultimi 12 Mesi</th>
-            <th>Mancata Produzione</th>
-            <th>Ore Equivalenti ultimi 12 mesi</th>
+            <th class="table-align-right">Potenza Contratto</th>
+            <th class="table-align-right">Potenza Installata</th>
+            <th class="table-align-right">PR Contrattuale</th>
+            <th class="table-align-right">PR Ultimi 12 Mesi</th>
+            <th class="table-align-right">Mancata Produzione</th>
+            <th class="table-align-right">Ore Equivalenti ultimi 12 mesi</th>
             <th>Inizio Contratto</th>
             <th>Fine Contratto</th>
             <th>Anni Contratto</th>
-            <th>Totale Contratto</th>
-            <th>Totale Annuo su MW</th>
-            <th>Totale Annuo</th>
-            <th>Maturato</th>
-            <th>Fatturato</th>
-            <th>Incassato</th>
+            <th class="table-align-right">Totale Contratto</th>
+            <th class="table-align-right">Totale Annuo su MW</th>
+            <th class="table-align-right">Totale Annuo</th>
+            <th class="table-align-right">Maturato</th>
+            <th class="table-align-right">Fatturato</th>
+            <th class="table-align-right">Incassato</th>
             <th>Data Prossima Fattura</th>
-            <th>Importo Prossima Fattura</th>
-            <th class="straord-start straord-col">Costo sostenuto</th>
-            <th class="straord-col">Totale fatturato</th>
-            <th class="straord-col">Margine</th>
-            <th class="straord-col"># Fatture Straordinarie Annuo</th>
-            <th class="straord-col"># Fatture Totali</th>
+            <th class="table-align-right">Importo Prossima Fattura</th>
+            <th class="table-align-right straord-start straord-col">Costo sostenuto</th>
+            <th class="table-align-right straord-col">Totale fatturato</th>
+            <th class="table-align-right straord-col">Margine</th>
+            <th class="table-align-center straord-col"># Fatture Straordinarie Annuo</th>
+            <th class="table-align-center straord-col"># Fatture Totali</th>
         </tr>
     </thead>
     <tbody>
@@ -38,36 +39,42 @@
                 <td><span class="{{ row.status_class }}" aria-hidden="true"></span></td>
                 <td>{{ row.nome_impianto }}</td>
                 <td>{{ row.nome_cliente }}</td>
-                <td>{{ row.potenza }}</td>
-                <td>{{ row.pr_contrattuale }}</td>
-                <td class="js-pr-ultimi-12-mesi">
+                <td class="table-align-right">{{ row.potenza_contratto }}</td>
+                <td class="table-align-right">{{ row.potenza_installata }}</td>
+                <td class="table-align-right">{{ row.pr_contrattuale }}</td>
+                <td class="js-pr-ultimi-12-mesi table-align-right">
                     {% if row.pr_ultimi_12_mesi == "WSM" or row.pr_ultimi_12_mesi == "ERR" %}
                         <span class="pr-placeholder-muted">{{ row.pr_ultimi_12_mesi }}</span>
                     {% else %}
                         {{ row.pr_ultimi_12_mesi }}
                     {% endif %}
                 </td>
-                <td>{{ row.mancata_produzione }}</td>
-                <td>{{ row.ore_equivalenti }}</td> <!-- Ore Equivalenti ultimi 12 mesi -->
+                <td class="table-align-right">
+                    <span class="{{ row.mancata_produzione_class }}">{{ row.mancata_produzione }}</span>
+                    {% if row.mancata_produzione != "WSM" and row.mancata_produzione != "ERR" and row.mancata_produzione != "--" %}
+                        <span class="metric-unit">kWh</span>
+                    {% endif %}
+                </td>
+                <td class="table-align-right">{{ row.ore_equivalenti }}</td> <!-- Ore Equivalenti ultimi 12 mesi -->
                 <td>{{ row.inizio_contratto }}</td>
                 <td>{{ row.fine_contratto }}</td>
                 <td>{{ row.totale_anni_contratto }}</td>
-                <td>{{ row.totale_contratto }}</td>
-                <td>{{ row.totale_annuale_su_MW }}</td>
-                <td>{{ row.totale_annuo }}</td>
-                <td>{{ row.totale_maturato }}</td>
-                <td>{{ row.fatturato }}</td>
-                <td>{{ row.totale_incassato }}</td>
+                <td class="table-align-right">{{ row.totale_contratto }}</td>
+                <td class="table-align-right">{{ row.totale_annuale_su_MW }}</td>
+                <td class="table-align-right">{{ row.totale_annuo }}</td>
+                <td class="table-align-right">{{ row.totale_maturato }}</td>
+                <td class="table-align-right">{{ row.fatturato }}</td>
+                <td class="table-align-right">{{ row.totale_incassato }}</td>
                 <td>{{ row.data_prossima_fattura }}</td>
-                <td>{{ row.importo_prossima_fattura }}</td>
-                <td class="straord-start straord-col">{{ row.totale_ordinato_straordinario }}</td>
-                <td class="straord-col">{{ row.totale_fatturato_straordinario }}</td>
-                <td class="straord-col">{{ row.margine_straordinario }}</td>
-                <td class="straord-col">{{ row.numero_fatture_straordinarie_annuo }}</td>
-                <td class="straord-col">{{ row.numero_fatture_straordinarie_totali }}</td>
+                <td class="table-align-right">{{ row.importo_prossima_fattura }}</td>
+                <td class="table-align-right straord-start straord-col">{{ row.totale_ordinato_straordinario }}</td>
+                <td class="table-align-right straord-col">{{ row.totale_fatturato_straordinario }}</td>
+                <td class="table-align-right straord-col"><span class="{{ row.margine_straordinario_class }}">{{ row.margine_straordinario }}</span></td>
+                <td class="table-align-center straord-col">{{ row.numero_fatture_straordinarie_annuo }}</td>
+                <td class="table-align-center straord-col">{{ row.numero_fatture_straordinarie_totali }}</td>
             </tr>
         {% empty %}
-            <tr><td colspan="24">Nessun dato disponibile.</td></tr>
+            <tr><td colspan="25">Nessun dato disponibile.</td></tr>
         {% endfor %}
     </tbody>
 </table>

@@ -135,12 +135,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 xAxis: [{ categories: categorie, crosshair: true }],
                 yAxis: [{
-                    labels: { format: '{value} kWh', style: { color: Highcharts.getOptions().colors[0] } },
+                    labels: {
+                        formatter: function () {
+                            return Number(this.value).toLocaleString('it-IT', {
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0
+                            }) + ' kWh';
+                        },
+                        style: { color: Highcharts.getOptions().colors[0] }
+                    },
                     title: { text: 'Energia (kWh)', style: { color: Highcharts.getOptions().colors[0] } },
                     gridLineColor: '#e6e6e6', gridLineWidth: 1
                 }, {
                     title: { text: 'Importi (€)', style: { color: '#FF6B6B' } },
-                    labels: { format: '{value} €', style: { color: '#FF6B6B' } },
+                    labels: {
+                        formatter: function () {
+                            return Number(this.value).toLocaleString('it-IT', {
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0
+                            }) + ' €';
+                        },
+                        style: { color: '#FF6B6B' }
+                    },
                     opposite: true
                 }],
                 tooltip: {

@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const syncPanelMap = {
         fv_clienti: "fv-clienti",
         fv_proprieta: "fv-proprieta",
+        fv_agrivoltaico: "fv-agrivoltaico",
         fv_costruzione: "fv-costruzione",
         fv_ppu: "fv-ppu",
         idr_gse: "idr-gse",
@@ -59,17 +60,19 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        if (!track.dataset.autoScrollToggleBound) {
-            const toolbar = document.createElement("div");
+        let toolbar = controlsRow.querySelector(":scope > .table-scroll-toolbar");
+        if (!toolbar) {
+            toolbar = document.createElement("div");
             toolbar.className = "table-scroll-toolbar";
+            controlsRow.appendChild(toolbar);
+        }
 
+        if (!track.dataset.autoScrollToggleBound) {
             const button = document.createElement("button");
             button.type = "button";
             button.className = "table-scroll-toggle";
             button.dataset.autoScrollToggle = "true";
             toolbar.appendChild(button);
-
-            controlsRow.appendChild(toolbar);
             track.dataset.autoScrollToggleBound = "true";
         }
 
@@ -136,6 +139,38 @@ document.addEventListener("DOMContentLoaded", () => {
             state.lastTs = 0;
         };
 
+        const moveScroll = (delta) => {
+            if (!state.hasOverflow || !Number.isFinite(delta) || delta === 0) {
+                return false;
+            }
+
+            const prev = track.scrollLeft;
+            const next = Math.max(0, Math.min(state.maxScroll, prev + delta));
+            track.scrollLeft = next;
+
+            if (Math.abs(next - prev) < 0.5) {
+                return false;
+            }
+
+            state.direction = delta > 0 ? 1 : -1;
+            state.edgePauseUntil = 0;
+            return true;
+        };
+
+        const handleWheel = (event) => {
+            pauseForUser();
+
+            const dominantDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY)
+                ? event.deltaX
+                : event.deltaY;
+
+            if (!moveScroll(dominantDelta)) {
+                return;
+            }
+
+            event.preventDefault();
+        };
+
         const tick = (now) => {
             const isVisible = !panel || !panel.hidden;
             if (!state.hasOverflow || !isVisible || state.isStopped) {
@@ -173,7 +208,7 @@ document.addEventListener("DOMContentLoaded", () => {
             state.rafId = requestAnimationFrame(tick);
         };
 
-        track.addEventListener("wheel", pauseForUser, { passive: true });
+        track.addEventListener("wheel", handleWheel, { passive: false });
         track.addEventListener("touchstart", pauseForUser, { passive: true });
         track.addEventListener("mousedown", pauseForUser);
         track.addEventListener("focusin", pauseForUser);
@@ -260,12 +295,12 @@ document.addEventListener("DOMContentLoaded", () => {
         document.dispatchEvent(new CustomEvent("portalezilio:tables-updated"));
     };
 
-    const triggerIscSync = async () => {
+    const triggerProviderMetricsSync = async () => {
         if (!syncBanner || !syncBanner.dataset.syncUrl) {
             return;
         }
 
-        setBannerState("Recupero dati ISC in corso...", "is-pending");
+        setBannerState("Aggiornamento metriche provider in corso...", "is-pending");
 
         try {
             const response = await fetch(syncBanner.dataset.syncUrl, {
@@ -280,13 +315,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const payload = await response.json();
             if (!response.ok || !payload.ok) {
-                throw new Error(payload.message || "Sync ISC non riuscito.");
+                throw new Error(payload.message || "Sync metriche provider non riuscito.");
             }
 
             applyUpdatedTables(payload.tables || {});
-            setBannerState(payload.message || "Aggiornamento dati completato.", "is-success");
+            setBannerState(payload.message || "Aggiornamento metriche provider completato.", "is-success");
         } catch (error) {
-            setBannerState(error.message || "Errore durante il recupero dati ISC.", "is-error");
+            setBannerState(error.message || "Errore durante l'aggiornamento delle metriche provider.", "is-error");
         }
     };
 
@@ -342,5 +377,5 @@ document.addEventListener("DOMContentLoaded", () => {
     rebuildTableControllers();
     refreshTables();
     window.addEventListener("resize", refreshTables);
-    triggerIscSync();
+    triggerProviderMetricsSync();
 });

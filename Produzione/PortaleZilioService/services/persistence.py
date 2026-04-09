@@ -43,6 +43,7 @@ def persist_metrics_to_fotovoltaico_metriche_tecniche(
 ) -> None:
     record, _ = FotovoltaicoMetricheTecniche.objects.get_or_create(impianto=impianto)
     record.pr_ultimi_12_mesi = metrics.performance_ratio
+    record.mancata_produzione = metrics.missed_production_kwh
     record.ore_equivalenti_ultimi_12_mesi = metrics.equivalent_hours
     record.stato_operativo = (
         metrics.status or FotovoltaicoMetricheTecniche.StatoOperativo.UNKNOWN
@@ -53,6 +54,7 @@ def persist_metrics_to_fotovoltaico_metriche_tecniche(
     record.save(
         update_fields=[
             "pr_ultimi_12_mesi",
+            "mancata_produzione",
             "ore_equivalenti_ultimi_12_mesi",
             "stato_operativo",
             "last_sync_at",

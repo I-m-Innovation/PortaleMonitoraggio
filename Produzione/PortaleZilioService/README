@@ -1,64 +1,342 @@
-commit di prova per git
+# PortaleZilioService
 
-## PortaleZilioService - Daily Summary (2026-03-10)
+## Stato attuale
 
-- Fixed model setup in `PortaleZilioService` to avoid duplicate-table conflicts with `MonitoraggioImpianti`.
-- Stabilized `home.html` structure with grouped panels and partial tables.
-- Added and aligned table partials with current `view_models.py` fields.
-- Introduced grouped headers (`O&M Ordinaria` / `Straordinario`) and visual separators.
-- Added/ordered confirmed columns, including `Mancata Produzione` and `Totale Annuo su MW`.
-- Created `FvMetadata` model + migrations for FV business metadata not available in legacy tables.
-- Added admin management for `FvMetadata` with ordered fields for manual data entry.
-- Switched `rows_builder.py` to read FV rows from `FvMetadata` (category/flags/contracts), with placeholders for not-yet-implemented metrics.
-- Resolved runtime errors encountered during setup:
-  - duplicate `db_table` mapping
-  - bad imports / stale file state
-  - SQLite lock during migration
-  - invalid field access (e.g., `nome_cliente` on wrong model)
-  - wrong queryset filters (e.g., `tipo` on `FvMetadata`)
+`PortaleZilioService` e' una app Django che espone due viste principali:
 
-## Current Status
+- `home_view`: panoramica contratti e raggruppamento impianti
+- `overview_view`: overview tabelle FV e IDR
 
-- `FvMetadata` table exists and can be populated from Django admin.
-- UI table columns are aligned with the confirmed structure.
-- Basic row population works; many computed/API fields still intentionally set to `--`.
+La logica corrente usa questi modelli applicativi:
 
-## Next Step
+- `ImpiantoAnagrafica`
+- `ImpiantoSorgenteDati`
+- `ImpiantoDispositivo`
+- `FotovoltaicoMetadata`
+- `FotovoltaicoStatoEconomico`
+- `FotovoltaicoMetricheTecniche`
+- `IdroelettricoMetadata`
 
-- Implement fields incrementally in `rows_builder.py` (2-3 fields at a time), starting from contract dates and contract-years calculation from `FvMetadata`.
+I builder runtime attualmente usati sono:
 
-## Image Reference
+- `Produzione/PortaleZilioService/services/rows_builder_fotovoltaico.py`
+- `Produzione/PortaleZilioService/services/rows_builder_idroelettrico.py`
 
-Image file:
+La sincronizzazione metriche provider passa da:
+
+- `Produzione/PortaleZilioService/services/sync.py`
+- `Produzione/PortaleZilioService/services/providers/isc.py`
+- `Produzione/PortaleZilioService/services/providers/saj.py`
+
+## Flusso overview
+
+`overview_view` costruisce il contesto tramite `_build_home_context()` e rende:
+
+- tabelle FV clienti
+- tabelle FV proprieta
+- tabelle FV agrivoltaico
+- tabelle FV in costruzione
+- tabelle FV PPU
+- tabelle IDR proprieta
+- tabelle IDR GSE
+
+Le tabelle FV sono popolate da query su `ImpiantoAnagrafica` con `select_related()` su:
+
+- `fotovoltaico_metadata`
+- `fotovoltaico_stato_economico`
+- `fotovoltaico_metriche_tecniche`
+
+Le tabelle IDR oggi sono ancora placeholder statici e non sono alimentate da dati reali di produzione.
+
+## Refresh tabelle
+
+Il refresh delle tabelle avviene cosi:
+
+1. il frontend chiama `POST /api/sync-provider-metrics/`
+2. la view `sync_provider_metrics_view` esegue la sync ISC e SAJ
+3. il backend rigenera i partial HTML delle tabelle con `_build_tables_payload()`
+4. il frontend sostituisce il contenuto dei pannelli tramite `homeTables.js`
+
+Attualmente il mapping frontend copre:
+
+- `fv_clienti`
+- `fv_proprieta`
+- `fv_agrivoltaico`
+- `fv_costruzione`
+- `fv_ppu`
+- `idr_proprieta`
+- `idr_gse`
+
+## Logica di appartenenza alle tabelle FV
+
+Le tabelle FV mostrate in `PortaleZilioService/overview.html` sono costruite in:
+
+- `Produzione/PortaleZilioService/services/rows_builder_fotovoltaico.py`
+
+La logica di appartenenza si basa su:
+
+- `ImpiantoAnagrafica.tipo_impianto`
+- `ImpiantoAnagrafica.stato_impianto`
+- `FotovoltaicoMetadata.categoria_fv`
+- `FotovoltaicoMetadata.is_oem`
+- `FotovoltaicoMetadata.is_ppu`
+- `FotovoltaicoMetadata.is_agrivoltaico`
+
+Regola dominante:
+
+- se un impianto FV e' `IN_COSTRUZIONE`, compare solo nella tabella `FV In Costruzione`
+- se un impianto FV e' `IN_COSTRUZIONE`, viene escluso da tutte le altre tabelle FV
+
+### Matrice tabelle FV
+
+| Tabella | tipo_impianto | stato_impianto | categoria_fv | is_oem | is_ppu | is_agrivoltaico | Note |
+|---|---|---|---|---|---|---|---|
+| FV In Costruzione | `FOTOVOLTAICO` | `IN_COSTRUZIONE` | qualsiasi | qualsiasi | qualsiasi | qualsiasi | regola dominante |
+| O&M FV Clienti | `FOTOVOLTAICO` | `!= IN_COSTRUZIONE` | `CLIENTE` | `True` | qualsiasi | qualsiasi | puo' convivere con `PPU FV` e `O&M Agrivoltaico` |
+| O&M FV Proprieta | `FOTOVOLTAICO` | `!= IN_COSTRUZIONE` | `PROPRIETA` | `True` | qualsiasi | qualsiasi | puo' convivere con `PPU FV` e `O&M Agrivoltaico` |
+| O&M Agrivoltaico | `FOTOVOLTAICO` | `!= IN_COSTRUZIONE` | qualsiasi | `True` | qualsiasi | `True` | puo' convivere con `Clienti`, `Proprieta`, `PPU` |
+| PPU FV | `FOTOVOLTAICO` | `!= IN_COSTRUZIONE` | qualsiasi | qualsiasi | `True` | qualsiasi | puo' convivere con O&M e Agrivoltaico |
+
+### Conseguenze pratiche
+
+- `CLIENTE + is_oem=True` -> `O&M FV Clienti`
+- `CLIENTE + is_oem=True + is_ppu=True` -> `O&M FV Clienti` + `PPU FV`
+- `PROPRIETA + is_oem=True + is_agrivoltaico=True` -> `O&M FV Proprieta` + `O&M Agrivoltaico`
+- `PROPRIETA + is_oem=True + is_ppu=True + is_agrivoltaico=True` -> `O&M FV Proprieta` + `O&M Agrivoltaico` + `PPU FV`
+- qualsiasi impianto FV con `stato_impianto = IN_COSTRUZIONE` -> solo `FV In Costruzione`
+
+### Configurazione di un nuovo impianto FV
+
+1. impostare `categoria_fv` come categoria business esclusiva:
+   - `CLIENTE`
+   - `PROPRIETA`
+2. impostare i flag trasversali in modo indipendente:
+   - `is_oem=True` per le tabelle O&M
+   - `is_ppu=True` per la tabella `PPU FV`
+   - `is_agrivoltaico=True` per la tabella `O&M Agrivoltaico`
+3. usare `stato_impianto = IN_COSTRUZIONE` come stato dominante
+4. verificare che esista il record `FotovoltaicoMetadata`
+5. controllare dopo il salvataggio che l'impianto compaia nell'insieme di tabelle atteso
+
+## API attualmente disponibili
+
+### iSolarCloud
+
+La parte runtime attiva usa:
+
+- `Produzione/PortaleZilioService/API_inverter/API_iSolarCloud.py`
+- `Produzione/PortaleZilioService/services/providers/isc.py`
+
+Funzioni runtime rilevanti:
+
+- login tramite `login_ISC()`
+- elenco impianti tramite `get_all_plants()`
+- elenco device tramite `get_all_devices()`
+- ricerca weather station tramite `find_weather_station_device()`
+- lettura energia giornaliera aggregata tramite endpoint `plant_data_daily`
+
+Come viene usata oggi:
+
+- matching impianto locale <-> impianto provider tramite `identificativo_esterno`, `codice_impianto`, `nome_riferimento_esterno`, `tag_impianto`, `nome_impianto`
+- selezione inverter remoti escludendo la weather station
+- calcolo energia finestra mobile 12 mesi fino a ieri
+- calcolo irraggiamento solo se la weather station e' presente
+- PR calcolabile solo quando energia, potenza e irraggiamento sono tutti disponibili
+- per `3F - Plastica` viene usato l'irraggiamento di `3F - Ferro`
+
+### Logica `mancata_produzione`
+
+La `mancata_produzione` viene calcolata solo nel flusso FV `iSolarCloud`.
+
+Dati usati:
+
+- `energia_reale_kwh`: somma energia ultimi 12 mesi letta da ISC
+- `potenza_installata_kw`: `ImpiantoAnagrafica.potenza_installata_kw`
+- `pr_contrattuale`: `FotovoltaicoMetadata.pr_contrattuale`
+- `irraggiamento_kwh_m2`: somma `p2005` ultimi 12 mesi da weather station ISC
+
+Formula:
+
+- `energia_attesa_kwh = potenza_installata_kw * irraggiamento_kwh_m2 * pr_contrattuale`
+- `mancata_produzione = energia_attesa_kwh - energia_reale_kwh`
+
+Note:
+
+- il valore e' espresso in `kWh`
+- il valore mantiene il segno
+- valore positivo = energia mancata
+- valore negativo = energia prodotta in eccesso rispetto all'atteso
+- se manca la weather station, `mancata_produzione` non viene calcolata e resta `NULL`
+- se manca il `pr_contrattuale`, `mancata_produzione` non viene calcolata e resta `NULL`
+
+Output salvato oggi in `FotovoltaicoMetricheTecniche`:
+
+- `pr_ultimi_12_mesi`
+- `mancata_produzione`
+- `ore_equivalenti_ultimi_12_mesi`
+- `stato_operativo`
+- `last_sync_at`
+- `sync_status`
+- `sync_note`
+
+Note runtime:
+
+- se manca la weather station ISC, il sync viene segnato come parziale
+- il messaggio di sync include nota esplicita: `Weather station ISC non trovata: PR non calcolabile.`
+
+### SAJ - Elekeeper
+
+La parte runtime attiva usa:
+
+- `Produzione/PortaleZilioService/API_inverter/saj_client.py`
+- `Produzione/PortaleZilioService/services/providers/saj.py`
+
+Funzioni runtime rilevanti:
+
+- login/token tramite `get_token()`
+- header autenticati tramite `build_headers()`
+- elenco impianti tramite `get_plants()`
+- elenco device tramite `get_devices()`
+- snapshot energia device tramite `get_device_energy_snapshot()`
+
+Come viene usata oggi:
+
+- matching impianto locale <-> impianto provider tramite `identificativo_esterno`, `codice_impianto`, `nome_riferimento_esterno`, `tag_impianto`, `nome_impianto`
+- selezione device energetici locali:
+  - prima `INVERTER`
+  - fallback `STORAGE_INVERTER`
+- confronto tra seriali locali e seriali remoti
+- calcolo energia finestra come differenza tra snapshot iniziale e finale per ogni device
+
+Limiti attuali:
+
+- non c'e' weather station disponibile nel flusso SAJ runtime
+- quindi `window_irradiation_kwh_m2` e' `None`
+- di conseguenza il PR non e' calcolabile e il sync viene tipicamente marcato come parziale
+
+Note runtime:
+
+- `sync_note` indica se la fonte energia e' `inverter` o `storage_inverter (fallback)`
+- `sync_note` elenca eventuali device senza dati
+
+### MyLeonardo
+
+Sono presenti script di probe in:
+
+- `Produzione/PortaleZilioService/tests_api/myleonardo/`
+
+Stato attuale:
+
+- non esiste integrazione runtime nel servizio di sync
+- non esiste provider applicativo agganciato a `MetricsSyncService`
+- al momento e' materiale di test/esplorazione API
+
+## Metriche calcolate oggi
+
+Il calcolo condiviso passa da `DefaultMetricsCalculator`:
+
+- `equivalent_hours = energy_kwh / peak_power_kw`
+- `performance_ratio = energy_kwh / (peak_power_kw * irradiation_kwh_m2)`
+
+Le metriche tecniche attualmente persistite nel portale sono:
+
+- PR ultimi 12 mesi
+- mancata produzione
+- ore equivalenti ultimi 12 mesi
+- stato operativo
+- metadata di sync
+
+## Logica di visualizzazione in tabella
+
+La colonna `Mancata Produzione` mantiene il nome storico, ma la resa visuale e' semantica.
+
+Regole:
+
+- valore positivo -> testo rosso con freccia giu': `↓ 24.802,36 kWh`
+- valore negativo -> testo verde con freccia su: `↑ 8.636,85 kWh`
+- valore zero -> testo grigio: `0,00 kWh`
+- valore non calcolabile (`WSM`, `ERR`, `--`) -> testo grigio senza unita'
+
+Dettagli:
+
+- i numeri sono mostrati in formato italiano: `.` per le migliaia e `,` per i decimali
+- per i valori negativi in tabella viene mostrato il valore assoluto dopo la freccia
+- `kWh` viene mostrato accanto al valore con colore neutro, separato dal colore del delta
+
+## Stato reale di alcune sezioni
+
+- FV overview: attiva
+- sync provider FV ISC: attiva
+- sync provider FV SAJ: attiva
+- home contratti: attiva
+- IDR overview: placeholder statico
+- MyLeonardo runtime: non attivo
+- test automatici applicativi: non presenti
+
+## Asset e note pratiche
+
+Immagine citata storicamente:
 
 - `Produzione/PortaleZilioService/static/PortaleZilioService/images/image.png`
 
-Use this relative path in CSS files under `static/PortaleZilioService/css/`:
+Percorso CSS:
 
 ```css
 url('../images/image.png')
 ```
 
-Use this Markdown path from this README file:
+Percorso Markdown da questa cartella:
 
 ```md
 ![alt text](static/PortaleZilioService/images/image.png)
 ```
 
-## SQLite DDL - tab_impianti_api_metriche
+## Legacy
 
-Use these statements when recreating the local or production SQLite schema for cached API metrics shown in the UI.
+Questa sezione conserva note storiche non piu' rappresentative dello stato runtime corrente.
+
+### Modello `FvMetadata`
+
+Storicamente l'app ha usato un modello `FvMetadata` con:
+
+- tabella fisica `fv_metadata`
+- admin dedicato
+- vecchi builder FV
+
+Stato attuale:
+
+- `FvMetadata` non e' piu' usato dal runtime dell'app
+- il rendering overview non dipende piu' da `FvMetadata`
+- il codice applicativo e l'admin sono stati ripuliti
+- la tabella fisica legacy puo' ancora esistere nel database per compatibilita' storica
+
+### Builder legacy
+
+Storicamente le tabelle FV erano costruite da:
+
+- `services/rows_builder.py`
+
+Stato attuale:
+
+- il file non e' piu' usato
+- il runtime usa:
+  - `services/rows_builder_fotovoltaico.py`
+  - `services/rows_builder_idroelettrico.py`
+
+### DDL storico `tab_impianti_api_metriche`
+
+Le note seguenti sono storiche e non descrivono un modello Django attivo nel portale corrente:
 
 ```sql
 CREATE TABLE IF NOT EXISTS tab_impianti_api_metriche (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-    fv_metadata_id INTEGER,                 -- aggancio diretto a fv_metadata se lo hai
-    impianto_id INTEGER,                    -- opzionale: aggancio a tab_impianti / Impianto
-    nome_impianto TEXT NOT NULL,            -- ridondante ma comodo per debug e query veloci
+    fv_metadata_id INTEGER,
+    impianto_id INTEGER,
+    nome_impianto TEXT NOT NULL,
 
-    api_provider TEXT,                      -- es: 'isolarcloud'
-    external_plant_id TEXT,                 -- id impianto lato provider, se disponibile
+    api_provider TEXT,
+    external_plant_id TEXT,
 
     stato_connessione TEXT DEFAULT 'unknown',
     energy_year_kwh REAL,
@@ -70,7 +348,7 @@ CREATE TABLE IF NOT EXISTS tab_impianti_api_metriche (
     coverage REAL,
 
     ultimo_sync DATETIME,
-    raw_payload_json TEXT,                  -- opzionale, utile per debug
+    raw_payload_json TEXT,
 
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

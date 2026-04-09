@@ -144,6 +144,7 @@ class MetricsSyncService:
                 potenza_installata_kw__isnull=False,
                 potenza_installata_kw__gt=0,
             )
+            .select_related("fotovoltaico_metadata")
             .exclude(codice_impianto__isnull=True)
             .exclude(codice_impianto="")
             .annotate(
