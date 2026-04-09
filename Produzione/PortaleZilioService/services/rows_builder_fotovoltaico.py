@@ -102,6 +102,18 @@ def _resolve_totale_fatturato_straordinario_value(
     return getattr(stato_economico, "totale_fatturato_straordinario", None)
 
 
+def _resolve_costo_straordinario_totale_value(
+    impianto,
+    stato_economico,
+    costo_straordinario_by_impianto: dict[str, Decimal] | None,
+):
+    if costo_straordinario_by_impianto:
+        normalized_name = _normalize_plant_name(impianto.nome_impianto)
+        if normalized_name in costo_straordinario_by_impianto:
+            return costo_straordinario_by_impianto[normalized_name]
+    return getattr(stato_economico, "costo_sostenuto_straordinario", None)
+
+
 def _resolve_numero_fatture_straordinarie_annuo_value(
     impianto,
     stato_economico,
@@ -124,6 +136,43 @@ def _resolve_numero_fatture_straordinarie_totali_value(
         if normalized_name in fatture_straordinarie_totali_by_impianto:
             return fatture_straordinarie_totali_by_impianto[normalized_name]
     return getattr(stato_economico, "numero_fatture_straordinarie_totali", None)
+
+
+def _margine_straordinario_cell(
+    impianto,
+    stato_economico,
+    costo_straordinario_by_impianto: dict[str, Decimal] | None,
+    fatturato_straordinario_by_impianto: dict[str, Decimal] | None,
+) -> tuple[str, str]:
+    costo = _resolve_costo_straordinario_totale_value(
+        impianto,
+        stato_economico,
+        costo_straordinario_by_impianto,
+    )
+    fatturato = _resolve_totale_fatturato_straordinario_value(
+        impianto,
+        stato_economico,
+        fatturato_straordinario_by_impianto,
+    )
+
+    if costo is not None and fatturato is not None:
+        margine = Decimal(str(fatturato)) - Decimal(str(costo))
+        if margine > 0:
+            return _fmt_currency_accounting(margine), "metric-delta metric-delta-gain"
+        if margine < 0:
+            return _fmt_currency_accounting(margine), "metric-delta metric-delta-loss"
+        return _fmt_currency_accounting(margine), "metric-delta metric-delta-neutral"
+
+    fallback = getattr(stato_economico, "margine_straordinario", None)
+    if fallback is None:
+        return "--", "metric-delta metric-delta-muted"
+
+    numeric_fallback = Decimal(str(fallback))
+    if numeric_fallback > 0:
+        return _fmt_currency_accounting(numeric_fallback), "metric-delta metric-delta-gain"
+    if numeric_fallback < 0:
+        return _fmt_currency_accounting(numeric_fallback), "metric-delta metric-delta-loss"
+    return _fmt_currency_accounting(numeric_fallback), "metric-delta metric-delta-neutral"
 
 
 def _calcola_anni_contratto(data_inizio: date | None, data_fine: date | None) -> str:
@@ -180,6 +229,7 @@ def _status_class_portale(metriche) -> str:
 def build_fotovoltaico_clienti_rows_portale(
     fatturato_by_impianto: dict[str, Decimal] | None = None,
     fatturato_straordinario_by_impianto: dict[str, Decimal] | None = None,
+    costo_straordinario_by_impianto: dict[str, Decimal] | None = None,
     fatture_straordinarie_annuo_by_impianto: dict[str, int] | None = None,
     fatture_straordinarie_totali_by_impianto: dict[str, int] | None = None,
 ):
@@ -192,6 +242,12 @@ def build_fotovoltaico_clienti_rows_portale(
         metriche = getattr(impianto, "fotovoltaico_metriche_tecniche", None)
 
         mancata_produzione, mancata_produzione_class = _mancata_produzione_cell(impianto, metriche)
+        margine_straordinario, margine_straordinario_class = _margine_straordinario_cell(
+            impianto,
+            stato_economico,
+            costo_straordinario_by_impianto,
+            fatturato_straordinario_by_impianto,
+        )
         rows.append(
             FotovoltaicoClientiRow(
                 status_class=_status_class_portale(metriche),
@@ -240,8 +296,12 @@ def build_fotovoltaico_clienti_rows_portale(
                 importo_prossima_fattura=_fmt_decimal(
                     getattr(stato_economico, "importo_prossima_fattura", None)
                 ),
-                totale_ordinato_straordinario=_fmt_decimal(
-                    getattr(stato_economico, "costo_sostenuto_straordinario", None)
+                totale_ordinato_straordinario=_fmt_currency_accounting(
+                    _resolve_costo_straordinario_totale_value(
+                        impianto,
+                        stato_economico,
+                        costo_straordinario_by_impianto,
+                    )
                 ),
                 totale_fatturato_straordinario=_fmt_currency_accounting(
                     _resolve_totale_fatturato_straordinario_value(
@@ -250,9 +310,8 @@ def build_fotovoltaico_clienti_rows_portale(
                         fatturato_straordinario_by_impianto,
                     )
                 ),
-                margine_straordinario=_fmt_decimal(
-                    getattr(stato_economico, "margine_straordinario", None)
-                ),
+                margine_straordinario=margine_straordinario,
+                margine_straordinario_class=margine_straordinario_class,
                 numero_fatture_straordinarie_annuo=_fmt_integer(
                     _resolve_numero_fatture_straordinarie_annuo_value(
                         impianto,
@@ -276,6 +335,7 @@ def build_fotovoltaico_clienti_rows_portale(
 def build_fotovoltaico_proprieta_rows_portale(
     fatturato_by_impianto: dict[str, Decimal] | None = None,
     fatturato_straordinario_by_impianto: dict[str, Decimal] | None = None,
+    costo_straordinario_by_impianto: dict[str, Decimal] | None = None,
     fatture_straordinarie_annuo_by_impianto: dict[str, int] | None = None,
     fatture_straordinarie_totali_by_impianto: dict[str, int] | None = None,
 ):
@@ -287,6 +347,12 @@ def build_fotovoltaico_proprieta_rows_portale(
         stato_economico = getattr(impianto, "fotovoltaico_stato_economico", None)
         metriche = getattr(impianto, "fotovoltaico_metriche_tecniche", None)
         mancata_produzione, mancata_produzione_class = _mancata_produzione_cell(impianto, metriche)
+        margine_straordinario, margine_straordinario_class = _margine_straordinario_cell(
+            impianto,
+            stato_economico,
+            costo_straordinario_by_impianto,
+            fatturato_straordinario_by_impianto,
+        )
 
         rows.append(
             FotovoltaicoProprietaRow(
@@ -336,8 +402,12 @@ def build_fotovoltaico_proprieta_rows_portale(
                 importo_prossima_fattura=_fmt_decimal(
                     getattr(stato_economico, "importo_prossima_fattura", None)
                 ),
-                totale_ordinato_straordinario=_fmt_decimal(
-                    getattr(stato_economico, "costo_sostenuto_straordinario", None)
+                totale_ordinato_straordinario=_fmt_currency_accounting(
+                    _resolve_costo_straordinario_totale_value(
+                        impianto,
+                        stato_economico,
+                        costo_straordinario_by_impianto,
+                    )
                 ),
                 totale_fatturato_straordinario=_fmt_currency_accounting(
                     _resolve_totale_fatturato_straordinario_value(
@@ -346,9 +416,8 @@ def build_fotovoltaico_proprieta_rows_portale(
                         fatturato_straordinario_by_impianto,
                     )
                 ),
-                margine_straordinario=_fmt_decimal(
-                    getattr(stato_economico, "margine_straordinario", None)
-                ),
+                margine_straordinario=margine_straordinario,
+                margine_straordinario_class=margine_straordinario_class,
                 numero_fatture_straordinarie_annuo=_fmt_integer(
                     _resolve_numero_fatture_straordinarie_annuo_value(
                         impianto,
@@ -372,6 +441,7 @@ def build_fotovoltaico_proprieta_rows_portale(
 def build_fotovoltaico_in_costruzione_rows_portale(
     fatturato_by_impianto: dict[str, Decimal] | None = None,
     fatturato_straordinario_by_impianto: dict[str, Decimal] | None = None,
+    costo_straordinario_by_impianto: dict[str, Decimal] | None = None,
     fatture_straordinarie_annuo_by_impianto: dict[str, int] | None = None,
     fatture_straordinarie_totali_by_impianto: dict[str, int] | None = None,
 ):
@@ -383,6 +453,12 @@ def build_fotovoltaico_in_costruzione_rows_portale(
         stato_economico = getattr(impianto, "fotovoltaico_stato_economico", None)
         metriche = getattr(impianto, "fotovoltaico_metriche_tecniche", None)
         mancata_produzione, mancata_produzione_class = _mancata_produzione_cell(impianto, metriche)
+        margine_straordinario, margine_straordinario_class = _margine_straordinario_cell(
+            impianto,
+            stato_economico,
+            costo_straordinario_by_impianto,
+            fatturato_straordinario_by_impianto,
+        )
 
         rows.append(
             FotovoltaicoInCostruzioneRow(
@@ -432,8 +508,12 @@ def build_fotovoltaico_in_costruzione_rows_portale(
                 importo_prossima_fattura=_fmt_decimal(
                     getattr(stato_economico, "importo_prossima_fattura", None)
                 ),
-                totale_ordinato_straordinario=_fmt_decimal(
-                    getattr(stato_economico, "costo_sostenuto_straordinario", None)
+                totale_ordinato_straordinario=_fmt_currency_accounting(
+                    _resolve_costo_straordinario_totale_value(
+                        impianto,
+                        stato_economico,
+                        costo_straordinario_by_impianto,
+                    )
                 ),
                 totale_fatturato_straordinario=_fmt_currency_accounting(
                     _resolve_totale_fatturato_straordinario_value(
@@ -442,9 +522,8 @@ def build_fotovoltaico_in_costruzione_rows_portale(
                         fatturato_straordinario_by_impianto,
                     )
                 ),
-                margine_straordinario=_fmt_decimal(
-                    getattr(stato_economico, "margine_straordinario", None)
-                ),
+                margine_straordinario=margine_straordinario,
+                margine_straordinario_class=margine_straordinario_class,
                 numero_fatture_straordinarie_annuo=_fmt_integer(
                     _resolve_numero_fatture_straordinarie_annuo_value(
                         impianto,
@@ -468,6 +547,7 @@ def build_fotovoltaico_in_costruzione_rows_portale(
 def build_agrivoltaico_rows_portale(
     fatturato_by_impianto: dict[str, Decimal] | None = None,
     fatturato_straordinario_by_impianto: dict[str, Decimal] | None = None,
+    costo_straordinario_by_impianto: dict[str, Decimal] | None = None,
     fatture_straordinarie_annuo_by_impianto: dict[str, int] | None = None,
     fatture_straordinarie_totali_by_impianto: dict[str, int] | None = None,
 ):
@@ -479,6 +559,12 @@ def build_agrivoltaico_rows_portale(
         stato_economico = getattr(impianto, "fotovoltaico_stato_economico", None)
         metriche = getattr(impianto, "fotovoltaico_metriche_tecniche", None)
         mancata_produzione, mancata_produzione_class = _mancata_produzione_cell(impianto, metriche)
+        margine_straordinario, margine_straordinario_class = _margine_straordinario_cell(
+            impianto,
+            stato_economico,
+            costo_straordinario_by_impianto,
+            fatturato_straordinario_by_impianto,
+        )
 
         rows.append(
             AgrivoltaicoRow(
@@ -528,8 +614,12 @@ def build_agrivoltaico_rows_portale(
                 importo_prossima_fattura=_fmt_decimal(
                     getattr(stato_economico, "importo_prossima_fattura", None)
                 ),
-                totale_ordinato_straordinario=_fmt_decimal(
-                    getattr(stato_economico, "costo_sostenuto_straordinario", None)
+                totale_ordinato_straordinario=_fmt_currency_accounting(
+                    _resolve_costo_straordinario_totale_value(
+                        impianto,
+                        stato_economico,
+                        costo_straordinario_by_impianto,
+                    )
                 ),
                 totale_fatturato_straordinario=_fmt_currency_accounting(
                     _resolve_totale_fatturato_straordinario_value(
@@ -538,9 +628,8 @@ def build_agrivoltaico_rows_portale(
                         fatturato_straordinario_by_impianto,
                     )
                 ),
-                margine_straordinario=_fmt_decimal(
-                    getattr(stato_economico, "margine_straordinario", None)
-                ),
+                margine_straordinario=margine_straordinario,
+                margine_straordinario_class=margine_straordinario_class,
                 numero_fatture_straordinarie_annuo=_fmt_integer(
                     _resolve_numero_fatture_straordinarie_annuo_value(
                         impianto,

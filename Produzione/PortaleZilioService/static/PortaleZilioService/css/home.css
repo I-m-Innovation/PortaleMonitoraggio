@@ -292,6 +292,10 @@ p.empty-state {
     text-align: right;
 }
 
+.table-align-center {
+    text-align: center;
+}
+
 .metric-delta {
     display: inline-flex;
     align-items: center;

@@ -38,6 +38,7 @@ class FotovoltaicoClientiRow:
     totale_ordinato_straordinario: str
     totale_fatturato_straordinario: str
     margine_straordinario: str
+    margine_straordinario_class: str
     numero_fatture_straordinarie_annuo: str
     numero_fatture_straordinarie_totali: str
 
@@ -72,6 +73,7 @@ class FotovoltaicoProprietaRow:
     totale_ordinato_straordinario: str
     totale_fatturato_straordinario: str
     margine_straordinario: str
+    margine_straordinario_class: str
     numero_fatture_straordinarie_annuo: str
     numero_fatture_straordinarie_totali: str
 
@@ -106,6 +108,7 @@ class FotovoltaicoInCostruzioneRow:
     totale_ordinato_straordinario: str
     totale_fatturato_straordinario: str
     margine_straordinario: str
+    margine_straordinario_class: str
     numero_fatture_straordinarie_annuo: str
     numero_fatture_straordinarie_totali: str
     
@@ -139,6 +142,7 @@ class AgrivoltaicoRow:
     totale_ordinato_straordinario: str
     totale_fatturato_straordinario: str
     margine_straordinario: str
+    margine_straordinario_class: str
     numero_fatture_straordinarie_annuo: str
     numero_fatture_straordinarie_totali: str
 

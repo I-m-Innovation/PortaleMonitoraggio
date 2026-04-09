@@ -59,6 +59,36 @@ def _load_fatturato_per_impianto(url: str, timeout: float) -> dict[str, Decimal]
     return fatturato_by_impianto
 
 
+def _load_decimal_value_per_impianto(
+    url: str,
+    timeout: float,
+    value_key: str,
+) -> dict[str, Decimal]:
+    try:
+        response = requests.get(url, timeout=timeout)
+        response.raise_for_status()
+        payload = response.json()
+    except (requests.RequestException, ValueError):
+        return {}
+
+    if payload.get("status") != "ok":
+        return {}
+
+    values_by_impianto: dict[str, Decimal] = {}
+    for item in payload.get("data", []):
+        nome_impianto = _normalize_plant_name(item.get("impianto"))
+        if not nome_impianto:
+            continue
+
+        value = _to_decimal(item.get(value_key))
+        if value is None:
+            continue
+
+        values_by_impianto[nome_impianto] = value
+
+    return values_by_impianto
+
+
 def _load_integer_value_per_impianto(
     url: str,
     timeout: float,
@@ -116,4 +146,12 @@ def get_numero_fatture_straordinarie_totali_per_impianto() -> dict[str, int]:
         settings.ZILIO_FATTURE_STRAORDINARIE_TOTALI_URL,
         settings.ZILIO_FATTURE_STRAORDINARIE_TOTALI_TIMEOUT,
         "numero_fatture",
+    )
+
+
+def get_costo_straordinario_totale_per_impianto() -> dict[str, Decimal]:
+    return _load_decimal_value_per_impianto(
+        settings.ZILIO_COSTO_STRAORDINARIO_TOTALE_URL,
+        settings.ZILIO_COSTO_STRAORDINARIO_TOTALE_TIMEOUT,
+        "costo_totale",
     )

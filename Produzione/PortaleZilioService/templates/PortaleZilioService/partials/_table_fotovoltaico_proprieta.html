@@ -29,8 +29,8 @@
             <th class="table-align-right straord-start straord-col">Costo sostenuto</th>
             <th class="table-align-right straord-col">Totale fatturato</th>
             <th class="table-align-right straord-col">Margine</th>
-            <th class="table-align-right straord-col"># Fatture Straordinarie Annuo</th>
-            <th class="table-align-right straord-col"># Fatture Totali</th>
+            <th class="table-align-center straord-col"># Fatture Straordinarie Annuo</th>
+            <th class="table-align-center straord-col"># Fatture Totali</th>
         </tr>
     </thead>
     <tbody>
@@ -69,9 +69,9 @@
                 <td class="table-align-right">{{ row.importo_prossima_fattura }}</td>
                 <td class="table-align-right straord-start straord-col">{{ row.totale_ordinato_straordinario }}</td>
                 <td class="table-align-right straord-col">{{ row.totale_fatturato_straordinario }}</td>
-                <td class="table-align-right straord-col">{{ row.margine_straordinario }}</td>
-                <td class="table-align-right straord-col">{{ row.numero_fatture_straordinarie_annuo }}</td>
-                <td class="table-align-right straord-col">{{ row.numero_fatture_straordinarie_totali }}</td>
+                <td class="table-align-right straord-col"><span class="{{ row.margine_straordinario_class }}">{{ row.margine_straordinario }}</span></td>
+                <td class="table-align-center straord-col">{{ row.numero_fatture_straordinarie_annuo }}</td>
+                <td class="table-align-center straord-col">{{ row.numero_fatture_straordinarie_totali }}</td>
             </tr>
         {% empty %}
             <tr><td colspan="25">Nessun dato disponibile.</td></tr>
