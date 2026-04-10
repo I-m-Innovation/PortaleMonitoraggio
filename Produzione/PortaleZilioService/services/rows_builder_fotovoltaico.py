@@ -195,7 +195,9 @@ def _maturato_value(stato_economico) -> Decimal | None:
 
     data_inizio = getattr(stato_economico, "data_inizio_contratto", None)
     periodicita_mesi = getattr(stato_economico, "periodicita_canone_mesi", None)
-    importo_canone_periodico = getattr(stato_economico, "importo_canone_periodico", None)
+    importo_canone_periodico = getattr(stato_economico, "compute_importo_canone_periodico", lambda: None)()
+    if importo_canone_periodico is None:
+        importo_canone_periodico = getattr(stato_economico, "importo_canone_periodico", None)
 
     if not data_inizio or periodicita_mesi in (None, 0) or importo_canone_periodico is None:
         return None
