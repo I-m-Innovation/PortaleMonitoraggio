@@ -1,3 +1,5 @@
+from decimal import Decimal, ROUND_HALF_UP
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import F, Q
@@ -224,6 +226,19 @@ class FotovoltaicoStatoEconomico(models.Model):
     def clean(self):
         if self.impianto.tipo_impianto != ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO:
             raise ValidationError("FotovoltaicoStatoEconomico puo' essere associato solo a impianti fotovoltaici.")
+
+    def compute_importo_canone_periodico(self):
+        if self.totale_annuo is None or self.periodicita_canone_mesi in (None, 0):
+            return None
+        return (
+            Decimal(str(self.totale_annuo))
+            * Decimal(str(self.periodicita_canone_mesi))
+            / Decimal("12")
+        ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    def save(self, *args, **kwargs):
+        self.importo_canone_periodico = self.compute_importo_canone_periodico()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.impianto.nome_impianto} - Stato economico FV"
