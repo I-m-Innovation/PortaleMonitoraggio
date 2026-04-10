@@ -200,7 +200,7 @@ ZILIO_FATTURE_STRAORDINARIE_TOTALI_TIMEOUT = float(
 )
 ZILIO_COSTO_STRAORDINARIO_TOTALE_URL = os.getenv(
     "ZILIO_COSTO_STRAORDINARIO_TOTALE_URL",
-    "http://127.0.0.1:1234/costo-totale-storico-straordinario-per-impianto/",
+    "http://192.168.10.229:1546/costi-sostenuti-straordinari-da-inizio-contratto-per-impianto/",
 )
 ZILIO_COSTO_STRAORDINARIO_TOTALE_TIMEOUT = float(
     os.getenv("ZILIO_COSTO_STRAORDINARIO_TOTALE_TIMEOUT", "3")

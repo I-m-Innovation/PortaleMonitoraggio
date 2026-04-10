@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import logging
 from decimal import Decimal, InvalidOperation
 
 import requests
 from django.conf import settings
+
+from ..models import FotovoltaicoStatoEconomico, ImpiantoAnagrafica
+
+logger = logging.getLogger(__name__)
 
 
 def _normalize_plant_name(value: str | None) -> str:
@@ -68,10 +73,18 @@ def _load_decimal_value_per_impianto(
         response = requests.get(url, timeout=timeout)
         response.raise_for_status()
         payload = response.json()
-    except (requests.RequestException, ValueError):
+    except (requests.RequestException, ValueError) as exc:
+        logger.warning(
+            "Errore nel caricamento valori decimali per impianto da endpoint Zilio",
+            extra={"url": url, "value_key": value_key, "error": str(exc)},
+        )
         return {}
 
     if payload.get("status") != "ok":
+        logger.warning(
+            "Endpoint Zilio ha restituito uno status non valido",
+            extra={"url": url, "value_key": value_key, "status": payload.get("status")},
+        )
         return {}
 
     values_by_impianto: dict[str, Decimal] = {}
@@ -86,6 +99,15 @@ def _load_decimal_value_per_impianto(
 
         values_by_impianto[nome_impianto] = value
 
+    logger.info(
+        "Valori decimali per impianto caricati da endpoint Zilio",
+        extra={
+            "url": url,
+            "value_key": value_key,
+            "items_received": len(payload.get("data", [])),
+            "items_mapped": len(values_by_impianto),
+        },
+    )
     return values_by_impianto
 
 
@@ -119,6 +141,56 @@ def _load_integer_value_per_impianto(
     return values_by_impianto
 
 
+def _persist_costo_straordinario_to_db(costo_by_impianto: dict[str, Decimal]) -> None:
+    if not costo_by_impianto:
+        logger.info("Nessun costo straordinario da persistire su database")
+        return
+
+    impianti_fotovoltaici = ImpiantoAnagrafica.objects.filter(
+        tipo_impianto=ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO,
+    )
+    impianti_by_name = {
+        _normalize_plant_name(impianto.nome_impianto): impianto
+        for impianto in impianti_fotovoltaici
+        if impianto.nome_impianto
+    }
+
+    updated_count = 0
+    created_count = 0
+    missing_in_db: list[str] = []
+
+    for normalized_name, costo in costo_by_impianto.items():
+        impianto = impianti_by_name.get(normalized_name)
+        if impianto is None:
+            missing_in_db.append(normalized_name)
+            logger.warning(
+                "Impianto endpoint costo straordinario non trovato in anagrafica DB",
+                extra={"normalized_name": normalized_name},
+            )
+            continue
+
+        stato_economico, created = FotovoltaicoStatoEconomico.objects.get_or_create(
+            impianto=impianto,
+        )
+        stato_economico.costo_sostenuto_straordinario = costo
+        stato_economico.save(update_fields=["costo_sostenuto_straordinario", "updated_at"])
+
+        if created:
+            created_count += 1
+        else:
+            updated_count += 1
+
+    logger.info(
+        "Persistenza costi straordinari completata",
+        extra={
+            "endpoint_items": len(costo_by_impianto),
+            "updated_count": updated_count,
+            "created_count": created_count,
+            "missing_in_db_count": len(missing_in_db),
+        },
+    )
+
+
 def get_fatturato_ordinario_anno_corrente_per_impianto() -> dict[str, Decimal]:
     return _load_fatturato_per_impianto(
         settings.ZILIO_FATTURATO_ORDINARIO_URL,
@@ -150,8 +222,10 @@ def get_numero_fatture_straordinarie_totali_per_impianto() -> dict[str, int]:
 
 
 def get_costo_straordinario_totale_per_impianto() -> dict[str, Decimal]:
-    return _load_decimal_value_per_impianto(
+    costo_by_impianto = _load_decimal_value_per_impianto(
         settings.ZILIO_COSTO_STRAORDINARIO_TOTALE_URL,
         settings.ZILIO_COSTO_STRAORDINARIO_TOTALE_TIMEOUT,
         "costo_totale",
     )
+    _persist_costo_straordinario_to_db(costo_by_impianto)
+    return costo_by_impianto

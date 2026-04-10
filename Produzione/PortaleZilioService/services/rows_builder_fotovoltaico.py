@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import date
 from decimal import Decimal
 
@@ -13,6 +14,8 @@ from ..view_models import (
     FotovoltaicoPPURow,
     FotovoltaicoProprietaRow,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _fmt_date(value: date | None) -> str:
@@ -111,6 +114,10 @@ def _resolve_costo_straordinario_totale_value(
         normalized_name = _normalize_plant_name(impianto.nome_impianto)
         if normalized_name in costo_straordinario_by_impianto:
             return costo_straordinario_by_impianto[normalized_name]
+        logger.info(
+            "Costo straordinario non trovato nel payload endpoint per impianto fotovoltaico",
+            extra={"impianto": impianto.nome_impianto, "normalized_name": normalized_name},
+        )
     return getattr(stato_economico, "costo_sostenuto_straordinario", None)
 
 
