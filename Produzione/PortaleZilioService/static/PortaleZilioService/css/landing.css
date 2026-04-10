@@ -46,6 +46,22 @@ body {
     color: var(--contracts-primary);
 }
 
+.overview-warning-label {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 0.2rem;
+    margin-left: 0.6rem;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid #e3c16f;
+    border-radius: 999px;
+    background: #fff6db;
+    color: #7a5600;
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.2;
+    vertical-align: middle;
+}
+
 .contracts-header-brand {
     display: flex;
     align-items: center;
