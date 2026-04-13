@@ -336,6 +336,11 @@ p.empty-state {
     font-weight: 700;
 }
 
+.invoice-date-today {
+    color: #b54708;
+    font-weight: 600;
+}
+
 .overview-info-button {
     position: fixed;
     right: 22px;
