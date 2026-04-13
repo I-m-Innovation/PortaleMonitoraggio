@@ -279,7 +279,7 @@ def _next_invoice_amount_cell(stato_economico) -> str:
     if importo_canone_periodico is None:
         return "--"
 
-    return _fmt_decimal(importo_canone_periodico)
+    return _fmt_currency_accounting(importo_canone_periodico)
 
 
 def _pr_ultimi_12_mesi_text(impianto, metriche) -> str:
@@ -376,17 +376,17 @@ def build_fotovoltaico_clienti_rows_portale(
                 totale_contratto=_fmt_currency_accounting(
                     getattr(stato_economico, "totale_contratto", None)
                 ),
-                totale_annuale_su_MW=_fmt_decimal(
+                totale_annuale_su_MW=_fmt_currency_accounting(
                     getattr(stato_economico, "totale_annuale_su_mw", None)
                 ),
-                totale_annuo=_fmt_decimal(
+                totale_annuo=_fmt_currency_accounting(
                     getattr(stato_economico, "totale_annuo", None)
                 ),
-                totale_maturato=_fmt_decimal(_maturato_value(stato_economico)),
+                totale_maturato=_fmt_currency_accounting(_maturato_value(stato_economico)),
                 fatturato=_fmt_currency_accounting(
                     _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
                 ),
-                totale_incassato=_fmt_decimal(
+                totale_incassato=_fmt_currency_accounting(
                     getattr(stato_economico, "incassato", None)
                 ),
                 data_prossima_fattura=data_prossima_fattura,
@@ -478,17 +478,17 @@ def build_fotovoltaico_proprieta_rows_portale(
                 totale_contratto=_fmt_currency_accounting(
                     getattr(stato_economico, "totale_contratto", None)
                 ),
-                totale_annuale_su_MW=_fmt_decimal(
+                totale_annuale_su_MW=_fmt_currency_accounting(
                     getattr(stato_economico, "totale_annuale_su_mw", None)
                 ),
-                totale_annuo=_fmt_decimal(
+                totale_annuo=_fmt_currency_accounting(
                     getattr(stato_economico, "totale_annuo", None)
                 ),
-                totale_maturato=_fmt_decimal(_maturato_value(stato_economico)),
+                totale_maturato=_fmt_currency_accounting(_maturato_value(stato_economico)),
                 fatturato=_fmt_currency_accounting(
                     _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
                 ),
-                totale_incassato=_fmt_decimal(
+                totale_incassato=_fmt_currency_accounting(
                     getattr(stato_economico, "incassato", None)
                 ),
                 data_prossima_fattura=data_prossima_fattura,
@@ -580,17 +580,17 @@ def build_fotovoltaico_in_costruzione_rows_portale(
                 totale_contratto=_fmt_currency_accounting(
                     getattr(stato_economico, "totale_contratto", None)
                 ),
-                totale_annuale_su_MW=_fmt_decimal(
+                totale_annuale_su_MW=_fmt_currency_accounting(
                     getattr(stato_economico, "totale_annuale_su_mw", None)
                 ),
-                totale_annuo=_fmt_decimal(
+                totale_annuo=_fmt_currency_accounting(
                     getattr(stato_economico, "totale_annuo", None)
                 ),
-                totale_maturato=_fmt_decimal(_maturato_value(stato_economico)),
+                totale_maturato=_fmt_currency_accounting(_maturato_value(stato_economico)),
                 fatturato=_fmt_currency_accounting(
                     _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
                 ),
-                totale_incassato=_fmt_decimal(
+                totale_incassato=_fmt_currency_accounting(
                     getattr(stato_economico, "incassato", None)
                 ),
                 data_prossima_fattura=data_prossima_fattura,
@@ -682,17 +682,17 @@ def build_agrivoltaico_rows_portale(
                 totale_contratto=_fmt_currency_accounting(
                     getattr(stato_economico, "totale_contratto", None)
                 ),
-                totale_annuale_su_MW=_fmt_decimal(
+                totale_annuale_su_MW=_fmt_currency_accounting(
                     getattr(stato_economico, "totale_annuale_su_mw", None)
                 ),
-                totale_annuo=_fmt_decimal(
+                totale_annuo=_fmt_currency_accounting(
                     getattr(stato_economico, "totale_annuo", None)
                 ),
-                totale_maturato=_fmt_decimal(_maturato_value(stato_economico)),
+                totale_maturato=_fmt_currency_accounting(_maturato_value(stato_economico)),
                 fatturato=_fmt_currency_accounting(
                     _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
                 ),
-                totale_incassato=_fmt_decimal(
+                totale_incassato=_fmt_currency_accounting(
                     getattr(stato_economico, "incassato", None)
                 ),
                 data_prossima_fattura=data_prossima_fattura,
