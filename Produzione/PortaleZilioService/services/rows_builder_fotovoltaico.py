@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from calendar import monthrange
 from datetime import date
 from decimal import Decimal
 
@@ -225,6 +226,62 @@ def _maturato_value(stato_economico) -> Decimal | None:
     return Decimal(numero_canoni_maturati) * Decimal(str(importo_canone_periodico))
 
 
+def _add_months(base_date: date, months: int) -> date:
+    month_index = base_date.month - 1 + months
+    year = base_date.year + month_index // 12
+    month = month_index % 12 + 1
+    day = min(base_date.day, monthrange(year, month)[1])
+    return date(year, month, day)
+
+
+def _next_invoice_state(stato_economico) -> tuple[date | None, bool]:
+    if stato_economico is None:
+        return None, False
+
+    data_inizio = getattr(stato_economico, "data_inizio_contratto", None)
+    periodicita_mesi = getattr(stato_economico, "periodicita_canone_mesi", None)
+    if not data_inizio or periodicita_mesi in (None, 0):
+        return None, False
+
+    data_fine = getattr(stato_economico, "data_fine_contratto", None)
+    today = date.today()
+
+    next_invoice_date = data_inizio
+    while next_invoice_date < today:
+        next_invoice_date = _add_months(next_invoice_date, periodicita_mesi)
+
+    if data_fine and next_invoice_date > data_fine:
+        return None, True
+
+    return next_invoice_date, False
+
+
+def _next_invoice_date_cell(stato_economico) -> tuple[str, str]:
+    next_invoice_date, is_contract_ended = _next_invoice_state(stato_economico)
+    if next_invoice_date is None:
+        return "--", ""
+
+    today = date.today()
+    css_class = "invoice-date-today" if next_invoice_date == today else ""
+    return _fmt_date(next_invoice_date), css_class
+
+
+def _next_invoice_amount_cell(stato_economico) -> str:
+    next_invoice_date, is_contract_ended = _next_invoice_state(stato_economico)
+    if is_contract_ended:
+        return "Fine contratto"
+    if next_invoice_date is None:
+        return "--"
+
+    importo_canone_periodico = getattr(stato_economico, "compute_importo_canone_periodico", lambda: None)()
+    if importo_canone_periodico is None:
+        importo_canone_periodico = getattr(stato_economico, "importo_canone_periodico", None)
+    if importo_canone_periodico is None:
+        return "--"
+
+    return _fmt_decimal(importo_canone_periodico)
+
+
 def _pr_ultimi_12_mesi_text(impianto, metriche) -> str:
     pr_value = getattr(metriche, "pr_ultimi_12_mesi", None)
     if pr_value is not None:
@@ -235,7 +292,7 @@ def _pr_ultimi_12_mesi_text(impianto, metriche) -> str:
         attivo=True,
     ).exists()
     if not has_weather_station:
-        return "WSM"
+        return "SM"
     return "ERR"
 
 
@@ -254,7 +311,7 @@ def _mancata_produzione_cell(impianto, metriche) -> tuple[str, str]:
         attivo=True,
     ).exists()
     if not has_weather_station:
-        return "WSM", "metric-delta metric-delta-muted"
+        return "SM", "metric-delta-soft-loss"
     return "ERR", "metric-delta metric-delta-muted"
 
 
@@ -283,6 +340,7 @@ def build_fotovoltaico_clienti_rows_portale(
         metadata = impianto.fotovoltaico_metadata
         stato_economico = getattr(impianto, "fotovoltaico_stato_economico", None)
         metriche = getattr(impianto, "fotovoltaico_metriche_tecniche", None)
+        data_prossima_fattura, data_prossima_fattura_class = _next_invoice_date_cell(stato_economico)
 
         mancata_produzione, mancata_produzione_class = _mancata_produzione_cell(impianto, metriche)
         margine_straordinario, margine_straordinario_class = _margine_straordinario_cell(
@@ -331,12 +389,9 @@ def build_fotovoltaico_clienti_rows_portale(
                 totale_incassato=_fmt_decimal(
                     getattr(stato_economico, "incassato", None)
                 ),
-                data_prossima_fattura=_fmt_date(
-                    getattr(stato_economico, "data_prossima_fattura", None)
-                ),
-                importo_prossima_fattura=_fmt_decimal(
-                    getattr(stato_economico, "importo_prossima_fattura", None)
-                ),
+                data_prossima_fattura=data_prossima_fattura,
+                data_prossima_fattura_class=data_prossima_fattura_class,
+                importo_prossima_fattura=_next_invoice_amount_cell(stato_economico),
                 totale_ordinato_straordinario=_fmt_currency_accounting(
                     _resolve_costo_straordinario_totale_value(
                         impianto,
@@ -387,6 +442,7 @@ def build_fotovoltaico_proprieta_rows_portale(
         metadata = impianto.fotovoltaico_metadata
         stato_economico = getattr(impianto, "fotovoltaico_stato_economico", None)
         metriche = getattr(impianto, "fotovoltaico_metriche_tecniche", None)
+        data_prossima_fattura, data_prossima_fattura_class = _next_invoice_date_cell(stato_economico)
         mancata_produzione, mancata_produzione_class = _mancata_produzione_cell(impianto, metriche)
         margine_straordinario, margine_straordinario_class = _margine_straordinario_cell(
             impianto,
@@ -435,12 +491,9 @@ def build_fotovoltaico_proprieta_rows_portale(
                 totale_incassato=_fmt_decimal(
                     getattr(stato_economico, "incassato", None)
                 ),
-                data_prossima_fattura=_fmt_date(
-                    getattr(stato_economico, "data_prossima_fattura", None)
-                ),
-                importo_prossima_fattura=_fmt_decimal(
-                    getattr(stato_economico, "importo_prossima_fattura", None)
-                ),
+                data_prossima_fattura=data_prossima_fattura,
+                data_prossima_fattura_class=data_prossima_fattura_class,
+                importo_prossima_fattura=_next_invoice_amount_cell(stato_economico),
                 totale_ordinato_straordinario=_fmt_currency_accounting(
                     _resolve_costo_straordinario_totale_value(
                         impianto,
@@ -491,6 +544,7 @@ def build_fotovoltaico_in_costruzione_rows_portale(
         metadata = getattr(impianto, "fotovoltaico_metadata", None)
         stato_economico = getattr(impianto, "fotovoltaico_stato_economico", None)
         metriche = getattr(impianto, "fotovoltaico_metriche_tecniche", None)
+        data_prossima_fattura, data_prossima_fattura_class = _next_invoice_date_cell(stato_economico)
         mancata_produzione, mancata_produzione_class = _mancata_produzione_cell(impianto, metriche)
         margine_straordinario, margine_straordinario_class = _margine_straordinario_cell(
             impianto,
@@ -539,12 +593,9 @@ def build_fotovoltaico_in_costruzione_rows_portale(
                 totale_incassato=_fmt_decimal(
                     getattr(stato_economico, "incassato", None)
                 ),
-                data_prossima_fattura=_fmt_date(
-                    getattr(stato_economico, "data_prossima_fattura", None)
-                ),
-                importo_prossima_fattura=_fmt_decimal(
-                    getattr(stato_economico, "importo_prossima_fattura", None)
-                ),
+                data_prossima_fattura=data_prossima_fattura,
+                data_prossima_fattura_class=data_prossima_fattura_class,
+                importo_prossima_fattura=_next_invoice_amount_cell(stato_economico),
                 totale_ordinato_straordinario=_fmt_currency_accounting(
                     _resolve_costo_straordinario_totale_value(
                         impianto,
@@ -595,6 +646,7 @@ def build_agrivoltaico_rows_portale(
         metadata = getattr(impianto, "fotovoltaico_metadata", None)
         stato_economico = getattr(impianto, "fotovoltaico_stato_economico", None)
         metriche = getattr(impianto, "fotovoltaico_metriche_tecniche", None)
+        data_prossima_fattura, data_prossima_fattura_class = _next_invoice_date_cell(stato_economico)
         mancata_produzione, mancata_produzione_class = _mancata_produzione_cell(impianto, metriche)
         margine_straordinario, margine_straordinario_class = _margine_straordinario_cell(
             impianto,
@@ -643,12 +695,9 @@ def build_agrivoltaico_rows_portale(
                 totale_incassato=_fmt_decimal(
                     getattr(stato_economico, "incassato", None)
                 ),
-                data_prossima_fattura=_fmt_date(
-                    getattr(stato_economico, "data_prossima_fattura", None)
-                ),
-                importo_prossima_fattura=_fmt_decimal(
-                    getattr(stato_economico, "importo_prossima_fattura", None)
-                ),
+                data_prossima_fattura=data_prossima_fattura,
+                data_prossima_fattura_class=data_prossima_fattura_class,
+                importo_prossima_fattura=_next_invoice_amount_cell(stato_economico),
                 totale_ordinato_straordinario=_fmt_currency_accounting(
                     _resolve_costo_straordinario_totale_value(
                         impianto,

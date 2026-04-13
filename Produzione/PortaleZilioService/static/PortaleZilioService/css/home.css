@@ -308,6 +308,12 @@ p.empty-state {
     color: #b42318;
 }
 
+.metric-delta-soft-loss {
+    color: #b42318;
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
 .metric-delta-gain {
     color: #067647;
 }
@@ -328,6 +334,11 @@ p.empty-state {
 .metric-unit-strong {
     font-size: 1em;
     font-weight: 700;
+}
+
+.invoice-date-today {
+    color: #b54708;
+    font-weight: 600;
 }
 
 .overview-info-button {

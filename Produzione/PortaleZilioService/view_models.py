@@ -31,6 +31,7 @@ class FotovoltaicoClientiRow:
     fatturato: str
     totale_incassato: str
     data_prossima_fattura: str # da togliere ? 
+    data_prossima_fattura_class: str
     importo_prossima_fattura: str # da togliere ?
 
     # COLONNE STRAORDINARIO  - separate da una linea rossa 
@@ -66,6 +67,7 @@ class FotovoltaicoProprietaRow:
     fatturato: str
     totale_incassato: str
     data_prossima_fattura: str # da togliere ? 
+    data_prossima_fattura_class: str
     importo_prossima_fattura: str # da togliere ?
 
     # COLONNE STRAORDINARIO  - separate da una linea rossa 
@@ -101,6 +103,7 @@ class FotovoltaicoInCostruzioneRow:
     fatturato: str
     totale_incassato: str
     data_prossima_fattura: str # da togliere ? 
+    data_prossima_fattura_class: str
     importo_prossima_fattura: str # da togliere ?
 
     # COLONNE STRAORDINARIO  - separate da una linea rossa 
@@ -135,6 +138,7 @@ class AgrivoltaicoRow:
     fatturato: str
     totale_incassato: str
     data_prossima_fattura: str # da togliere ? 
+    data_prossima_fattura_class: str
     importo_prossima_fattura: str # da togliere ?
 
     # COLONNE STRAORDINARIO  - separate da una linea rossa 

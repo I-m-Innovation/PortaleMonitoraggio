@@ -2,7 +2,7 @@
 <table>
     <thead>
         <tr>
-            <th colspan="20" class="section-header">O&amp;M Ordinaria</th>
+            <th colspan="20" class="section-header">O&amp;M Ordinaria {% now "Y" %}</th>
             <th colspan="5" class="section-header straord-start straord-col">Straordinario</th>
         </tr>
         <tr>
@@ -21,9 +21,9 @@
             <th class="table-align-right">Totale Contratto</th>
             <th class="table-align-right">Totale Annuo su MW</th>
             <th class="table-align-right">Totale Annuo</th>
-            <th class="table-align-right">Maturato</th>
-            <th class="table-align-right">Fatturato</th>
-            <th class="table-align-right">Incassato</th>
+            <th class="table-align-right">Maturato {% now "Y" %}</th>
+            <th class="table-align-right">Fatturato {% now "Y" %}</th>
+            <th class="table-align-right">Incassato {% now "Y" %}</th>
             <th>Data Prossima Fattura</th>
             <th class="table-align-right">Importo Prossima Fattura</th>
             <th class="table-align-right straord-start straord-col">Costo sostenuto</th>
@@ -43,7 +43,9 @@
                 <td class="table-align-right">{{ row.potenza }}</td>
                 <td class="table-align-right">{{ row.pr_contrattuale }}</td>
                 <td class="js-pr-ultimi-12-mesi table-align-right">
-                    {% if row.pr_ultimi_12_mesi == "WSM" or row.pr_ultimi_12_mesi == "ERR" %}
+                    {% if row.pr_ultimi_12_mesi == "SM" %}
+                        <span class="metric-delta-soft-loss">{{ row.pr_ultimi_12_mesi }}</span>
+                    {% elif row.pr_ultimi_12_mesi == "ERR" %}
                         <span class="pr-placeholder-muted">{{ row.pr_ultimi_12_mesi }}</span>
                     {% else %}
                         {{ row.pr_ultimi_12_mesi }}
@@ -51,7 +53,7 @@
                 </td>
                 <td class="table-align-right">
                     <span class="{{ row.mancata_produzione_class }}">{{ row.mancata_produzione }}</span>
-                    {% if row.mancata_produzione != "WSM" and row.mancata_produzione != "ERR" and row.mancata_produzione != "--" %}
+                    {% if row.mancata_produzione != "SM" and row.mancata_produzione != "ERR" and row.mancata_produzione != "--" %}
                         <span class="metric-unit">kWh</span>
                     {% endif %}
                 </td>
@@ -65,7 +67,7 @@
                 <td class="table-align-right">{{ row.totale_maturato }}</td>
                 <td class="table-align-right">{{ row.fatturato }}</td>
                 <td class="table-align-right">{{ row.totale_incassato }}</td>
-                <td>{{ row.data_prossima_fattura }}</td>
+                <td><span class="{{ row.data_prossima_fattura_class }}">{{ row.data_prossima_fattura }}</span></td>
                 <td class="table-align-right">{{ row.importo_prossima_fattura }}</td>
                 <td class="table-align-right straord-start straord-col">{{ row.totale_ordinato_straordinario }}</td>
                 <td class="table-align-right straord-col">{{ row.totale_fatturato_straordinario }}</td>
@@ -79,5 +81,5 @@
     </tbody>
 </table>
 </div>
-<p class="pr-placeholder-muted">WSM = Weather Station Missing. ERR = PR non disponibile nonostante la weather station sia presente.</p>
+<p class="pr-placeholder-muted">SM = Solarimetro mancante. ERR = PR non disponibile nonostante il solarimetro sia presente.</p>
 
