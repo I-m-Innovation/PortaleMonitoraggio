@@ -255,7 +255,8 @@ Regole:
 - valore positivo -> testo rosso con freccia giu': `↓ 24.802,36 kWh`
 - valore negativo -> testo verde con freccia su: `↑ 8.636,85 kWh`
 - valore zero -> testo grigio: `0,00 kWh`
-- valore non calcolabile (`WSM`, `ERR`, `--`) -> testo grigio senza unita'
+- valore non calcolabile (`SM`, `ERR`, `--`) -> testo grigio senza unita'
+- `SM` = Solarimetro mancante (`WSM` = Weather Station Missing, significato precedente)
 
 Dettagli:
 

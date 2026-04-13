@@ -235,7 +235,7 @@ def _pr_ultimi_12_mesi_text(impianto, metriche) -> str:
         attivo=True,
     ).exists()
     if not has_weather_station:
-        return "WSM"
+        return "SM"
     return "ERR"
 
 
@@ -254,7 +254,7 @@ def _mancata_produzione_cell(impianto, metriche) -> tuple[str, str]:
         attivo=True,
     ).exists()
     if not has_weather_station:
-        return "WSM", "metric-delta metric-delta-muted"
+        return "SM", "metric-delta-soft-loss"
     return "ERR", "metric-delta metric-delta-muted"
 
 
