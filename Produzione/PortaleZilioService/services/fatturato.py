@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import date
 from decimal import Decimal, InvalidOperation
 
 import requests
@@ -40,6 +41,16 @@ def _to_int(value) -> int | None:
 
 def _extract_plant_name(item: dict) -> str:
     return _normalize_plant_name(item.get("impianto") or item.get("Impianto"))
+
+
+def _extract_invoice_year(item: dict) -> int | None:
+    raw_value = item.get("ListinoDataRif")
+    if not raw_value:
+        return None
+    try:
+        return date.fromisoformat(str(raw_value)).year
+    except ValueError:
+        return None
 
 
 def _load_fatturato_per_impianto(url: str, timeout: float) -> dict[str, Decimal]:
@@ -217,6 +228,7 @@ def _load_canoni_incassati_oem_per_impianto(url: str, timeout: float) -> dict[st
         )
         return {}
 
+    current_year = date.today().year
     incassato_by_impianto: dict[str, Decimal] = {}
     for item in payload.get("data", []):
         nome_impianto = _extract_plant_name(item)
@@ -225,6 +237,10 @@ def _load_canoni_incassati_oem_per_impianto(url: str, timeout: float) -> dict[st
 
         esito_match = str(item.get("EsitoMatch") or item.get("esito_match") or "").strip().upper()
         if esito_match != "MATCH":
+            continue
+
+        invoice_year = _extract_invoice_year(item)
+        if invoice_year != current_year:
             continue
 
         importo = _to_decimal(item.get("TotaleDocumento"))
