@@ -38,6 +38,10 @@ def _to_int(value) -> int | None:
             return None
 
 
+def _extract_plant_name(item: dict) -> str:
+    return _normalize_plant_name(item.get("impianto") or item.get("Impianto"))
+
+
 def _load_fatturato_per_impianto(url: str, timeout: float) -> dict[str, Decimal]:
     try:
         response = requests.get(url, timeout=timeout)
@@ -51,7 +55,7 @@ def _load_fatturato_per_impianto(url: str, timeout: float) -> dict[str, Decimal]
 
     fatturato_by_impianto: dict[str, Decimal] = {}
     for item in payload.get("data", []):
-        nome_impianto = _normalize_plant_name(item.get("impianto"))
+        nome_impianto = _extract_plant_name(item)
         if not nome_impianto:
             continue
 
@@ -89,7 +93,7 @@ def _load_decimal_value_per_impianto(
 
     values_by_impianto: dict[str, Decimal] = {}
     for item in payload.get("data", []):
-        nome_impianto = _normalize_plant_name(item.get("impianto"))
+        nome_impianto = _extract_plant_name(item)
         if not nome_impianto:
             continue
 
@@ -128,7 +132,7 @@ def _load_integer_value_per_impianto(
 
     values_by_impianto: dict[str, int] = {}
     for item in payload.get("data", []):
-        nome_impianto = _normalize_plant_name(item.get("impianto"))
+        nome_impianto = _extract_plant_name(item)
         if not nome_impianto:
             continue
 
@@ -191,6 +195,59 @@ def _persist_costo_straordinario_to_db(costo_by_impianto: dict[str, Decimal]) ->
     )
 
 
+def _load_canoni_incassati_oem_per_impianto(url: str, timeout: float) -> dict[str, Decimal]:
+    if not url:
+        return {}
+
+    try:
+        response = requests.get(url, timeout=timeout)
+        response.raise_for_status()
+        payload = response.json()
+    except (requests.RequestException, ValueError) as exc:
+        logger.warning(
+            "Errore nel caricamento canoni incassati O&M da endpoint Zilio",
+            extra={"url": url, "error": str(exc)},
+        )
+        return {}
+
+    if payload.get("status") != "ok":
+        logger.warning(
+            "Endpoint canoni incassati O&M ha restituito uno status non valido",
+            extra={"url": url, "status": payload.get("status")},
+        )
+        return {}
+
+    incassato_by_impianto: dict[str, Decimal] = {}
+    for item in payload.get("data", []):
+        nome_impianto = _extract_plant_name(item)
+        if not nome_impianto:
+            continue
+
+        esito_match = str(item.get("EsitoMatch") or item.get("esito_match") or "").strip().upper()
+        if esito_match != "MATCH":
+            continue
+
+        importo = _to_decimal(item.get("TotaleDocumento"))
+        if importo is None:
+            importo = _to_decimal(item.get("ImportoUdc"))
+        if importo is None:
+            continue
+
+        incassato_by_impianto[nome_impianto] = (
+            incassato_by_impianto.get(nome_impianto, Decimal("0")) + importo
+        )
+
+    logger.info(
+        "Canoni incassati O&M per impianto caricati da endpoint Zilio",
+        extra={
+            "url": url,
+            "items_received": len(payload.get("data", [])),
+            "items_mapped": len(incassato_by_impianto),
+        },
+    )
+    return incassato_by_impianto
+
+
 def get_fatturato_ordinario_anno_corrente_per_impianto() -> dict[str, Decimal]:
     return _load_fatturato_per_impianto(
         settings.ZILIO_FATTURATO_ORDINARIO_URL,
@@ -229,3 +286,14 @@ def get_costo_straordinario_totale_per_impianto() -> dict[str, Decimal]:
     )
     _persist_costo_straordinario_to_db(costo_by_impianto)
     return costo_by_impianto
+
+
+def get_canoni_incassati_oem_per_impianto() -> dict[str, Decimal]:
+    url = getattr(settings, "ZILIO_CANONI_INCASSATI_OEM_URL", "")
+    raw_timeout = getattr(settings, "ZILIO_CANONI_INCASSATI_OEM_TIMEOUT", 10)
+    try:
+        timeout = float(raw_timeout)
+    except (TypeError, ValueError):
+        timeout = 10.0
+
+    return _load_canoni_incassati_oem_per_impianto(url, timeout)
