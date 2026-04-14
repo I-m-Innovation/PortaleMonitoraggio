@@ -22,7 +22,7 @@
     <tbody>
         {% for row in rows %}
             <tr>
-                <td>{{ row.nome_impianto }}</td>
+                <td><a class="impianto-detail-link" href="{% url 'PortaleZilioService:impianto-detail' %}?nome={{ row.nome_impianto|urlencode }}">{{ row.nome_impianto }}</a></td>
                 <td>{{ row.nome_cliente }}</td>
                 <td>{{ row.tariffa_mwh }}</td>
                 <td>{{ row.strumento_di_contabilizzazione }}</td>
@@ -44,3 +44,4 @@
     </tbody>
 </table>
 </div>
+

@@ -1,0 +1,15 @@
+{% extends "base_layout.html" %}
+{% load static %}
+
+{% block title %}Portale Zilio Service - Dettaglio Impianto{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/style_overview_page.css' %}">
+    <link rel="stylesheet" href="{% static 'PortaleZilioService/css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+    <main class="impianto-detail-page">
+        <h1>{{ nome_impianto }}</h1>
+    </main>
+{% endblock %}

@@ -402,6 +402,56 @@ p.empty-state {
     backdrop-filter: blur(10px);
 }
 
+.impianto-detail-link {
+    color: #1f6a9a;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.impianto-detail-link:hover,
+.impianto-detail-link:focus {
+    text-decoration: underline;
+}
+
+.impianto-detail-page {
+    padding: 1.5rem;
+}
+
+.impianto-detail-card {
+    margin-bottom: 1rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid #d7e0ea;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 2px 10px rgba(22, 33, 45, 0.06);
+}
+
+.impianto-detail-card h2 {
+    margin: 0 0 0.7rem;
+    font-size: 1.05rem;
+    color: #12324b;
+}
+
+.impianto-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 0.5rem 1rem;
+    color: #243b53;
+}
+
+.impianto-detail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.impianto-detail-list-item {
+    padding: 0.45rem 0.6rem;
+    border-radius: 6px;
+    background: #f3f7fb;
+    color: #1f3347;
+}
+
 .overview-info-panel-header {
     display: flex;
     align-items: flex-start;

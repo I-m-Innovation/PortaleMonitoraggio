@@ -37,7 +37,7 @@
             {% for row in rows %}
                 <tr>
                     <td><span class="{{ row.status_class }}" aria-hidden="true"></span></td>
-                    <td>{{ row.nome_impianto }}</td>
+                    <td><a class="impianto-detail-link" href="{% url 'PortaleZilioService:impianto-detail' %}?nome={{ row.nome_impianto|urlencode }}">{{ row.nome_impianto }}</a></td>
                     <td>{{ row.nome_cliente }}</td>
                     <td class="table-align-right">{{ row.potenza_contratto }}</td>
                     <td class="table-align-right">{{ row.potenza_installata }}</td>

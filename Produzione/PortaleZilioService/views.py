@@ -1,6 +1,6 @@
 from collections import Counter
 
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
@@ -240,6 +240,32 @@ def overview_view(request):
     return render(request, "PortaleZilioService/overview.html", _build_home_context())
 
 
+def impianto_detail_view(request):
+    nome_impianto = (request.GET.get("nome") or "").strip()
+    if not nome_impianto:
+        raise Http404("Parametro nome mancante")
+
+    impianto = (
+        ImpiantoAnagrafica.objects.select_related(
+            "fotovoltaico_metadata",
+            "fotovoltaico_stato_economico",
+            "fotovoltaico_metriche_tecniche",
+            "idroelettrico_metadata",
+        )
+        .prefetch_related("commesse", "sorgenti_dati", "dispositivi")
+        .filter(nome_impianto=nome_impianto)
+        .order_by("id")
+        .first()
+    )
+    if impianto is None:
+        raise Http404("Impianto non trovato")
+    return render(
+        request,
+        "PortaleZilioService/impianto_detail.html",
+        {"nome_impianto": impianto.nome_impianto},
+    )
+
+
 @require_POST
 def sync_provider_metrics_view(request):
     try:
@@ -276,3 +302,4 @@ def sync_provider_metrics_view(request):
             },
             status=500,
         )
+

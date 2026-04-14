@@ -1,4 +1,4 @@
-﻿<div class="table-scroll-track" data-auto-scroll="true">
+<div class="table-scroll-track" data-auto-scroll="true">
 <table>
     <thead>
         <tr>
@@ -16,13 +16,13 @@
         {% for row in rows %}
             <tr>
                 <td><span class="{{ row.status_class }}" aria-hidden="true"></span></td>
-                <td>{{ row.nome }}</td>
+                <td><a class="impianto-detail-link" href="{% url 'PortaleZilioService:impianto-detail' %}?nome={{ row.nome|urlencode }}">{{ row.nome }}</a></td>
                 <td>{{ row.potenza }}</td>
                 <td>{{ row.portata }}</td>
                 <td>{{ row.salto }}</td>
                 <td>{{ row.lettura_dati }}</td>
                 <td>{{ row.stato_contratto }}</td>
-                <td><a href="{{ row.dettaglio_url }}">link</a></td>
+                <td><a href="{% url 'PortaleZilioService:impianto-detail' %}?nome={{ row.nome|urlencode }}">link</a></td>
             </tr>
         {% empty %}
             <tr><td colspan="8">Nessun dato disponibile.</td></tr>
@@ -30,4 +30,5 @@
     </tbody>
 </table>
 </div>
+
 
