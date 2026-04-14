@@ -76,8 +76,9 @@ def _fmt_currency_accounting(value: Decimal | float | None) -> str:
         return "--"
     numeric_value = float(value)
     if numeric_value < 0:
-        return f"- € {_fmt_number_it(abs(numeric_value), decimals=2)}"
-    return f"€ {_fmt_number_it(numeric_value, decimals=2)}"
+        # \u20ac simbolo dell'euro 
+        return f"- \u20ac {_fmt_number_it(abs(numeric_value), decimals=2)}"
+    return f"\u20ac {_fmt_number_it(numeric_value, decimals=2)}"
 
 
 def _normalize_plant_name(value: str | None) -> str:
@@ -843,3 +844,4 @@ def _build_fotovoltaico_in_costruzione_portale_queryset():
         )
         .order_by("nome_cliente", "nome_impianto")
     )
+
