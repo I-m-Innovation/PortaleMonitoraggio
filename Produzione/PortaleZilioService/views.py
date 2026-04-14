@@ -9,6 +9,7 @@ from PortaleZilioService.API_inverter.API_iSolarCloud import get_all_devices, lo
 
 from .models import ImpiantoAnagrafica
 from .services.fatturato import (
+    get_canoni_incassati_oem_per_impianto,
     get_costo_straordinario_totale_per_impianto,
     get_fatturato_ordinario_anno_corrente_per_impianto,
     get_fatturato_straordinario_totale_per_impianto,
@@ -32,6 +33,7 @@ from .services.rows_builder_fotovoltaico import (
 
 def _build_home_context():
     fatturato_by_impianto = get_fatturato_ordinario_anno_corrente_per_impianto()
+    incassato_by_impianto = get_canoni_incassati_oem_per_impianto()
     fatturato_straordinario_by_impianto = get_fatturato_straordinario_totale_per_impianto()
     costo_straordinario_by_impianto = get_costo_straordinario_totale_per_impianto()
     fatture_straordinarie_annuo_by_impianto = (
@@ -43,6 +45,7 @@ def _build_home_context():
     return {
         "fv_clienti_rows": build_fotovoltaico_clienti_rows_portale(
             fatturato_by_impianto,
+            incassato_by_impianto,
             fatturato_straordinario_by_impianto,
             costo_straordinario_by_impianto,
             fatture_straordinarie_annuo_by_impianto,
@@ -50,6 +53,7 @@ def _build_home_context():
         ),
         "fv_proprieta_rows": build_fotovoltaico_proprieta_rows_portale(
             fatturato_by_impianto,
+            incassato_by_impianto,
             fatturato_straordinario_by_impianto,
             costo_straordinario_by_impianto,
             fatture_straordinarie_annuo_by_impianto,
@@ -57,6 +61,7 @@ def _build_home_context():
         ),
         "fv_agrivoltaico_rows": build_agrivoltaico_rows_portale(
             fatturato_by_impianto,
+            incassato_by_impianto,
             fatturato_straordinario_by_impianto,
             costo_straordinario_by_impianto,
             fatture_straordinarie_annuo_by_impianto,
@@ -64,6 +69,7 @@ def _build_home_context():
         ),
         "fv_in_costruzione_rows": build_fotovoltaico_in_costruzione_rows_portale(
             fatturato_by_impianto,
+            incassato_by_impianto,
             fatturato_straordinario_by_impianto,
             costo_straordinario_by_impianto,
             fatture_straordinarie_annuo_by_impianto,

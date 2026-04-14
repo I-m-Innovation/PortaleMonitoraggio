@@ -95,6 +95,18 @@ def _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto: d
     return getattr(stato_economico, "fatturato", None)
 
 
+def _resolve_incassato_value(
+    impianto,
+    stato_economico,
+    incassato_by_impianto: dict[str, Decimal] | None,
+):
+    if incassato_by_impianto:
+        normalized_name = _normalize_plant_name(impianto.nome_impianto)
+        if normalized_name in incassato_by_impianto:
+            return incassato_by_impianto[normalized_name]
+    return getattr(stato_economico, "incassato", None)
+
+
 def _resolve_totale_fatturato_straordinario_value(
     impianto,
     stato_economico,
@@ -329,6 +341,7 @@ def _status_class_portale(metriche) -> str:
 
 def build_fotovoltaico_clienti_rows_portale(
     fatturato_by_impianto: dict[str, Decimal] | None = None,
+    incassato_by_impianto: dict[str, Decimal] | None = None,
     fatturato_straordinario_by_impianto: dict[str, Decimal] | None = None,
     costo_straordinario_by_impianto: dict[str, Decimal] | None = None,
     fatture_straordinarie_annuo_by_impianto: dict[str, int] | None = None,
@@ -388,7 +401,7 @@ def build_fotovoltaico_clienti_rows_portale(
                     _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
                 ),
                 totale_incassato=_fmt_currency_accounting(
-                    getattr(stato_economico, "incassato", None)
+                    _resolve_incassato_value(impianto, stato_economico, incassato_by_impianto)
                 ),
                 data_prossima_fattura=data_prossima_fattura,
                 data_prossima_fattura_class=data_prossima_fattura_class,
@@ -431,6 +444,7 @@ def build_fotovoltaico_clienti_rows_portale(
 
 def build_fotovoltaico_proprieta_rows_portale(
     fatturato_by_impianto: dict[str, Decimal] | None = None,
+    incassato_by_impianto: dict[str, Decimal] | None = None,
     fatturato_straordinario_by_impianto: dict[str, Decimal] | None = None,
     costo_straordinario_by_impianto: dict[str, Decimal] | None = None,
     fatture_straordinarie_annuo_by_impianto: dict[str, int] | None = None,
@@ -490,7 +504,7 @@ def build_fotovoltaico_proprieta_rows_portale(
                     _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
                 ),
                 totale_incassato=_fmt_currency_accounting(
-                    getattr(stato_economico, "incassato", None)
+                    _resolve_incassato_value(impianto, stato_economico, incassato_by_impianto)
                 ),
                 data_prossima_fattura=data_prossima_fattura,
                 data_prossima_fattura_class=data_prossima_fattura_class,
@@ -533,6 +547,7 @@ def build_fotovoltaico_proprieta_rows_portale(
 
 def build_fotovoltaico_in_costruzione_rows_portale(
     fatturato_by_impianto: dict[str, Decimal] | None = None,
+    incassato_by_impianto: dict[str, Decimal] | None = None,
     fatturato_straordinario_by_impianto: dict[str, Decimal] | None = None,
     costo_straordinario_by_impianto: dict[str, Decimal] | None = None,
     fatture_straordinarie_annuo_by_impianto: dict[str, int] | None = None,
@@ -592,7 +607,7 @@ def build_fotovoltaico_in_costruzione_rows_portale(
                     _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
                 ),
                 totale_incassato=_fmt_currency_accounting(
-                    getattr(stato_economico, "incassato", None)
+                    _resolve_incassato_value(impianto, stato_economico, incassato_by_impianto)
                 ),
                 data_prossima_fattura=data_prossima_fattura,
                 data_prossima_fattura_class=data_prossima_fattura_class,
@@ -635,6 +650,7 @@ def build_fotovoltaico_in_costruzione_rows_portale(
 
 def build_agrivoltaico_rows_portale(
     fatturato_by_impianto: dict[str, Decimal] | None = None,
+    incassato_by_impianto: dict[str, Decimal] | None = None,
     fatturato_straordinario_by_impianto: dict[str, Decimal] | None = None,
     costo_straordinario_by_impianto: dict[str, Decimal] | None = None,
     fatture_straordinarie_annuo_by_impianto: dict[str, int] | None = None,
@@ -694,7 +710,7 @@ def build_agrivoltaico_rows_portale(
                     _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
                 ),
                 totale_incassato=_fmt_currency_accounting(
-                    getattr(stato_economico, "incassato", None)
+                    _resolve_incassato_value(impianto, stato_economico, incassato_by_impianto)
                 ),
                 data_prossima_fattura=data_prossima_fattura,
                 data_prossima_fattura_class=data_prossima_fattura_class,
