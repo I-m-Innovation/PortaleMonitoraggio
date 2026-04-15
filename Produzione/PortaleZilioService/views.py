@@ -132,6 +132,18 @@ def _maturato_value(stato_economico):
     return Decimal(numero_canoni_maturati) * Decimal(str(importo_canone_periodico))
 
 
+def _anni_contratto_value(stato_economico):
+    if stato_economico is None:
+        return None
+
+    data_inizio = getattr(stato_economico, "data_inizio_contratto", None)
+    data_fine = getattr(stato_economico, "data_fine_contratto", None)
+    if not data_inizio or not data_fine:
+        return None
+
+    return Decimal(str((data_fine - data_inizio).days / 365.25)).quantize(Decimal("0.1"))
+
+
 def _build_impianto_detail_context(
     impianto,
     *,
@@ -234,7 +246,7 @@ def _build_impianto_detail_context(
             ("Tipologia contratto", _contract_type_label(impianto)),
             ("Inizio contratto", _fmt_date(getattr(stato_economico, "data_inizio_contratto", None))),
             ("Fine contratto", _fmt_date(getattr(stato_economico, "data_fine_contratto", None))),
-            ("Anni contratto", _fmt_decimal(getattr(stato_economico, "anni_contratto", None))),
+            ("Anni contratto", _fmt_decimal(_anni_contratto_value(stato_economico))),
             ("Totale contratto", _fmt_decimal(getattr(stato_economico, "totale_contratto", None), " EUR")),
             ("Totale annuo", _fmt_decimal(getattr(stato_economico, "totale_annuo", None), " EUR")),
             ("Totale annuale su MW", _fmt_decimal(getattr(stato_economico, "totale_annuale_su_mw", None), " EUR")),
