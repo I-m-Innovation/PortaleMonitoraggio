@@ -373,6 +373,7 @@ class ImpiantoCommessa(models.Model):
     )
     tipo_commessa = models.CharField(max_length=20, choices=TipoCommessa.choices)
     codice_commessa = models.CharField(max_length=50)
+    riparto = models.DecimalField(max_digits=6, decimal_places=3, blank=True, null=True)
     note = models.TextField(blank=True, null=True)
 
     class Meta:

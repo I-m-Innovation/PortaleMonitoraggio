@@ -1,4 +1,5 @@
 from collections import Counter
+from datetime import date
 from decimal import Decimal
 
 from django.http import FileResponse, Http404, JsonResponse
@@ -61,6 +62,20 @@ def _join_values(values):
     return ", ".join(cleaned) if cleaned else "--"
 
 
+def _normalize_plant_name(value):
+    if value is None:
+        return ""
+    return " ".join(value.strip().split()).casefold()
+
+
+def _resolve_mapping_value(impianto, fallback_value, values_by_impianto):
+    if values_by_impianto:
+        normalized_name = _normalize_plant_name(impianto.nome_impianto)
+        if normalized_name in values_by_impianto:
+            return values_by_impianto[normalized_name]
+    return fallback_value
+
+
 def _contract_type_label(impianto):
     metadata = getattr(impianto, "fotovoltaico_metadata", None)
     if metadata is None:
@@ -77,7 +92,56 @@ def _contract_type_label(impianto):
     return " / ".join(labels)
 
 
-def _build_impianto_detail_context(impianto):
+def _maturato_value(stato_economico):
+    if stato_economico is None:
+        return None
+
+    data_inizio = getattr(stato_economico, "data_inizio_contratto", None)
+    periodicita_mesi = getattr(stato_economico, "periodicita_canone_mesi", None)
+    importo_canone_periodico = getattr(
+        stato_economico,
+        "compute_importo_canone_periodico",
+        lambda: None,
+    )()
+    if importo_canone_periodico is None:
+        importo_canone_periodico = getattr(stato_economico, "importo_canone_periodico", None)
+
+    if not data_inizio or periodicita_mesi in (None, 0) or importo_canone_periodico is None:
+        return None
+
+    today = date.today()
+    if data_inizio > today:
+        return Decimal("0")
+
+    data_fine = getattr(stato_economico, "data_fine_contratto", None)
+    effective_end = min(today, data_fine) if data_fine else today
+    if effective_end < data_inizio:
+        return Decimal("0")
+
+    elapsed_months = (
+        (effective_end.year - data_inizio.year) * 12
+        + (effective_end.month - data_inizio.month)
+    )
+    if effective_end.day < data_inizio.day:
+        elapsed_months -= 1
+
+    if elapsed_months < periodicita_mesi:
+        return Decimal("0")
+
+    numero_canoni_maturati = elapsed_months // periodicita_mesi
+    return Decimal(numero_canoni_maturati) * Decimal(str(importo_canone_periodico))
+
+
+def _build_impianto_detail_context(
+    impianto,
+    *,
+    fatturato_by_impianto=None,
+    incassato_by_impianto=None,
+    fatturato_straordinario_by_impianto=None,
+    costo_straordinario_by_impianto=None,
+    fatture_straordinarie_annuo_by_impianto=None,
+    fatture_straordinarie_totali_by_impianto=None,
+):
     stato_economico = getattr(impianto, "fotovoltaico_stato_economico", None)
     metriche = getattr(impianto, "fotovoltaico_metriche_tecniche", None)
     metadata_fv = getattr(impianto, "fotovoltaico_metadata", None)
@@ -99,6 +163,41 @@ def _build_impianto_detail_context(impianto):
             for sorgente in sorgenti_dati
         ]
     )
+    fatturato_ordinario_value = _resolve_mapping_value(
+        impianto,
+        getattr(stato_economico, "fatturato", None),
+        fatturato_by_impianto,
+    )
+    incassato_value = _resolve_mapping_value(
+        impianto,
+        getattr(stato_economico, "incassato", None),
+        incassato_by_impianto,
+    )
+    costo_straordinario_value = _resolve_mapping_value(
+        impianto,
+        getattr(stato_economico, "costo_sostenuto_straordinario", None),
+        costo_straordinario_by_impianto,
+    )
+    fatturato_straordinario_value = _resolve_mapping_value(
+        impianto,
+        getattr(stato_economico, "totale_fatturato_straordinario", None),
+        fatturato_straordinario_by_impianto,
+    )
+    fatture_straordinarie_annuo_value = _resolve_mapping_value(
+        impianto,
+        getattr(stato_economico, "numero_fatture_straordinarie_annuo", None),
+        fatture_straordinarie_annuo_by_impianto,
+    )
+    fatture_straordinarie_totali_value = _resolve_mapping_value(
+        impianto,
+        getattr(stato_economico, "numero_fatture_straordinarie_totali", None),
+        fatture_straordinarie_totali_by_impianto,
+    )
+    margine_straordinario_value = getattr(stato_economico, "margine_straordinario", None)
+    if costo_straordinario_value is not None and fatturato_straordinario_value is not None:
+        margine_straordinario_value = Decimal(str(fatturato_straordinario_value)) - Decimal(
+            str(costo_straordinario_value)
+        )
 
     return {
         "impianto": impianto,
@@ -108,7 +207,6 @@ def _build_impianto_detail_context(impianto):
             ("Tipo impianto", impianto.get_tipo_impianto_display()),
             ("Stato impianto", impianto.get_stato_impianto_display()),
             ("Tag impianto", impianto.tag_impianto or "--"),
-            ("Codice impianto", impianto.codice_impianto or "--"),
             ("Cliente", impianto.nome_cliente or "--"),
             ("Proprietario", impianto.nome_proprietario or "--"),
             ("Entrata in esercizio", _fmt_date(impianto.data_entrata_esercizio)),
@@ -146,16 +244,16 @@ def _build_impianto_detail_context(impianto):
             ("Importo prossima fattura", _fmt_decimal(getattr(stato_economico, "importo_prossima_fattura", None), " EUR")),
         ],
         "economico_ordinario_items": [
-            ("Maturato", _fmt_decimal(getattr(stato_economico, "maturato", None), " EUR")),
-            ("Fatturato", _fmt_decimal(getattr(stato_economico, "fatturato", None), " EUR")),
-            ("Incassato", _fmt_decimal(getattr(stato_economico, "incassato", None), " EUR")),
+            ("Maturato", _fmt_decimal(_maturato_value(stato_economico), " EUR")),
+            ("Fatturato", _fmt_decimal(fatturato_ordinario_value, " EUR")),
+            ("Incassato", _fmt_decimal(incassato_value, " EUR")),
         ],
         "economico_straordinario_items": [
-            ("Costo sostenuto", _fmt_decimal(getattr(stato_economico, "costo_sostenuto_straordinario", None), " EUR")),
-            ("Totale fatturato straordinario", _fmt_decimal(getattr(stato_economico, "totale_fatturato_straordinario", None), " EUR")),
-            ("Margine", _fmt_decimal(getattr(stato_economico, "margine_straordinario", None), " EUR")),
-            ("Fatture straordinarie annuo", getattr(stato_economico, "numero_fatture_straordinarie_annuo", None) or "--"),
-            ("Fatture straordinarie totali", getattr(stato_economico, "numero_fatture_straordinarie_totali", None) or "--"),
+            ("Costo sostenuto", _fmt_decimal(costo_straordinario_value, " EUR")),
+            ("Totale fatturato straordinario", _fmt_decimal(fatturato_straordinario_value, " EUR")),
+            ("Margine", _fmt_decimal(margine_straordinario_value, " EUR")),
+            ("Fatture straordinarie annuo", fatture_straordinarie_annuo_value if fatture_straordinarie_annuo_value is not None else "--"),
+            ("Fatture straordinarie totali", fatture_straordinarie_totali_value if fatture_straordinarie_totali_value is not None else "--"),
         ],
         "monitoraggio_tecnico_items": [
             ("Sorgenti dati", sources_summary),
@@ -400,10 +498,28 @@ def impianto_detail_view(request):
     )
     if impianto is None:
         raise Http404("Impianto non trovato")
+    fatturato_by_impianto = get_fatturato_ordinario_anno_corrente_per_impianto()
+    incassato_by_impianto = get_canoni_incassati_oem_per_impianto()
+    fatturato_straordinario_by_impianto = get_fatturato_straordinario_totale_per_impianto()
+    costo_straordinario_by_impianto = get_costo_straordinario_totale_per_impianto()
+    fatture_straordinarie_annuo_by_impianto = (
+        get_numero_fatture_straordinarie_anno_corrente_per_impianto()
+    )
+    fatture_straordinarie_totali_by_impianto = (
+        get_numero_fatture_straordinarie_totali_per_impianto()
+    )
     return render(
         request,
         "PortaleZilioService/impianto_detail.html",
-        _build_impianto_detail_context(impianto),
+        _build_impianto_detail_context(
+            impianto,
+            fatturato_by_impianto=fatturato_by_impianto,
+            incassato_by_impianto=incassato_by_impianto,
+            fatturato_straordinario_by_impianto=fatturato_straordinario_by_impianto,
+            costo_straordinario_by_impianto=costo_straordinario_by_impianto,
+            fatture_straordinarie_annuo_by_impianto=fatture_straordinarie_annuo_by_impianto,
+            fatture_straordinarie_totali_by_impianto=fatture_straordinarie_totali_by_impianto,
+        ),
     )
 
 

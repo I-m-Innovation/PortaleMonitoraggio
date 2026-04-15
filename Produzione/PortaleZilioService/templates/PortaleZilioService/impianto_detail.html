@@ -126,6 +126,28 @@
                                         </div>
                                     {% endfor %}
                                 </dl>
+
+                                <div class="detail-inline-block">
+                                    <h4>Codici commessa</h4>
+                                    {% if commesse %}
+                                        <div class="detail-mini-table" role="table" aria-label="Codici commessa">
+                                            <div class="detail-mini-table-row detail-mini-table-head" role="row">
+                                                <span role="columnheader">Tipo</span>
+                                                <span role="columnheader">Codice</span>
+                                                <span role="columnheader">Riparto</span>
+                                            </div>
+                                            {% for commessa in commesse %}
+                                                <div class="detail-mini-table-row" role="row">
+                                                    <span role="cell">{{ commessa.get_tipo_commessa_display }}</span>
+                                                    <span role="cell">{{ commessa.codice_commessa }}</span>
+                                                    <span role="cell">{{ commessa.riparto|default:"--" }}</span>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <p class="detail-empty">Nessuna commessa disponibile.</p>
+                                    {% endif %}
+                                </div>
                             </section>
 
                             <section class="detail-column-card">
@@ -169,22 +191,6 @@
                             {% endfor %}
                         </dl>
                     </section>
-
-                    <section class="detail-subsection">
-                        <h3>Commesse</h3>
-                        {% if commesse %}
-                            <ul class="detail-chip-list">
-                                {% for commessa in commesse %}
-                                    <li>
-                                        <strong>{{ commessa.get_tipo_commessa_display }}</strong>
-                                        <span>{{ commessa.codice_commessa }}</span>
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        {% else %}
-                            <p class="detail-empty">Nessuna commessa disponibile.</p>
-                        {% endif %}
-                    </section>
                 </article>
 
                 <article class="detail-card detail-card-wide" data-detail-panel="documenti" hidden>
@@ -194,7 +200,13 @@
                             {% for documento in documenti %}
                                 <li>
                                     <a href="{% url 'PortaleZilioService:documento-download' documento.id %}" target="_blank" rel="noopener">
-                                        {{ documento.descrizione|default:documento.file.name }}
+                                        <img
+                                            class="detail-document-icon"
+                                            src="{% static 'PortaleZilioService/images/icons/file-text.svg' %}"
+                                            alt=""
+                                            aria-hidden="true"
+                                        >
+                                        <span>{{ documento.descrizione|default:documento.file.name }}</span>
                                     </a>
                                 </li>
                             {% endfor %}

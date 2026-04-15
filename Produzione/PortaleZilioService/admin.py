@@ -277,6 +277,7 @@ class ImpiantoCommessaAdmin(admin.ModelAdmin):
         "impianto",
         "tipo_commessa",
         "codice_commessa",
+        "riparto",
     )
     list_filter = ("tipo_commessa",)
     search_fields = (
