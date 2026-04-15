@@ -6,10 +6,251 @@
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/style_overview_page.css' %}">
     <link rel="stylesheet" href="{% static 'PortaleZilioService/css/home.css' %}">
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""
+    >
 {% endblock %}
 
 {% block content %}
     <main class="impianto-detail-page">
-        <h1>{{ nome_impianto }}</h1>
+        <section class="page-header impianto-detail-header">
+            <div class="page-header-copy">
+                <div class="impianto-detail-heading">
+                    <h1>{{ impianto.nome_impianto }}</h1>
+                    <p class="impianto-detail-subtitle">
+                        {{ impianto.get_tipo_impianto_display }} - {{ impianto.get_stato_impianto_display }}
+                    </p>
+                </div>
+                <div class="page-header-actions impianto-detail-actions">
+                    <a class="overview-link-button" href="{% url 'PortaleZilioService:overview' %}">Torna alla overview</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="detail-layout">
+            <aside class="detail-sidebar">
+                <nav class="detail-nav" aria-label="Sezioni dettaglio impianto">
+                    <button type="button" class="detail-nav-button is-active" data-detail-target="anagrafica" aria-pressed="true">Anagrafica</button>
+                    <button type="button" class="detail-nav-button" data-detail-target="economico" aria-pressed="false">Economico</button>
+                    <button type="button" class="detail-nav-button" data-detail-target="monitoraggio" aria-pressed="false">Monitoraggio</button>
+                    <button type="button" class="detail-nav-button" data-detail-target="documenti" aria-pressed="false">Documenti</button>
+                </nav>
+            </aside>
+
+            <section class="detail-panels">
+                <article class="detail-card detail-card-wide" data-detail-panel="anagrafica">
+                    <h2>Anagrafica</h2>
+
+                <section class="detail-subsection">
+                    <div class="detail-columns-3">
+                        <section class="detail-column-card">
+                            <h3>Impianto</h3>
+                            <dl class="detail-list">
+                                {% for label, value in anagrafica_impianto_items %}
+                                    <div class="detail-list-row">
+                                        <dt>{{ label }}</dt>
+                                        <dd>{{ value }}</dd>
+                                    </div>
+                                {% endfor %}
+                            </dl>
+                        </section>
+
+                        <section class="detail-column-card">
+                            <h3>Dati tecnici</h3>
+                            <dl class="detail-list">
+                                {% for label, value in anagrafica_tecnica_items %}
+                                    <div class="detail-list-row">
+                                        <dt>{{ label }}</dt>
+                                        <dd>{{ value }}</dd>
+                                    </div>
+                                {% endfor %}
+                                {% if is_idroelettrico %}
+                                    {% for label, value in anagrafica_idroelettrico_items %}
+                                        <div class="detail-list-row">
+                                            <dt>{{ label }}</dt>
+                                            <dd>{{ value }}</dd>
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            </dl>
+                        </section>
+
+                        <section class="detail-column-card">
+                            <h3>Informazioni geografiche</h3>
+                            <dl class="detail-list">
+                                {% for label, value in anagrafica_geografica_items %}
+                                    <div class="detail-list-row">
+                                        <dt>{{ label }}</dt>
+                                        <dd>{{ value }}</dd>
+                                    </div>
+                                {% endfor %}
+                            </dl>
+                            {% if latitudine and longitudine %}
+                                <div
+                                    id="impianto-map"
+                                    class="detail-map"
+                                    data-lat="{{ latitudine }}"
+                                    data-lng="{{ longitudine }}"
+                                    data-name="{{ impianto.nome_impianto }}"
+                                ></div>
+                            {% else %}
+                                <p class="detail-empty detail-map-empty">Coordinate non disponibili.</p>
+                            {% endif %}
+                        </section>
+                    </div>
+                </section>
+
+                {% if note_impianto %}
+                    <section class="detail-subsection">
+                        <h3>Note</h3>
+                        <p class="detail-note">{{ note_impianto }}</p>
+                    </section>
+                {% endif %}
+                </article>
+
+                <article class="detail-card detail-card-wide" data-detail-panel="economico" hidden>
+                    <h2>Economico</h2>
+
+                    <section class="detail-subsection">
+                        <div class="detail-columns-3">
+                            <section class="detail-column-card">
+                                <h3>Contratto</h3>
+                                <dl class="detail-list">
+                                    {% for label, value in economico_contratto_items %}
+                                        <div class="detail-list-row">
+                                            <dt>{{ label }}</dt>
+                                            <dd>{{ value }}</dd>
+                                        </div>
+                                    {% endfor %}
+                                </dl>
+                            </section>
+
+                            <section class="detail-column-card">
+                                <h3>Andamento economico ordinario</h3>
+                                <dl class="detail-list">
+                                    {% for label, value in economico_ordinario_items %}
+                                        <div class="detail-list-row">
+                                            <dt>{{ label }}</dt>
+                                            <dd>{{ value }}</dd>
+                                        </div>
+                                    {% endfor %}
+                                </dl>
+                            </section>
+
+                            <section class="detail-column-card">
+                                <h3>Andamento economico straordinario</h3>
+                                <dl class="detail-list">
+                                    {% for label, value in economico_straordinario_items %}
+                                        <div class="detail-list-row">
+                                            <dt>{{ label }}</dt>
+                                            <dd>{{ value }}</dd>
+                                        </div>
+                                    {% endfor %}
+                                </dl>
+                            </section>
+                        </div>
+                    </section>
+                </article>
+
+                <article class="detail-card detail-card-wide" data-detail-panel="monitoraggio" hidden>
+                    <h2>Monitoraggio</h2>
+
+                    <section class="detail-subsection">
+                        <h3>Monitoraggio tecnico</h3>
+                        <dl class="detail-list">
+                            {% for label, value in monitoraggio_tecnico_items %}
+                                <div class="detail-list-row">
+                                    <dt>{{ label }}</dt>
+                                    <dd>{{ value }}</dd>
+                                </div>
+                            {% endfor %}
+                        </dl>
+                    </section>
+
+                    <section class="detail-subsection">
+                        <h3>Commesse</h3>
+                        {% if commesse %}
+                            <ul class="detail-chip-list">
+                                {% for commessa in commesse %}
+                                    <li>
+                                        <strong>{{ commessa.get_tipo_commessa_display }}</strong>
+                                        <span>{{ commessa.codice_commessa }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="detail-empty">Nessuna commessa disponibile.</p>
+                        {% endif %}
+                    </section>
+                </article>
+
+                <article class="detail-card detail-card-wide" data-detail-panel="documenti" hidden>
+                    <h2>Documenti</h2>
+                    {% if documenti %}
+                        <ul class="detail-document-list">
+                            {% for documento in documenti %}
+                                <li>
+                                    <a href="{% url 'PortaleZilioService:documento-download' documento.id %}" target="_blank" rel="noopener">
+                                        {{ documento.descrizione|default:documento.file.name }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="detail-empty">Nessun documento disponibile.</p>
+                    {% endif %}
+                </article>
+            </section>
+        </section>
     </main>
+
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""
+    ></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const buttons = Array.from(document.querySelectorAll("[data-detail-target]"));
+            const panels = Array.from(document.querySelectorAll("[data-detail-panel]"));
+
+            const activatePanel = (target) => {
+                buttons.forEach((button) => {
+                    const isActive = button.dataset.detailTarget === target;
+                    button.classList.toggle("is-active", isActive);
+                    button.setAttribute("aria-pressed", String(isActive));
+                });
+
+                panels.forEach((panel) => {
+                    panel.hidden = panel.dataset.detailPanel !== target;
+                });
+            };
+
+            buttons.forEach((button) => {
+                button.addEventListener("click", () => activatePanel(button.dataset.detailTarget));
+            });
+
+            const mapElement = document.getElementById("impianto-map");
+            if (mapElement && typeof L !== "undefined") {
+                const lat = Number.parseFloat(mapElement.dataset.lat);
+                const lng = Number.parseFloat(mapElement.dataset.lng);
+
+                if (Number.isFinite(lat) && Number.isFinite(lng)) {
+                    const map = L.map(mapElement, {
+                        scrollWheelZoom: false,
+                    }).setView([lat, lng], 12);
+
+                    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                        maxZoom: 19,
+                        attribution: "&copy; OpenStreetMap contributors",
+                    }).addTo(map);
+
+                    L.marker([lat, lng]).addTo(map).bindPopup(mapElement.dataset.name);
+                }
+            }
+        });
+    </script>
 {% endblock %}

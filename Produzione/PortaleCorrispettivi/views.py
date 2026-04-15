@@ -115,7 +115,6 @@ def impianto(request, nickname):
         'page_title': 'Situazione corrispettivi',
         # DATI PAGINA
         'impianti': dz_impianti,
-        'headtitle': 'Dettaglio impianto',
         'nickname': nickname,
         'impianto': dz_impianto,
         

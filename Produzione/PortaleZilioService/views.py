@@ -1,13 +1,14 @@
 from collections import Counter
+from decimal import Decimal
 
-from django.http import Http404, JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
 
 from PortaleZilioService.API_inverter.API_iSolarCloud import get_all_devices, login_ISC
 
-from .models import ImpiantoAnagrafica
+from .models import DocumentoImpianto, ImpiantoAnagrafica
 from .services.fatturato import (
     get_canoni_incassati_oem_per_impianto,
     get_costo_straordinario_totale_per_impianto,
@@ -29,6 +30,146 @@ from .services.rows_builder_fotovoltaico import (
     build_fotovoltaico_ppu_rows_portale,
     build_fotovoltaico_proprieta_rows_portale,
 )
+
+
+def _fmt_date(value):
+    return value.strftime("%d/%m/%Y") if value else "--"
+
+
+def _fmt_decimal(value, suffix=""):
+    if value in (None, ""):
+        return "--"
+    number = Decimal(str(value))
+    formatted = f"{number:,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")
+    return f"{formatted}{suffix}"
+
+
+def _fmt_decimal_var(value, decimals=2, suffix=""):
+    if value in (None, ""):
+        return "--"
+    number = float(value)
+    formatted = f"{number:,.{decimals}f}".replace(",", "_").replace(".", ",").replace("_", ".")
+    return f"{formatted}{suffix}"
+
+
+def _fmt_bool(value):
+    return "Si" if value else "No"
+
+
+def _join_values(values):
+    cleaned = [value for value in values if value]
+    return ", ".join(cleaned) if cleaned else "--"
+
+
+def _contract_type_label(impianto):
+    metadata = getattr(impianto, "fotovoltaico_metadata", None)
+    if metadata is None:
+        return "--"
+    labels = []
+    if metadata.is_oem:
+        labels.append("O&M")
+    if metadata.is_ppu:
+        labels.append("PPU")
+    if metadata.is_agrivoltaico:
+        labels.append("Agrivoltaico")
+    if not labels:
+        return "--"
+    return " / ".join(labels)
+
+
+def _build_impianto_detail_context(impianto):
+    stato_economico = getattr(impianto, "fotovoltaico_stato_economico", None)
+    metriche = getattr(impianto, "fotovoltaico_metriche_tecniche", None)
+    metadata_fv = getattr(impianto, "fotovoltaico_metadata", None)
+    metadata_idr = getattr(impianto, "idroelettrico_metadata", None)
+    sorgenti_dati = list(impianto.sorgenti_dati.all())
+    dispositivi = list(impianto.dispositivi.all())
+    commesse = list(impianto.commesse.all())
+    documenti = list(impianto.documenti.all())
+
+    counts_by_device_type = Counter(
+        dispositivo.get_tipo_dispositivo_display() for dispositivo in dispositivi
+    )
+    device_counts_summary = _join_values(
+        [f"{count} {label}" for label, count in counts_by_device_type.items()]
+    )
+    sources_summary = _join_values(
+        [
+            f"{sorgente.nome_sorgente} ({sorgente.get_tipo_sorgente_display()})"
+            for sorgente in sorgenti_dati
+        ]
+    )
+
+    return {
+        "impianto": impianto,
+        "is_fotovoltaico": impianto.tipo_impianto == ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO,
+        "is_idroelettrico": impianto.tipo_impianto == ImpiantoAnagrafica.TipoImpianto.IDROELETTRICO,
+        "anagrafica_impianto_items": [
+            ("Tipo impianto", impianto.get_tipo_impianto_display()),
+            ("Stato impianto", impianto.get_stato_impianto_display()),
+            ("Tag impianto", impianto.tag_impianto or "--"),
+            ("Codice impianto", impianto.codice_impianto or "--"),
+            ("Cliente", impianto.nome_cliente or "--"),
+            ("Proprietario", impianto.nome_proprietario or "--"),
+            ("Entrata in esercizio", _fmt_date(impianto.data_entrata_esercizio)),
+        ],
+        "anagrafica_tecnica_items": [
+            ("Potenza installata", _fmt_decimal_var(impianto.potenza_installata_kw, decimals=3, suffix=" kW")),
+            ("Potenza contratto", _fmt_decimal_var(getattr(metadata_fv, "potenza_contratto_kw", None), decimals=3, suffix=" kW")),
+        ],
+        "anagrafica_geografica_items": [
+            ("Localita", impianto.localita or "--"),
+            ("Provincia", impianto.provincia or "--"),
+            ("Regione", impianto.regione or "--"),
+            ("Indirizzo", impianto.indirizzo or "--"),
+        ],
+        "latitudine": impianto.latitudine,
+        "longitudine": impianto.longitudine,
+        "anagrafica_idroelettrico_items": [
+            ("Categoria IDR", getattr(metadata_idr, "get_categoria_idr_display", lambda: "--")()),
+            ("Portata concessione", _fmt_decimal_var(getattr(metadata_idr, "portata_concessione", None), decimals=3)),
+            ("Unita misura portata", getattr(metadata_idr, "unita_misura_portata", None) or "--"),
+            ("Salto", _fmt_decimal_var(getattr(metadata_idr, "salto", None), decimals=3, suffix=" m")),
+            ("Potenza business plan", _fmt_decimal_var(getattr(metadata_idr, "potenza_business_plan_kw", None), decimals=3, suffix=" kW")),
+        ],
+        "economico_contratto_items": [
+            ("Tipologia contratto", _contract_type_label(impianto)),
+            ("Inizio contratto", _fmt_date(getattr(stato_economico, "data_inizio_contratto", None))),
+            ("Fine contratto", _fmt_date(getattr(stato_economico, "data_fine_contratto", None))),
+            ("Anni contratto", _fmt_decimal(getattr(stato_economico, "anni_contratto", None))),
+            ("Totale contratto", _fmt_decimal(getattr(stato_economico, "totale_contratto", None), " EUR")),
+            ("Totale annuo", _fmt_decimal(getattr(stato_economico, "totale_annuo", None), " EUR")),
+            ("Totale annuale su MW", _fmt_decimal(getattr(stato_economico, "totale_annuale_su_mw", None), " EUR")),
+            ("Periodicita canone", getattr(stato_economico, "periodicita_canone_mesi", None) or "--"),
+            ("Importo canone periodico", _fmt_decimal(getattr(stato_economico, "importo_canone_periodico", None), " EUR")),
+            ("Prossima fattura", _fmt_date(getattr(stato_economico, "data_prossima_fattura", None))),
+            ("Importo prossima fattura", _fmt_decimal(getattr(stato_economico, "importo_prossima_fattura", None), " EUR")),
+        ],
+        "economico_ordinario_items": [
+            ("Maturato", _fmt_decimal(getattr(stato_economico, "maturato", None), " EUR")),
+            ("Fatturato", _fmt_decimal(getattr(stato_economico, "fatturato", None), " EUR")),
+            ("Incassato", _fmt_decimal(getattr(stato_economico, "incassato", None), " EUR")),
+        ],
+        "economico_straordinario_items": [
+            ("Costo sostenuto", _fmt_decimal(getattr(stato_economico, "costo_sostenuto_straordinario", None), " EUR")),
+            ("Totale fatturato straordinario", _fmt_decimal(getattr(stato_economico, "totale_fatturato_straordinario", None), " EUR")),
+            ("Margine", _fmt_decimal(getattr(stato_economico, "margine_straordinario", None), " EUR")),
+            ("Fatture straordinarie annuo", getattr(stato_economico, "numero_fatture_straordinarie_annuo", None) or "--"),
+            ("Fatture straordinarie totali", getattr(stato_economico, "numero_fatture_straordinarie_totali", None) or "--"),
+        ],
+        "monitoraggio_tecnico_items": [
+            ("Sorgenti dati", sources_summary),
+            ("Dispositivi", device_counts_summary),
+            ("PR contrattuale", _fmt_decimal_var(getattr(metadata_fv, "pr_contrattuale", None), suffix=" %")),
+            ("PR ultimi 12 mesi", _fmt_decimal_var((getattr(metriche, "pr_ultimi_12_mesi", None) or 0) * 100, suffix=" %") if getattr(metriche, "pr_ultimi_12_mesi", None) is not None else "--"),
+            ("Mancata produzione", _fmt_decimal(getattr(metriche, "mancata_produzione", None), " kWh")),
+            ("Ore equivalenti ultimi 12 mesi", _fmt_decimal(getattr(metriche, "ore_equivalenti_ultimi_12_mesi", None), " h")),
+            ("Stato operativo", getattr(metriche, "get_stato_operativo_display", lambda: "--")()),
+        ],
+        "commesse": commesse,
+        "documenti": documenti,
+        "note_impianto": impianto.note or "",
+    }
 
 
 def _build_home_context():
@@ -252,7 +393,7 @@ def impianto_detail_view(request):
             "fotovoltaico_metriche_tecniche",
             "idroelettrico_metadata",
         )
-        .prefetch_related("commesse", "sorgenti_dati", "dispositivi")
+        .prefetch_related("commesse", "sorgenti_dati", "dispositivi", "documenti")
         .filter(nome_impianto=nome_impianto)
         .order_by("id")
         .first()
@@ -262,8 +403,24 @@ def impianto_detail_view(request):
     return render(
         request,
         "PortaleZilioService/impianto_detail.html",
-        {"nome_impianto": impianto.nome_impianto},
+        _build_impianto_detail_context(impianto),
     )
+
+
+def documento_impianto_download_view(request, documento_id):
+    documento = (
+        DocumentoImpianto.objects.select_related("impianto")
+        .filter(pk=documento_id)
+        .first()
+    )
+    if documento is None:
+        raise Http404("Documento non trovato")
+
+    file_field = documento.file
+    if not file_field:
+        raise Http404("File documento non disponibile")
+
+    return FileResponse(file_field.open("rb"), as_attachment=False, filename=file_field.name.rsplit("/", 1)[-1])
 
 
 @require_POST
