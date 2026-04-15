@@ -383,3 +383,26 @@ class ImpiantoCommessa(models.Model):
 
     def __str__(self):
         return f"{self.impianto} - {self.get_tipo_commessa_display()} - {self.codice_commessa}"
+
+
+
+
+class DocumentoImpianto(models.Model): 
+    impianto = models.ForeignKey(
+        ImpiantoAnagrafica,
+        on_delete=models.CASCADE,
+        related_name="documenti",
+    )
+    file = models.FileField(upload_to="documenti_impianto/")
+    descrizione = models.CharField(max_length=255, blank=True)
+    
+    
+    class Meta:
+        verbose_name = "Documento impianto"
+        verbose_name_plural = "Documenti impianto"
+        ordering = ["impianto__nome_impianto", "descrizione"]
+    
+    def __str__(self):
+        return f"{self.impianto.nome_impianto} - {self.descrizione or 'Documento senza descrizione'}"
+    
+     

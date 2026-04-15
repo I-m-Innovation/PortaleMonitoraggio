@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import (
+    DocumentoImpianto,
     FotovoltaicoMetadata,
     FotovoltaicoMetricheTecniche,
     FotovoltaicoStatoEconomico,
@@ -286,3 +287,23 @@ class ImpiantoCommessaAdmin(admin.ModelAdmin):
     )
     list_select_related = ("impianto",)
     ordering = ("impianto__nome_impianto", "tipo_commessa")
+
+
+@admin.register(DocumentoImpianto)
+class DocumentoImpiantoAdmin(admin.ModelAdmin):
+    autocomplete_fields = ("impianto",)
+    list_display = (
+        "id",
+        "impianto",
+        "file",
+        "descrizione",
+    )
+    search_fields = (
+        "impianto__nome_impianto",
+        "impianto__tag_impianto",
+        "impianto__codice_impianto",
+        "descrizione",
+        "file",
+    )
+    list_select_related = ("impianto",)
+    ordering = ("impianto__nome_impianto", "descrizione", "id")
