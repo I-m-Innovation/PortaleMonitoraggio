@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('PortaleZilioService', '0007_fvmetadata_contract_totals'),
+        ('PortaleZilioService', '0007_fotovoltaicostatoeconomico_importo_canone_periodico_and_more'),
     ]
 
     operations = [

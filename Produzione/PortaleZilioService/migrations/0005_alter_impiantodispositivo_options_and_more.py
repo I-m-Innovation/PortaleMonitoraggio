@@ -6,18 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('PortaleZilioService', '0004_impiantoanagrafica_idroelettricometadata_and_more'),
+        ('PortaleZilioService', '0004_fotovoltaicometadata_potenza_contratto_kw'),
     ]
 
     operations = [
         migrations.AlterModelOptions(
             name='impiantodispositivo',
             options={'ordering': ['impianto__nome_impianto', 'tipo_dispositivo', 'codice_dispositivo'], 'verbose_name': 'Dispositivo impianto', 'verbose_name_plural': 'Dispositivi impianto'},
-        ),
-        migrations.RenameField(
-            model_name='impiantodispositivo',
-            old_name='identificativo_esterno',
-            new_name='codice_dispositivo',
         ),
         migrations.AlterUniqueTogether(
             name='impiantodispositivo',
@@ -32,9 +27,5 @@ class Migration(migrations.Migration):
             model_name='idroelettricometadata',
             name='categoria_idr',
             field=models.CharField(choices=[('proprieta', 'Proprietà'), ('gse', 'GSE'), ('unknown', 'Unknown')], max_length=30),
-        ),
-        migrations.RemoveField(
-            model_name='impiantodispositivo',
-            name='nome_dispositivo',
         ),
     ]
