@@ -1,4 +1,4 @@
-﻿<div class="table-scroll-track" data-auto-scroll="true">
+<div class="table-scroll-track" data-auto-scroll="true">
 <table>
     <thead>
         <tr>
@@ -37,7 +37,7 @@
         {% for row in rows %}
             <tr>
                 <td><span class="{{ row.status_class }}" aria-hidden="true"></span></td>
-                <td>{{ row.nome_impianto }}</td>
+                <td><a class="impianto-detail-link" href="{% url 'PortaleZilioService:impianto-detail' %}?nome={{ row.nome_impianto|urlencode }}">{{ row.nome_impianto }}</a></td>
                 <td>{{ row.nome_cliente }}</td>
                 <td>{{ row.tipologia_contratto }}</td>
                 <td class="table-align-right">{{ row.potenza }}</td>
@@ -82,4 +82,5 @@
 </table>
 </div>
 <p class="pr-placeholder-muted">SM = Solarimetro mancante. ERR = PR non disponibile nonostante il solarimetro sia presente.</p>
+
 
