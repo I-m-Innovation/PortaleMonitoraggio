@@ -15,9 +15,7 @@ __pycache__/
 # Static e media
 staticfiles/
 
-# Migrazioni Django
-migrations/
-*/migrations/
+# Cache Python
 */__pycache__/
 
 # File temporanei comuni
