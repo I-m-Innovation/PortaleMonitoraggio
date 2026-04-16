@@ -338,12 +338,20 @@ p.empty-state {
     width: 100%;
 }
 
+.impianto-detail-header-card {
+    padding: 1.25rem 1.4rem;
+    border: 1px solid rgba(159, 179, 200, 0.5);
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 18px 36px rgba(36, 73, 107, 0.08);
+}
+
 .impianto-detail-heading {
     min-width: 0;
 }
 
 .impianto-detail-subtitle {
-    margin: 0.45rem 0 0;
+    margin: 0;
     color: #526477;
     font-size: 1rem;
 }
