@@ -1,6 +1,7 @@
 from collections import Counter
 from datetime import date
 from decimal import Decimal
+import logging
 
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import render
@@ -31,6 +32,8 @@ from .services.rows_builder_fotovoltaico import (
     build_fotovoltaico_ppu_rows_portale,
     build_fotovoltaico_proprieta_rows_portale,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _fmt_date(value):
@@ -79,7 +82,15 @@ def _resolve_mapping_value(impianto, fallback_value, values_by_impianto):
         normalized_tag = _normalize_plant_tag(impianto.tag_impianto)
         by_tag = getattr(values_by_impianto, "by_tag", None)
         if by_tag and normalized_tag in by_tag:
+            logger.info(
+                "Match endpoint dettaglio riuscito per tag",
+                extra={"impianto": impianto.nome_impianto, "normalized_tag": normalized_tag},
+            )
             return by_tag[normalized_tag]
+        logger.warning(
+            "Match endpoint dettaglio fallito per tag",
+            extra={"impianto": impianto.nome_impianto, "normalized_tag": normalized_tag},
+        )
     return fallback_value
 
 

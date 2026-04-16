@@ -95,13 +95,25 @@ def _normalize_plant_tag(value: str | None) -> str:
 
 def _resolve_endpoint_value(impianto, values_by_impianto):
     if not values_by_impianto:
+        logger.info(
+            "Nessun payload endpoint disponibile per il resolver overview",
+            extra={"impianto": impianto.nome_impianto, "tag_impianto": impianto.tag_impianto},
+        )
         return None
 
     normalized_tag = _normalize_plant_tag(impianto.tag_impianto)
     by_tag = getattr(values_by_impianto, "by_tag", None)
     if by_tag and normalized_tag in by_tag:
+        logger.info(
+            "Match endpoint overview riuscito per tag",
+            extra={"impianto": impianto.nome_impianto, "normalized_tag": normalized_tag},
+        )
         return by_tag[normalized_tag]
 
+    logger.warning(
+        "Match endpoint overview fallito per tag",
+        extra={"impianto": impianto.nome_impianto, "normalized_tag": normalized_tag},
+    )
     return None
 
 
