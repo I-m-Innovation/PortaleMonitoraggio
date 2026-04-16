@@ -1,9 +1,6 @@
 from dataclasses import dataclass
 
 
-'''
-Nota: dobbiamo stabilire come quali tabelle farci preparare da Sistemi e capire come funzionano le API
-'''
 
 
 
@@ -16,11 +13,11 @@ class FotovoltaicoClientiRow:
     nome_cliente: str
     potenza_contratto: str
     potenza_installata: str
-    pr_contrattuale: str  # 78% di solito secondo nicola e comunque lo deve inserire lui 
-    pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  
+    pr_contrattuale: str  # 78% di solito 
+    pr_ultimi_12_mesi: str 
     mancata_produzione: str
     mancata_produzione_class: str
-    ore_equivalenti: str   # Nicola capisce se sono a contratto o no
+    ore_equivalenti: str  
     inizio_contratto: str
     fine_contratto: str
     totale_anni_contratto: str
@@ -30,9 +27,9 @@ class FotovoltaicoClientiRow:
     totale_maturato: str
     fatturato: str
     totale_incassato: str
-    data_prossima_fattura: str # da togliere ? 
+    data_prossima_fattura: str 
     data_prossima_fattura_class: str
-    importo_prossima_fattura: str # da togliere ?
+    importo_prossima_fattura: str 
 
     # COLONNE STRAORDINARIO  - separate da una linea rossa 
 
@@ -52,11 +49,11 @@ class FotovoltaicoProprietaRow:
     nome_cliente: str
     potenza_contratto: str
     potenza_installata: str
-    pr_contrattuale: str  # 78% di solito secondo nicola e comunque lo deve inserire lui 
-    pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  
+    pr_contrattuale: str  # 78% di solito 
+    pr_ultimi_12_mesi: str 
     mancata_produzione: str
     mancata_produzione_class: str
-    ore_equivalenti: str   # Nicola capisce se sono a contratto o no
+    ore_equivalenti: str  
     inizio_contratto: str
     fine_contratto: str
     totale_anni_contratto: str
@@ -66,9 +63,9 @@ class FotovoltaicoProprietaRow:
     totale_maturato: str
     fatturato: str
     totale_incassato: str
-    data_prossima_fattura: str # da togliere ? 
+    data_prossima_fattura: str 
     data_prossima_fattura_class: str
-    importo_prossima_fattura: str # da togliere ?
+    importo_prossima_fattura: str 
 
     # COLONNE STRAORDINARIO  - separate da una linea rossa 
 
@@ -88,11 +85,11 @@ class FotovoltaicoInCostruzioneRow:
     nome_cliente: str
     tipologia_contratto: str
     potenza: str
-    pr_contrattuale: str  # 78% di solito secondo nicola e comunque lo deve inserire lui 
-    pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  
+    pr_contrattuale: str  # 78% di solito 
+    pr_ultimi_12_mesi: str 
     mancata_produzione: str
     mancata_produzione_class: str
-    ore_equivalenti: str   # Nicola capisce se sono a contratto o no
+    ore_equivalenti: str  
     inizio_contratto: str
     fine_contratto: str
     totale_anni_contratto: str
@@ -102,9 +99,9 @@ class FotovoltaicoInCostruzioneRow:
     totale_maturato: str
     fatturato: str
     totale_incassato: str
-    data_prossima_fattura: str # da togliere ? 
+    data_prossima_fattura: str 
     data_prossima_fattura_class: str
-    importo_prossima_fattura: str # da togliere ?
+    importo_prossima_fattura: str 
 
     # COLONNE STRAORDINARIO  - separate da una linea rossa 
 
@@ -123,11 +120,11 @@ class AgrivoltaicoRow:
     nome_cliente: str
     potenza_contratto: str
     potenza_installata: str
-    pr_contrattuale: str  # 78% di solito secondo nicola e comunque lo deve inserire lui 
-    pr_ultimi_12_mesi: str # prima era 3 mesi calcolato attraverso i dati dalle API  
+    pr_contrattuale: str  # 78% di solito 
+    pr_ultimi_12_mesi: str 
     mancata_produzione: str
     mancata_produzione_class: str
-    ore_equivalenti: str   # Nicola capisce se sono a contratto o no
+    ore_equivalenti: str  
     inizio_contratto: str
     fine_contratto: str
     totale_anni_contratto: str
@@ -137,9 +134,9 @@ class AgrivoltaicoRow:
     totale_maturato: str
     fatturato: str
     totale_incassato: str
-    data_prossima_fattura: str # da togliere ? 
+    data_prossima_fattura: str 
     data_prossima_fattura_class: str
-    importo_prossima_fattura: str # da togliere ?
+    importo_prossima_fattura: str 
 
     # COLONNE STRAORDINARIO  - separate da una linea rossa 
 
