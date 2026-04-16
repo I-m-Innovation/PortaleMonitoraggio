@@ -68,11 +68,18 @@ def _normalize_plant_name(value):
     return " ".join(value.strip().split()).casefold()
 
 
+def _normalize_plant_tag(value):
+    if value is None:
+        return ""
+    return str(value).strip().casefold()
+
+
 def _resolve_mapping_value(impianto, fallback_value, values_by_impianto):
     if values_by_impianto:
-        normalized_name = _normalize_plant_name(impianto.nome_impianto)
-        if normalized_name in values_by_impianto:
-            return values_by_impianto[normalized_name]
+        normalized_tag = _normalize_plant_tag(impianto.tag_impianto)
+        by_tag = getattr(values_by_impianto, "by_tag", None)
+        if by_tag and normalized_tag in by_tag:
+            return by_tag[normalized_tag]
     return fallback_value
 
 
