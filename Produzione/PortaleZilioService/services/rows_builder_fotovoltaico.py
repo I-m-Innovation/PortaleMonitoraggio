@@ -87,50 +87,70 @@ def _normalize_plant_name(value: str | None) -> str:
     return " ".join(value.strip().split()).casefold()
 
 
-def _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto: dict[str, Decimal] | None):
-    if fatturato_by_impianto:
-        normalized_name = _normalize_plant_name(impianto.nome_impianto)
-        if normalized_name in fatturato_by_impianto:
-            return fatturato_by_impianto[normalized_name]
+def _normalize_plant_tag(value: str | None) -> str:
+    if value is None:
+        return ""
+    return str(value).strip().casefold()
+
+
+def _resolve_endpoint_value(impianto, values_by_impianto):
+    if not values_by_impianto:
+        return None
+
+    normalized_tag = _normalize_plant_tag(impianto.tag_impianto)
+    by_tag = getattr(values_by_impianto, "by_tag", None)
+    if by_tag and normalized_tag in by_tag:
+        return by_tag[normalized_tag]
+
+    return None
+
+
+def _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto):
+    endpoint_value = _resolve_endpoint_value(impianto, fatturato_by_impianto)
+    if endpoint_value is not None:
+        return endpoint_value
     return getattr(stato_economico, "fatturato", None)
 
 
 def _resolve_incassato_value(
     impianto,
     stato_economico,
-    incassato_by_impianto: dict[str, Decimal] | None,
+    incassato_by_impianto,
 ):
-    if incassato_by_impianto:
-        normalized_name = _normalize_plant_name(impianto.nome_impianto)
-        if normalized_name in incassato_by_impianto:
-            return incassato_by_impianto[normalized_name]
+    endpoint_value = _resolve_endpoint_value(impianto, incassato_by_impianto)
+    if endpoint_value is not None:
+        return endpoint_value
     return getattr(stato_economico, "incassato", None)
 
 
 def _resolve_totale_fatturato_straordinario_value(
     impianto,
     stato_economico,
-    fatturato_straordinario_by_impianto: dict[str, Decimal] | None,
+    fatturato_straordinario_by_impianto,
 ):
-    if fatturato_straordinario_by_impianto:
-        normalized_name = _normalize_plant_name(impianto.nome_impianto)
-        if normalized_name in fatturato_straordinario_by_impianto:
-            return fatturato_straordinario_by_impianto[normalized_name]
+    endpoint_value = _resolve_endpoint_value(impianto, fatturato_straordinario_by_impianto)
+    if endpoint_value is not None:
+        return endpoint_value
     return getattr(stato_economico, "totale_fatturato_straordinario", None)
 
 
 def _resolve_costo_straordinario_totale_value(
     impianto,
     stato_economico,
-    costo_straordinario_by_impianto: dict[str, Decimal] | None,
+    costo_straordinario_by_impianto,
 ):
+    endpoint_value = _resolve_endpoint_value(impianto, costo_straordinario_by_impianto)
+    if endpoint_value is not None:
+        return endpoint_value
+
     if costo_straordinario_by_impianto:
-        normalized_name = _normalize_plant_name(impianto.nome_impianto)
-        if normalized_name in costo_straordinario_by_impianto:
-            return costo_straordinario_by_impianto[normalized_name]
+        normalized_tag = _normalize_plant_tag(impianto.tag_impianto)
         logger.info(
             "Costo straordinario non trovato nel payload endpoint per impianto fotovoltaico",
-            extra={"impianto": impianto.nome_impianto, "normalized_name": normalized_name},
+            extra={
+                "impianto": impianto.nome_impianto,
+                "normalized_tag": normalized_tag,
+            },
         )
     return getattr(stato_economico, "costo_sostenuto_straordinario", None)
 
@@ -138,24 +158,22 @@ def _resolve_costo_straordinario_totale_value(
 def _resolve_numero_fatture_straordinarie_annuo_value(
     impianto,
     stato_economico,
-    fatture_straordinarie_annuo_by_impianto: dict[str, int] | None,
+    fatture_straordinarie_annuo_by_impianto,
 ):
-    if fatture_straordinarie_annuo_by_impianto:
-        normalized_name = _normalize_plant_name(impianto.nome_impianto)
-        if normalized_name in fatture_straordinarie_annuo_by_impianto:
-            return fatture_straordinarie_annuo_by_impianto[normalized_name]
+    endpoint_value = _resolve_endpoint_value(impianto, fatture_straordinarie_annuo_by_impianto)
+    if endpoint_value is not None:
+        return endpoint_value
     return getattr(stato_economico, "numero_fatture_straordinarie_annuo", None)
 
 
 def _resolve_numero_fatture_straordinarie_totali_value(
     impianto,
     stato_economico,
-    fatture_straordinarie_totali_by_impianto: dict[str, int] | None,
+    fatture_straordinarie_totali_by_impianto,
 ):
-    if fatture_straordinarie_totali_by_impianto:
-        normalized_name = _normalize_plant_name(impianto.nome_impianto)
-        if normalized_name in fatture_straordinarie_totali_by_impianto:
-            return fatture_straordinarie_totali_by_impianto[normalized_name]
+    endpoint_value = _resolve_endpoint_value(impianto, fatture_straordinarie_totali_by_impianto)
+    if endpoint_value is not None:
+        return endpoint_value
     return getattr(stato_economico, "numero_fatture_straordinarie_totali", None)
 
 
