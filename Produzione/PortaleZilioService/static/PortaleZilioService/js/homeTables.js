@@ -2,6 +2,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const buttons = Array.from(document.querySelectorAll(".category-button[data-group][data-target]"));
     const panels = Array.from(document.querySelectorAll("[data-panel]"));
     const syncBanner = document.querySelector("[data-sync-banner]");
+    const groupAutoScrollButtons = new Map(
+        Array.from(document.querySelectorAll("[data-group-auto-scroll-toggle]")).map((button) => [
+            button.dataset.groupAutoScrollToggle,
+            button,
+        ])
+    );
 
     let tableTracks = [];
     let autoScrollControllers = [];
@@ -36,64 +42,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return panel.id;
         }
         return track.dataset.autoScrollKey || `table-track-${index}`;
-    };
-
-    const ensurePanelControlsRow = (track) => {
-        const panel = track.closest("[data-panel]");
-        if (!panel) {
-            return null;
-        }
-
-        let controlsRow = panel.querySelector(":scope > .table-panel-actions");
-        if (!controlsRow) {
-            controlsRow = document.createElement("div");
-            controlsRow.className = "table-panel-actions";
-            panel.insertBefore(controlsRow, track);
-        }
-
-        return controlsRow;
-    };
-
-    const ensureAutoScrollToggle = (track, controller) => {
-        const controlsRow = ensurePanelControlsRow(track);
-        if (!controlsRow) {
-            return;
-        }
-
-        let toolbar = controlsRow.querySelector(":scope > .table-scroll-toolbar");
-        if (!toolbar) {
-            toolbar = document.createElement("div");
-            toolbar.className = "table-scroll-toolbar";
-            controlsRow.appendChild(toolbar);
-        }
-
-        if (!track.dataset.autoScrollToggleBound) {
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = "table-scroll-toggle";
-            button.dataset.autoScrollToggle = "true";
-            toolbar.appendChild(button);
-            track.dataset.autoScrollToggleBound = "true";
-        }
-
-        const button = controlsRow.querySelector("[data-auto-scroll-toggle='true']");
-        if (!button) {
-            return;
-        }
-
-        const syncButtonState = () => {
-            const isStopped = controller.isStopped();
-            button.textContent = isStopped ? "Riavvia scorrimento" : "Stop scorrimento";
-            button.setAttribute("aria-pressed", String(isStopped));
-            button.classList.toggle("is-stopped", isStopped);
-        };
-
-        button.onclick = () => {
-            controller.setStopped(!controller.isStopped());
-            syncButtonState();
-        };
-
-        syncButtonState();
     };
 
     const createAutoScroller = (track) => {
@@ -233,20 +181,73 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     };
 
+    const getVisiblePanelForGroup = (group) => (
+        panels.find((panel) => panel.dataset.group === group && !panel.hidden) || null
+    );
+
+    const getControllerEntryForPanel = (panel) => {
+        if (!panel) {
+            return null;
+        }
+        return autoScrollControllers.find((entry) => entry.panelId === panel.id) || null;
+    };
+
+    const syncGroupAutoScrollToggle = (group) => {
+        const button = groupAutoScrollButtons.get(group);
+        if (!button) {
+            return;
+        }
+
+        const visiblePanel = getVisiblePanelForGroup(group);
+        const controllerEntry = getControllerEntryForPanel(visiblePanel);
+        if (!controllerEntry) {
+            button.hidden = true;
+            button.onclick = null;
+            return;
+        }
+
+        const { controller } = controllerEntry;
+        const syncButtonState = () => {
+            const isStopped = controller.isStopped();
+            button.hidden = false;
+            button.textContent = isStopped ? "Riavvia scorrimento" : "Stop scorrimento";
+            button.setAttribute("aria-pressed", String(isStopped));
+            button.classList.toggle("is-stopped", isStopped);
+        };
+
+        button.onclick = () => {
+            controller.setStopped(!controller.isStopped());
+            syncButtonState();
+        };
+
+        syncButtonState();
+    };
+
+    const syncAllGroupAutoScrollToggles = () => {
+        groupAutoScrollButtons.forEach((_, group) => {
+            syncGroupAutoScrollToggle(group);
+        });
+    };
+
     const rebuildTableControllers = () => {
-        autoScrollControllers.forEach((controller) => controller.stop());
+        autoScrollControllers.forEach((entry) => entry.controller.stop());
         tableTracks = Array.from(document.querySelectorAll(".table-scroll-track[data-auto-scroll='true']"));
         autoScrollControllers = tableTracks.map((track, index) => {
             track.dataset.autoScrollPreferenceKey = getTrackPreferenceKey(track, index);
             const controller = createAutoScroller(track);
-            ensureAutoScrollToggle(track, controller);
-            return controller;
+            const panel = track.closest("[data-panel]");
+            return {
+                track,
+                panelId: panel?.id || "",
+                controller,
+            };
         });
+        syncAllGroupAutoScrollToggles();
     };
 
     const refreshTables = () => {
         updateStickyOffsets();
-        autoScrollControllers.forEach((controller) => controller.refresh());
+        autoScrollControllers.forEach((entry) => entry.controller.refresh());
     };
 
     const setBannerState = (message, state) => {
@@ -337,6 +338,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 button.classList.remove("active");
             }
         });
+        syncGroupAutoScrollToggle(group);
         requestAnimationFrame(refreshTables);
     };
 
@@ -359,6 +361,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
+        syncGroupAutoScrollToggle(group);
         requestAnimationFrame(refreshTables);
         setTimeout(refreshTables, 60);
         setTimeout(refreshTables, 180);
@@ -375,6 +378,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     rebuildTableControllers();
+    const defaultFvButton = document.getElementById("clienti-tab-button");
+    if (defaultFvButton) {
+        activateButton(defaultFvButton);
+    }
+    syncAllGroupAutoScrollToggles();
     refreshTables();
     window.addEventListener("resize", refreshTables);
     triggerProviderMetricsSync();

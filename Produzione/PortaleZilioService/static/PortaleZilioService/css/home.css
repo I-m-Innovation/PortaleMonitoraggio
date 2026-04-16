@@ -116,6 +116,14 @@ main {
     margin-bottom: 1rem;
 }
 
+#section-zilio-service {
+    padding: 1.35rem 1.5rem 1.5rem;
+    border: 1px solid #d9e2ea;
+    border-radius: 20px;
+    background: #ffffff;
+    box-shadow: 0 14px 30px rgba(23, 56, 77, 0.08);
+}
+
 .sync-banner {
     margin: 0 0 16px;
     padding: 12px 14px;
@@ -124,6 +132,14 @@ main {
     background: #eef5fb;
     color: #24496b;
     font-weight: 600;
+}
+
+.sync-banner-inline {
+    margin: 0;
+    padding: 9px 12px;
+    flex: 0 1 auto;
+    max-width: min(100%, 420px);
+    font-size: 0.88rem;
 }
 
 .sync-banner.is-pending {
@@ -148,12 +164,35 @@ main {
     margin-bottom: 1rem;
 }
 
+.section-heading-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 1rem;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.section-heading-row h2 {
+    margin: 0;
+    flex: 0 1 auto;
+}
+
+.section-heading-arrow {
+    display: block;
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+    opacity: 0.72;
+}
+
 .category-header-fotovoltaico {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 10px;
-    margin-bottom: 8px;
+    margin-bottom: 0;
+    flex: 1 1 auto;
 }
 .category-header-idroelettrico {
     display: flex;
@@ -169,6 +208,23 @@ main {
     align-items: center;
     gap: 0;
     flex-wrap: wrap;
+    margin-left: 4em;
+}
+
+.fv-header-tools {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 0 0 auto;
+}
+
+.sync-banner-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 42px;
 }
 
 .category-panel table {
@@ -338,12 +394,20 @@ p.empty-state {
     width: 100%;
 }
 
+.impianto-detail-header-card {
+    padding: 1.25rem 1.4rem;
+    border: 1px solid rgba(159, 179, 200, 0.5);
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 18px 36px rgba(36, 73, 107, 0.08);
+}
+
 .impianto-detail-heading {
     min-width: 0;
 }
 
 .impianto-detail-subtitle {
-    margin: 0.45rem 0 0;
+    margin: 0;
     color: #526477;
     font-size: 1rem;
 }
@@ -624,6 +688,30 @@ p.empty-state {
 }
 
 @media (max-width: 768px) {
+    .section-heading-row {
+        align-items: stretch;
+    }
+
+    .section-heading-row h2 {
+        width: 100%;
+    }
+
+    .category-header-fotovoltaico {
+        flex: 1 1 100%;
+        justify-content: flex-start;
+    }
+
+    .sync-banner-slot {
+        flex: 1 1 100%;
+        width: 100%;
+        min-height: 0;
+    }
+
+    .fv-header-tools {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
     .page-header-copy {
         flex-direction: column;
         align-items: stretch;

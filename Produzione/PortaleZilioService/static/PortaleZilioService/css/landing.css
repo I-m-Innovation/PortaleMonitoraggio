@@ -24,12 +24,16 @@ body {
 }
 
 .contracts-header-card {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
-    justify-content: space-between;
     gap: 1rem;
     padding: 1.5rem;
     margin-bottom: 1rem;
+}
+
+.contracts-header-copy {
+    min-width: 0;
 }
 
 .contracts-eyebrow {
@@ -66,7 +70,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    flex: 0 0 auto;
+    min-width: 0;
 }
 
 .contracts-header-logo {
@@ -80,6 +84,7 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    justify-self: end;
     min-height: 42px;
     padding: 0 1rem;
     border-radius: 999px;
@@ -93,6 +98,20 @@ body {
 .contracts-overview-link:focus {
     color: #ffffff;
     background: #204d68;
+}
+
+@media (max-width: 900px) {
+    .contracts-header-card {
+        grid-template-columns: 1fr;
+    }
+
+    .contracts-header-brand {
+        justify-content: flex-start;
+    }
+
+    .contracts-overview-link {
+        justify-self: start;
+    }
 }
 
 .contracts-table-card {

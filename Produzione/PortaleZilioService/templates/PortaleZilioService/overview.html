@@ -12,8 +12,8 @@
 {% block content %}
     <main class="contracts-page">
         <section class="contracts-header-card">
-            <div>
-                <p class="contracts-eyebrow">Portale Zilio Service <span class="h1-work-in-progress">IN LAVORAZIONE</span></p>
+            <div class="contracts-header-copy">
+                <p class="contracts-eyebrow">Portale Zilio Service <span class="h1-work-in-progress">IN LAVORAZIONE - dati da verificare</span></p>
                 <h1>Overview impianti</h1>
             </div>
             <div class="contracts-header-brand">
@@ -25,28 +25,44 @@
             </div>
             <a class="contracts-overview-link" href="{% url 'PortaleZilioService:home' %}">Torna alla home</a>
         </section>
-        <section
-            id="isc-sync-banner"
-            class="sync-banner"
-            data-sync-banner
-            data-sync-url="{% url 'PortaleZilioService:sync-provider-metrics' %}"
-            hidden
-        ></section>
         <section class="energy-section" id="section-zilio-service">
-            <h2>
-                Fotovoltaico
-                <span class="overview-warning-label">Dati ancora da verificare</span>
-            </h2>
+            <div class="section-heading-row">
+                <h2>Fotovoltaico</h2>
+                <img
+                    src="{% static 'PortaleZilioService/images/icons/sun.svg' %}"
+                    alt=""
+                    aria-hidden="true"
+                    class="section-heading-arrow"
+                >
 
-            <header class="category-header-fotovoltaico" data-group="fv">
-                <div class="fv-header-tabs">
-                    <button class="category-button" type="button" data-group="fv" data-target="fv-clienti" aria-controls="fv-clienti" aria-pressed="false" id="clienti-tab-button">O&amp;M FV Clienti</button>
-                    <button class="category-button" type="button" data-group="fv" data-target="fv-proprieta" aria-controls="fv-proprieta" aria-pressed="false" id="proprieta-tab-button">O&amp;M FV Proprieta</button>
-                    <button class="category-button" type="button" data-group="fv" data-target="fv-agrivoltaico" aria-controls="fv-agrivoltaico" aria-pressed="false" id="agrivoltaico-tab-button">O&amp;M Agrivoltaico</button>
-                    <button class="category-button" type="button" data-group="fv" data-target="fv-ppu" aria-controls="fv-ppu" aria-pressed="false" id="ppu-tab-button">PPU FV</button>
-                    <button class="category-button" type="button" data-group="fv" data-target="fv-costruzione" aria-controls="fv-costruzione" aria-pressed="false" id="costruzione-tab-button">FV In Costruzione</button>
-                </div>
-            </header>
+                <header class="category-header-fotovoltaico" data-group="fv">
+                    <div class="fv-header-tabs">
+                        <button class="category-button" type="button" data-group="fv" data-target="fv-clienti" aria-controls="fv-clienti" aria-pressed="false" id="clienti-tab-button">O&amp;M FV Clienti</button>
+                        <button class="category-button" type="button" data-group="fv" data-target="fv-proprieta" aria-controls="fv-proprieta" aria-pressed="false" id="proprieta-tab-button">O&amp;M FV Proprieta</button>
+                        <button class="category-button" type="button" data-group="fv" data-target="fv-agrivoltaico" aria-controls="fv-agrivoltaico" aria-pressed="false" id="agrivoltaico-tab-button">O&amp;M Agrivoltaico</button>
+                        <button class="category-button" type="button" data-group="fv" data-target="fv-ppu" aria-controls="fv-ppu" aria-pressed="false" id="ppu-tab-button">PPU FV</button>
+                        <button class="category-button" type="button" data-group="fv" data-target="fv-costruzione" aria-controls="fv-costruzione" aria-pressed="false" id="costruzione-tab-button">FV In Costruzione</button>
+                    </div>
+                    <div class="sync-banner-slot">
+                        <div
+                            id="isc-sync-banner"
+                            class="sync-banner sync-banner-inline"
+                            data-sync-banner
+                            data-sync-url="{% url 'PortaleZilioService:sync-provider-metrics' %}"
+                            hidden
+                        ></div>
+                    </div>
+                    <div class="fv-header-tools">
+                        <button
+                            type="button"
+                            class="table-scroll-toggle"
+                            data-group-auto-scroll-toggle="fv"
+                            aria-pressed="false"
+                            hidden
+                        ></button>
+                    </div>
+                </header>
+            </div>
 
             <section class="category-panel" id="fv-empty" data-panel data-group="fv">
                 <p class="empty-state">Seleziona una categoria per visualizzare i dati.</p>
