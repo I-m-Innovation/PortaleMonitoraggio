@@ -8,12 +8,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
-                migrations.DeleteModel(
-                    name="FvMetadata",
-                ),
-            ],
-        ),
+        # No-op migration retained for historical branch compatibility.
+        # The FvMetadata model is already removed earlier in the migration graph.
     ]
