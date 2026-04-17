@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class ImpiantoEndpointMap:
     by_tag: dict[str, object]
+    endpoint_name: str = ""
+    endpoint_url: str = ""
+    is_available: bool = False
 
 
 def _normalize_plant_name(value: str | None) -> str:
@@ -28,6 +31,24 @@ def _normalize_plant_tag(value: str | None) -> str:
     if value is None:
         return ""
     return str(value).strip().casefold()
+
+
+def _fmt_log_value(value) -> str:
+    if value in (None, ""):
+        return "-"
+    return str(value)
+
+
+def _fmt_missing_tag_fields(item: dict) -> str:
+    return ", ".join(
+        [
+            f"tag_impianto={_fmt_log_value(item.get('tag_impianto'))}",
+            f"tagImpianto={_fmt_log_value(item.get('tagImpianto'))}",
+            f"TagImpianto={_fmt_log_value(item.get('TagImpianto'))}",
+            f"tag={_fmt_log_value(item.get('tag'))}",
+            f"Tag={_fmt_log_value(item.get('Tag'))}",
+        ]
+    )
 
 
 def _to_decimal(value) -> Decimal | None:
@@ -79,8 +100,9 @@ def _empty_impianto_endpoint_map() -> ImpiantoEndpointMap:
     return ImpiantoEndpointMap(by_tag={})
 
 
-def _build_endpoint_map(items: list[dict], value_getter) -> ImpiantoEndpointMap:
+def _build_endpoint_map(items: list[dict], value_getter, endpoint_name: str, endpoint_url: str) -> ImpiantoEndpointMap:
     values_by_tag: dict[str, object] = {}
+    skipped_missing_tag = 0
 
     for item in items:
         value = value_getter(item)
@@ -89,10 +111,30 @@ def _build_endpoint_map(items: list[dict], value_getter) -> ImpiantoEndpointMap:
 
         tag_impianto = _extract_plant_tag(item)
         if not tag_impianto:
+            skipped_missing_tag += 1
+            logger.warning(
+                "[endpoint-record-skipped] endpoint=%s | impianto=%s | tag_fields={%s}",
+                endpoint_name,
+                _fmt_log_value(item.get("impianto") or item.get("Impianto")),
+                _fmt_missing_tag_fields(item),
+            )
             continue
         values_by_tag[tag_impianto] = value
 
-    return ImpiantoEndpointMap(by_tag=values_by_tag)
+    logger.info(
+        "Mappa endpoint costruita",
+        extra={
+            "items_mapped_by_tag": len(values_by_tag),
+            "items_skipped_missing_tag": skipped_missing_tag,
+        },
+    )
+
+    return ImpiantoEndpointMap(
+        by_tag=values_by_tag,
+        endpoint_name=endpoint_name,
+        endpoint_url=endpoint_url,
+        is_available=True,
+    )
 
 
 def _load_fatturato_per_impianto(url: str, timeout: float) -> ImpiantoEndpointMap:
@@ -106,10 +148,21 @@ def _load_fatturato_per_impianto(url: str, timeout: float) -> ImpiantoEndpointMa
     if payload.get("status") != "ok":
         return _empty_impianto_endpoint_map()
 
-    return _build_endpoint_map(
+    endpoint_map = _build_endpoint_map(
         payload.get("data", []),
         lambda item: _to_decimal(item.get("fatturato_totale")),
+        endpoint_name="fatturato_per_impianto",
+        endpoint_url=url,
     )
+    logger.info(
+        "Fatturato per impianto caricato da endpoint Zilio",
+        extra={
+            "url": url,
+            "items_received": len(payload.get("data", [])),
+            "items_mapped_by_tag": len(endpoint_map.by_tag),
+        },
+    )
+    return endpoint_map
 
 
 def _load_decimal_value_per_impianto(
@@ -138,6 +191,8 @@ def _load_decimal_value_per_impianto(
     endpoint_map = _build_endpoint_map(
         payload.get("data", []),
         lambda item: _to_decimal(item.get(value_key)),
+        endpoint_name=f"decimal_value_per_impianto:{value_key}",
+        endpoint_url=url,
     )
 
     logger.info(
@@ -170,6 +225,8 @@ def _load_integer_value_per_impianto(
     return _build_endpoint_map(
         payload.get("data", []),
         lambda item: _to_int(item.get(value_key)),
+        endpoint_name=f"integer_value_per_impianto:{value_key}",
+        endpoint_url=url,
     )
 
 
@@ -246,6 +303,7 @@ def _load_canoni_incassati_oem_per_impianto(url: str, timeout: float) -> Impiant
 
     current_year = date.today().year
     incassato_by_tag: dict[str, Decimal] = {}
+    skipped_missing_tag = 0
     for item in payload.get("data", []):
         esito_match = str(item.get("EsitoMatch") or item.get("esito_match") or "").strip().upper()
         if esito_match != "MATCH":
@@ -263,6 +321,13 @@ def _load_canoni_incassati_oem_per_impianto(url: str, timeout: float) -> Impiant
 
         tag_impianto = _extract_plant_tag(item)
         if not tag_impianto:
+            skipped_missing_tag += 1
+            logger.warning(
+                "[endpoint-record-skipped] endpoint=%s | impianto=%s | tag_fields={%s}",
+                "canoni_incassati_oem_per_impianto",
+                _fmt_log_value(item.get("impianto") or item.get("Impianto")),
+                _fmt_missing_tag_fields(item),
+            )
             continue
         incassato_by_tag[tag_impianto] = incassato_by_tag.get(tag_impianto, Decimal("0")) + importo
 
@@ -272,9 +337,15 @@ def _load_canoni_incassati_oem_per_impianto(url: str, timeout: float) -> Impiant
             "url": url,
             "items_received": len(payload.get("data", [])),
             "items_mapped_by_tag": len(incassato_by_tag),
+            "items_skipped_missing_tag": skipped_missing_tag,
         },
     )
-    endpoint_map = ImpiantoEndpointMap(by_tag=incassato_by_tag)
+    endpoint_map = ImpiantoEndpointMap(
+        by_tag=incassato_by_tag,
+        endpoint_name="canoni_incassati_oem_per_impianto",
+        endpoint_url=url,
+        is_available=True,
+    )
     return endpoint_map
 
 

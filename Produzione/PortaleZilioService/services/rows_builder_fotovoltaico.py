@@ -18,6 +18,8 @@ from ..view_models import (
 
 logger = logging.getLogger(__name__)
 
+ENDPOINT_ERROR_LABEL = "API ERR"
+
 
 def _fmt_date(value: date | None) -> str:
     return value.strftime("%d/%m/%Y") if value else "--"
@@ -61,9 +63,9 @@ def _fmt_decimal(value: Decimal | float | None) -> str:
     return _fmt_number_it(value, decimals=2)
 
 
-def _fmt_integer(value: int | None) -> str:
+def _fmt_integer(value: int | None, missing_label: str = "--") -> str:
     if value is None:
-        return "--"
+        return missing_label
     return str(value)
 
 
@@ -71,9 +73,9 @@ def _fmt_power(value: Decimal | float | None) -> str:
     return _fmt_with_unit(_fmt_number_it(value, decimals=2), "kW")
 
 
-def _fmt_currency_accounting(value: Decimal | float | None) -> str:
+def _fmt_currency_accounting(value: Decimal | float | None, missing_label: str = "--") -> str:
     if value is None:
-        return "--"
+        return missing_label
     numeric_value = float(value)
     if numeric_value < 0:
         # \u20ac simbolo dell'euro 
@@ -93,7 +95,7 @@ def _normalize_plant_tag(value: str | None) -> str:
     return str(value).strip().casefold()
 
 
-def _resolve_endpoint_value(impianto, values_by_impianto):
+def _resolve_endpoint_value(impianto, values_by_impianto, endpoint_name: str):
     if not values_by_impianto:
         return None
 
@@ -101,15 +103,16 @@ def _resolve_endpoint_value(impianto, values_by_impianto):
     by_tag = getattr(values_by_impianto, "by_tag", None)
     if by_tag and normalized_tag in by_tag:
         return by_tag[normalized_tag]
-
     return None
 
 
 def _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto):
-    endpoint_value = _resolve_endpoint_value(impianto, fatturato_by_impianto)
-    if endpoint_value is not None:
-        return endpoint_value
-    return getattr(stato_economico, "fatturato", None)
+    endpoint_value = _resolve_endpoint_value(
+        impianto,
+        fatturato_by_impianto,
+        endpoint_name="fatturato_ordinario_anno_corrente_per_impianto",
+    )
+    return endpoint_value
 
 
 def _resolve_incassato_value(
@@ -117,10 +120,17 @@ def _resolve_incassato_value(
     stato_economico,
     incassato_by_impianto,
 ):
-    endpoint_value = _resolve_endpoint_value(impianto, incassato_by_impianto)
+    if not incassato_by_impianto or not getattr(incassato_by_impianto, "is_available", False):
+        return None
+
+    endpoint_value = _resolve_endpoint_value(
+        impianto,
+        incassato_by_impianto,
+        endpoint_name="canoni_incassati_oem_per_impianto",
+    )
     if endpoint_value is not None:
         return endpoint_value
-    return getattr(stato_economico, "incassato", None)
+    return Decimal("0")
 
 
 def _resolve_totale_fatturato_straordinario_value(
@@ -128,10 +138,12 @@ def _resolve_totale_fatturato_straordinario_value(
     stato_economico,
     fatturato_straordinario_by_impianto,
 ):
-    endpoint_value = _resolve_endpoint_value(impianto, fatturato_straordinario_by_impianto)
-    if endpoint_value is not None:
-        return endpoint_value
-    return getattr(stato_economico, "totale_fatturato_straordinario", None)
+    endpoint_value = _resolve_endpoint_value(
+        impianto,
+        fatturato_straordinario_by_impianto,
+        endpoint_name="fatturato_straordinario_totale_per_impianto",
+    )
+    return endpoint_value
 
 
 def _resolve_costo_straordinario_totale_value(
@@ -139,20 +151,12 @@ def _resolve_costo_straordinario_totale_value(
     stato_economico,
     costo_straordinario_by_impianto,
 ):
-    endpoint_value = _resolve_endpoint_value(impianto, costo_straordinario_by_impianto)
-    if endpoint_value is not None:
-        return endpoint_value
-
-    if costo_straordinario_by_impianto:
-        normalized_tag = _normalize_plant_tag(impianto.tag_impianto)
-        logger.info(
-            "Costo straordinario non trovato nel payload endpoint per impianto fotovoltaico",
-            extra={
-                "impianto": impianto.nome_impianto,
-                "normalized_tag": normalized_tag,
-            },
-        )
-    return getattr(stato_economico, "costo_sostenuto_straordinario", None)
+    endpoint_value = _resolve_endpoint_value(
+        impianto,
+        costo_straordinario_by_impianto,
+        endpoint_name="costo_straordinario_totale_per_impianto",
+    )
+    return endpoint_value
 
 
 def _resolve_numero_fatture_straordinarie_annuo_value(
@@ -160,10 +164,12 @@ def _resolve_numero_fatture_straordinarie_annuo_value(
     stato_economico,
     fatture_straordinarie_annuo_by_impianto,
 ):
-    endpoint_value = _resolve_endpoint_value(impianto, fatture_straordinarie_annuo_by_impianto)
-    if endpoint_value is not None:
-        return endpoint_value
-    return getattr(stato_economico, "numero_fatture_straordinarie_annuo", None)
+    endpoint_value = _resolve_endpoint_value(
+        impianto,
+        fatture_straordinarie_annuo_by_impianto,
+        endpoint_name="numero_fatture_straordinarie_anno_corrente_per_impianto",
+    )
+    return endpoint_value
 
 
 def _resolve_numero_fatture_straordinarie_totali_value(
@@ -171,10 +177,12 @@ def _resolve_numero_fatture_straordinarie_totali_value(
     stato_economico,
     fatture_straordinarie_totali_by_impianto,
 ):
-    endpoint_value = _resolve_endpoint_value(impianto, fatture_straordinarie_totali_by_impianto)
-    if endpoint_value is not None:
-        return endpoint_value
-    return getattr(stato_economico, "numero_fatture_straordinarie_totali", None)
+    endpoint_value = _resolve_endpoint_value(
+        impianto,
+        fatture_straordinarie_totali_by_impianto,
+        endpoint_name="numero_fatture_straordinarie_totali_per_impianto",
+    )
+    return endpoint_value
 
 
 def _margine_straordinario_cell(
@@ -202,16 +210,7 @@ def _margine_straordinario_cell(
             return _fmt_currency_accounting(margine), "metric-delta metric-delta-loss"
         return _fmt_currency_accounting(margine), "metric-delta metric-delta-neutral"
 
-    fallback = getattr(stato_economico, "margine_straordinario", None)
-    if fallback is None:
-        return "--", "metric-delta metric-delta-muted"
-
-    numeric_fallback = Decimal(str(fallback))
-    if numeric_fallback > 0:
-        return _fmt_currency_accounting(numeric_fallback), "metric-delta metric-delta-gain"
-    if numeric_fallback < 0:
-        return _fmt_currency_accounting(numeric_fallback), "metric-delta metric-delta-loss"
-    return _fmt_currency_accounting(numeric_fallback), "metric-delta metric-delta-neutral"
+    return ENDPOINT_ERROR_LABEL, "endpoint-error-badge"
 
 
 def _calcola_anni_contratto(data_inizio: date | None, data_fine: date | None) -> str:
@@ -416,10 +415,12 @@ def build_fotovoltaico_clienti_rows_portale(
                 ),
                 totale_maturato=_fmt_currency_accounting(_maturato_value(stato_economico)),
                 fatturato=_fmt_currency_accounting(
-                    _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
+                    _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 totale_incassato=_fmt_currency_accounting(
-                    _resolve_incassato_value(impianto, stato_economico, incassato_by_impianto)
+                    _resolve_incassato_value(impianto, stato_economico, incassato_by_impianto),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 data_prossima_fattura=data_prossima_fattura,
                 data_prossima_fattura_class=data_prossima_fattura_class,
@@ -429,14 +430,16 @@ def build_fotovoltaico_clienti_rows_portale(
                         impianto,
                         stato_economico,
                         costo_straordinario_by_impianto,
-                    )
+                    ),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 totale_fatturato_straordinario=_fmt_currency_accounting(
                     _resolve_totale_fatturato_straordinario_value(
                         impianto,
                         stato_economico,
                         fatturato_straordinario_by_impianto,
-                    )
+                    ),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 margine_straordinario=margine_straordinario,
                 margine_straordinario_class=margine_straordinario_class,
@@ -445,14 +448,16 @@ def build_fotovoltaico_clienti_rows_portale(
                         impianto,
                         stato_economico,
                         fatture_straordinarie_annuo_by_impianto,
-                    )
+                    ),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 numero_fatture_straordinarie_totali=_fmt_integer(
                     _resolve_numero_fatture_straordinarie_totali_value(
                         impianto,
                         stato_economico,
                         fatture_straordinarie_totali_by_impianto,
-                    )
+                    ),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
             )
         )
@@ -519,10 +524,12 @@ def build_fotovoltaico_proprieta_rows_portale(
                 ),
                 totale_maturato=_fmt_currency_accounting(_maturato_value(stato_economico)),
                 fatturato=_fmt_currency_accounting(
-                    _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
+                    _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 totale_incassato=_fmt_currency_accounting(
-                    _resolve_incassato_value(impianto, stato_economico, incassato_by_impianto)
+                    _resolve_incassato_value(impianto, stato_economico, incassato_by_impianto),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 data_prossima_fattura=data_prossima_fattura,
                 data_prossima_fattura_class=data_prossima_fattura_class,
@@ -532,14 +539,16 @@ def build_fotovoltaico_proprieta_rows_portale(
                         impianto,
                         stato_economico,
                         costo_straordinario_by_impianto,
-                    )
+                    ),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 totale_fatturato_straordinario=_fmt_currency_accounting(
                     _resolve_totale_fatturato_straordinario_value(
                         impianto,
                         stato_economico,
                         fatturato_straordinario_by_impianto,
-                    )
+                    ),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 margine_straordinario=margine_straordinario,
                 margine_straordinario_class=margine_straordinario_class,
@@ -548,14 +557,16 @@ def build_fotovoltaico_proprieta_rows_portale(
                         impianto,
                         stato_economico,
                         fatture_straordinarie_annuo_by_impianto,
-                    )
+                    ),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 numero_fatture_straordinarie_totali=_fmt_integer(
                     _resolve_numero_fatture_straordinarie_totali_value(
                         impianto,
                         stato_economico,
                         fatture_straordinarie_totali_by_impianto,
-                    )
+                    ),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
             )
         )
@@ -622,10 +633,12 @@ def build_fotovoltaico_in_costruzione_rows_portale(
                 ),
                 totale_maturato=_fmt_currency_accounting(_maturato_value(stato_economico)),
                 fatturato=_fmt_currency_accounting(
-                    _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
+                    _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 totale_incassato=_fmt_currency_accounting(
-                    _resolve_incassato_value(impianto, stato_economico, incassato_by_impianto)
+                    _resolve_incassato_value(impianto, stato_economico, incassato_by_impianto),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 data_prossima_fattura=data_prossima_fattura,
                 data_prossima_fattura_class=data_prossima_fattura_class,
@@ -635,14 +648,16 @@ def build_fotovoltaico_in_costruzione_rows_portale(
                         impianto,
                         stato_economico,
                         costo_straordinario_by_impianto,
-                    )
+                    ),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 totale_fatturato_straordinario=_fmt_currency_accounting(
                     _resolve_totale_fatturato_straordinario_value(
                         impianto,
                         stato_economico,
                         fatturato_straordinario_by_impianto,
-                    )
+                    ),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 margine_straordinario=margine_straordinario,
                 margine_straordinario_class=margine_straordinario_class,
@@ -651,14 +666,16 @@ def build_fotovoltaico_in_costruzione_rows_portale(
                         impianto,
                         stato_economico,
                         fatture_straordinarie_annuo_by_impianto,
-                    )
+                    ),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 numero_fatture_straordinarie_totali=_fmt_integer(
                     _resolve_numero_fatture_straordinarie_totali_value(
                         impianto,
                         stato_economico,
                         fatture_straordinarie_totali_by_impianto,
-                    )
+                    ),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
             )
         )
@@ -725,10 +742,12 @@ def build_agrivoltaico_rows_portale(
                 ),
                 totale_maturato=_fmt_currency_accounting(_maturato_value(stato_economico)),
                 fatturato=_fmt_currency_accounting(
-                    _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto)
+                    _resolve_fatturato_value(impianto, stato_economico, fatturato_by_impianto),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 totale_incassato=_fmt_currency_accounting(
-                    _resolve_incassato_value(impianto, stato_economico, incassato_by_impianto)
+                    _resolve_incassato_value(impianto, stato_economico, incassato_by_impianto),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 data_prossima_fattura=data_prossima_fattura,
                 data_prossima_fattura_class=data_prossima_fattura_class,
@@ -738,14 +757,16 @@ def build_agrivoltaico_rows_portale(
                         impianto,
                         stato_economico,
                         costo_straordinario_by_impianto,
-                    )
+                    ),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 totale_fatturato_straordinario=_fmt_currency_accounting(
                     _resolve_totale_fatturato_straordinario_value(
                         impianto,
                         stato_economico,
                         fatturato_straordinario_by_impianto,
-                    )
+                    ),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 margine_straordinario=margine_straordinario,
                 margine_straordinario_class=margine_straordinario_class,
@@ -754,14 +775,16 @@ def build_agrivoltaico_rows_portale(
                         impianto,
                         stato_economico,
                         fatture_straordinarie_annuo_by_impianto,
-                    )
+                    ),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
                 numero_fatture_straordinarie_totali=_fmt_integer(
                     _resolve_numero_fatture_straordinarie_totali_value(
                         impianto,
                         stato_economico,
                         fatture_straordinarie_totali_by_impianto,
-                    )
+                    ),
+                    missing_label=ENDPOINT_ERROR_LABEL,
                 ),
             )
         )

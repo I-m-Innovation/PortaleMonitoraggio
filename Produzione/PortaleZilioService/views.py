@@ -1,6 +1,7 @@
 from collections import Counter
 from datetime import date
 from decimal import Decimal
+import logging
 
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import render
@@ -31,6 +32,9 @@ from .services.rows_builder_fotovoltaico import (
     build_fotovoltaico_ppu_rows_portale,
     build_fotovoltaico_proprieta_rows_portale,
 )
+
+logger = logging.getLogger(__name__)
+ENDPOINT_ERROR_LABEL = "API ERR"
 
 
 def _fmt_date(value):
@@ -74,13 +78,67 @@ def _normalize_plant_tag(value):
     return str(value).strip().casefold()
 
 
-def _resolve_mapping_value(impianto, fallback_value, values_by_impianto):
+def _resolve_mapping_value(impianto, fallback_value, values_by_impianto, endpoint_name):
     if values_by_impianto:
         normalized_tag = _normalize_plant_tag(impianto.tag_impianto)
         by_tag = getattr(values_by_impianto, "by_tag", None)
         if by_tag and normalized_tag in by_tag:
             return by_tag[normalized_tag]
-    return fallback_value
+    return None
+
+
+def _resolve_incassato_mapping_value(impianto, values_by_impianto):
+    if not values_by_impianto or not getattr(values_by_impianto, "is_available", False):
+        return None
+
+    normalized_tag = _normalize_plant_tag(impianto.tag_impianto)
+    by_tag = getattr(values_by_impianto, "by_tag", None) or {}
+    if normalized_tag in by_tag:
+        return by_tag[normalized_tag]
+    return Decimal("0")
+
+
+def _format_log_sample(values, *, limit=8):
+    if not values:
+        return "-"
+    sample = values[:limit]
+    rendered = ", ".join(sample)
+    if len(values) > limit:
+        return f"{rendered} ..."
+    return rendered
+
+
+def _log_overview_alignment_summary(endpoint_name, values_by_impianto, impianti):
+    by_tag = getattr(values_by_impianto, "by_tag", None) or {}
+    endpoint_tags = sorted(by_tag.keys())
+
+    local_entries = []
+    for impianto in impianti:
+        normalized_tag = _normalize_plant_tag(impianto.tag_impianto)
+        if not normalized_tag:
+            continue
+        local_entries.append((impianto.nome_impianto, normalized_tag))
+
+    missing_local = [
+        f"{nome}[{tag}]"
+        for nome, tag in local_entries
+        if tag not in by_tag
+    ]
+    local_tags = {tag for _, tag in local_entries}
+    extra_endpoint_tags = [tag for tag in endpoint_tags if tag not in local_tags]
+    matched_count = len(local_entries) - len(missing_local)
+
+    logger.info(
+        "[overview-tag-summary] endpoint=%s | local_plants=%s | matched=%s | missing_local_count=%s | missing_local_sample=%s | endpoint_tags_count=%s | extra_endpoint_tags_count=%s | extra_endpoint_tags_sample=%s",
+        endpoint_name,
+        len(local_entries),
+        matched_count,
+        len(missing_local),
+        _format_log_sample(missing_local),
+        len(endpoint_tags),
+        len(extra_endpoint_tags),
+        _format_log_sample(extra_endpoint_tags),
+    )
 
 
 def _contract_type_label(impianto):
@@ -186,33 +244,34 @@ def _build_impianto_detail_context(
         impianto,
         getattr(stato_economico, "fatturato", None),
         fatturato_by_impianto,
+        "fatturato_ordinario_anno_corrente_per_impianto",
     )
-    incassato_value = _resolve_mapping_value(
-        impianto,
-        getattr(stato_economico, "incassato", None),
-        incassato_by_impianto,
-    )
+    incassato_value = _resolve_incassato_mapping_value(impianto, incassato_by_impianto)
     costo_straordinario_value = _resolve_mapping_value(
         impianto,
         getattr(stato_economico, "costo_sostenuto_straordinario", None),
         costo_straordinario_by_impianto,
+        "costo_straordinario_totale_per_impianto",
     )
     fatturato_straordinario_value = _resolve_mapping_value(
         impianto,
         getattr(stato_economico, "totale_fatturato_straordinario", None),
         fatturato_straordinario_by_impianto,
+        "fatturato_straordinario_totale_per_impianto",
     )
     fatture_straordinarie_annuo_value = _resolve_mapping_value(
         impianto,
         getattr(stato_economico, "numero_fatture_straordinarie_annuo", None),
         fatture_straordinarie_annuo_by_impianto,
+        "numero_fatture_straordinarie_anno_corrente_per_impianto",
     )
     fatture_straordinarie_totali_value = _resolve_mapping_value(
         impianto,
         getattr(stato_economico, "numero_fatture_straordinarie_totali", None),
         fatture_straordinarie_totali_by_impianto,
+        "numero_fatture_straordinarie_totali_per_impianto",
     )
-    margine_straordinario_value = getattr(stato_economico, "margine_straordinario", None)
+    margine_straordinario_value = None
     if costo_straordinario_value is not None and fatturato_straordinario_value is not None:
         margine_straordinario_value = Decimal(str(fatturato_straordinario_value)) - Decimal(
             str(costo_straordinario_value)
@@ -264,15 +323,15 @@ def _build_impianto_detail_context(
         ],
         "economico_ordinario_items": [
             ("Maturato", _fmt_decimal(_maturato_value(stato_economico), " EUR")),
-            ("Fatturato", _fmt_decimal(fatturato_ordinario_value, " EUR")),
-            ("Incassato", _fmt_decimal(incassato_value, " EUR")),
+            ("Fatturato", _fmt_decimal(fatturato_ordinario_value, " EUR") if fatturato_ordinario_value is not None else ENDPOINT_ERROR_LABEL),
+            ("Incassato", _fmt_decimal(incassato_value, " EUR") if incassato_value is not None else ENDPOINT_ERROR_LABEL),
         ],
         "economico_straordinario_items": [
-            ("Costo sostenuto", _fmt_decimal(costo_straordinario_value, " EUR")),
-            ("Totale fatturato straordinario", _fmt_decimal(fatturato_straordinario_value, " EUR")),
-            ("Margine", _fmt_decimal(margine_straordinario_value, " EUR")),
-            ("Fatture straordinarie annuo", fatture_straordinarie_annuo_value if fatture_straordinarie_annuo_value is not None else "--"),
-            ("Fatture straordinarie totali", fatture_straordinarie_totali_value if fatture_straordinarie_totali_value is not None else "--"),
+            ("Costo sostenuto", _fmt_decimal(costo_straordinario_value, " EUR") if costo_straordinario_value is not None else ENDPOINT_ERROR_LABEL),
+            ("Totale fatturato straordinario", _fmt_decimal(fatturato_straordinario_value, " EUR") if fatturato_straordinario_value is not None else ENDPOINT_ERROR_LABEL),
+            ("Margine", _fmt_decimal(margine_straordinario_value, " EUR") if margine_straordinario_value is not None else ENDPOINT_ERROR_LABEL),
+            ("Fatture straordinarie annuo", fatture_straordinarie_annuo_value if fatture_straordinarie_annuo_value is not None else ENDPOINT_ERROR_LABEL),
+            ("Fatture straordinarie totali", fatture_straordinarie_totali_value if fatture_straordinarie_totali_value is not None else ENDPOINT_ERROR_LABEL),
         ],
         "monitoraggio_tecnico_items": [
             ("Sorgenti dati", sources_summary),
@@ -290,6 +349,11 @@ def _build_impianto_detail_context(
 
 
 def _build_home_context():
+    impianti_overview = list(
+        ImpiantoAnagrafica.objects.filter(
+            tipo_impianto=ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO,
+        ).only("id", "nome_impianto", "tag_impianto")
+    )
     fatturato_by_impianto = get_fatturato_ordinario_anno_corrente_per_impianto()
     incassato_by_impianto = get_canoni_incassati_oem_per_impianto()
     fatturato_straordinario_by_impianto = get_fatturato_straordinario_totale_per_impianto()
@@ -300,6 +364,38 @@ def _build_home_context():
     fatture_straordinarie_totali_by_impianto = (
         get_numero_fatture_straordinarie_totali_per_impianto()
     )
+
+    _log_overview_alignment_summary(
+        "fatturato_ordinario_anno_corrente",
+        fatturato_by_impianto,
+        impianti_overview,
+    )
+    _log_overview_alignment_summary(
+        "canoni_incassati_oem",
+        incassato_by_impianto,
+        impianti_overview,
+    )
+    _log_overview_alignment_summary(
+        "fatturato_straordinario_totale",
+        fatturato_straordinario_by_impianto,
+        impianti_overview,
+    )
+    _log_overview_alignment_summary(
+        "costo_straordinario_totale",
+        costo_straordinario_by_impianto,
+        impianti_overview,
+    )
+    _log_overview_alignment_summary(
+        "fatture_straordinarie_annuo",
+        fatture_straordinarie_annuo_by_impianto,
+        impianti_overview,
+    )
+    _log_overview_alignment_summary(
+        "fatture_straordinarie_totali",
+        fatture_straordinarie_totali_by_impianto,
+        impianti_overview,
+    )
+
     return {
         "fv_clienti_rows": build_fotovoltaico_clienti_rows_portale(
             fatturato_by_impianto,
