@@ -3,6 +3,15 @@
 
 console.log('[GRAFICO TOTALE] Modulo caricato - Versione Event-Driven');
 
+// configura Highcharts per usare il punto come separatore delle migliaia e la virgola come separatore decimale
+Highcharts.setOptions({
+    lang: {
+            thousandsSep: '.',
+            decimalPoint: ','
+        }
+    });
+
+
 // Formatta il nickname: "impianto_solar_power" diventa "Impianto Solar Power"
 function formatNickname(nickname) {
     if (!nickname) return '';
@@ -72,7 +81,7 @@ function creaGraficoETabellaRiepilogativa(totaliAnnuali, nickname) {
     const datiFatturazione = totaliAnnuali.map(a => a.fatturazione || 0);
     const datiIncassi = totaliAnnuali.map(a => a.pagamenti || 0);
 
-    // Crea il grafico
+     // Crea il grafico
     Highcharts.chart('chart_totale_impianto', {
         chart: { 
             type: 'column',
