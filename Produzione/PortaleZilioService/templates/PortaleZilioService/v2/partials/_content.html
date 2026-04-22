@@ -1,0 +1,30 @@
+<section class="content">
+
+    <h2>Impianti Fotovoltaici</h2>
+
+    <div class="plant-list">
+        <div class="plant-list-header">
+            <span>Nome impianto</span>
+            <span>Tipo contratto</span>
+            <span>Inizio</span>
+            <span>Fine</span>
+            <span>Anni</span>
+            <span>Importo annuo</span>
+            <span>Importo totale</span>
+        </div>
+        {% for impianto in impianti_fotovoltaici %}
+        <div class="plant-row">
+            <span class="plant-name">{{ impianto.nome_impianto|default:"—" }}</span>
+            <span>{{ impianto.fotovoltaico_stato_economico.get_tipo_contratto_display|default:"—" }}</span>
+            <span>{{ impianto.fotovoltaico_stato_economico.data_inizio_contratto|default:"—" }}</span>
+            <span>{{ impianto.fotovoltaico_stato_economico.data_fine_contratto|default:"—" }}</span>
+            <span>{{ impianto.fotovoltaico_stato_economico.anni_contratto_calcolati|default:"—" }}</span>
+            <span>{{ impianto.fotovoltaico_stato_economico.importo_stimato_contratto_annuo|default:"—" }}</span>
+            <span>{{ impianto.fotovoltaico_stato_economico.totale_contratto|default:"—" }}</span>
+        </div>
+        {% empty %}
+        <div class="plant-empty">Nessun impianto trovato.</div>
+        {% endfor %}
+    </div>
+
+</section>

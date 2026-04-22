@@ -236,6 +236,17 @@ class FotovoltaicoStatoEconomico(models.Model):
             / Decimal("12")
         ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
+    @property
+    def anni_contratto_calcolati(self):
+        if self.anni_contratto is not None:
+            return self.anni_contratto
+        if not self.data_inizio_contratto or not self.data_fine_contratto:
+            return None
+        return (
+            Decimal((self.data_fine_contratto - self.data_inizio_contratto).days)
+            / Decimal("365.25")
+        ).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+
     def save(self, *args, **kwargs):
         self.importo_canone_periodico = self.compute_importo_canone_periodico()
         super().save(*args, **kwargs)

@@ -691,3 +691,21 @@ def sync_provider_metrics_view(request):
             status=500,
         )
 
+
+def home_v2_view(request):
+    impianti_fotovoltaici = ImpiantoAnagrafica.objects.select_related("fotovoltaico_stato_economico", "fotovoltaico_metadata").filter(tipo_impianto=ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO)
+    impianti_idroelettrici = ImpiantoAnagrafica.objects.select_related("idroelettrico_metadata").filter(tipo_impianto=ImpiantoAnagrafica.TipoImpianto.IDROELETTRICO)
+    
+    if not impianti_fotovoltaici.exists() or impianti_fotovoltaici.count() < 1:
+        print("Nessun impianto fotovoltaico trovato. Verifica la presenza di impianti di tipo FOTOVOLTAICO nel database.")
+    if not impianti_idroelettrici.exists() or impianti_idroelettrici.count() < 1:
+        print("Nessun impianto idroelettrico trovato. Verifica la presenza di impianti di tipo IDROELETTRICO nel database.")
+    
+    context = {
+            "impianti_fotovoltaici": impianti_fotovoltaici,
+            "impianti_idroelettrici": impianti_idroelettrici,
+    }
+    
+    
+    return render(request, "PortaleZilioService/v2/home.html", context)
+

@@ -1,0 +1,27 @@
+<nav class="sidebar">
+    <ul class="tree">
+        <li><a href="#">Home</a></li>
+        <li><a href="#">Tabelle</a></li>
+        <li class="tree-item">
+            <button class="tree-toggle">Impianti</button>
+            <ul class="tree-children">
+                <li class="tree-item">
+                    <button class="tree-toggle">Fotovoltaici</button>
+                    <ul class="tree-children">
+                        {% for impianto in impianti_fotovoltaici %}
+                            <li><a href="#">{{ impianto.nome_impianto }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </li>
+                <li class="tree-item">
+                    <button class="tree-toggle">Idroelettrici</button>
+                    <ul class="tree-children">
+                        {% for impianto in impianti_idroelettrici %}
+                            <li><a href="#">{{ impianto.nome_impianto }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+</nav>
