@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import logging
+from math import isclose
+
 from django.db import transaction
 from django.db.models import Count, Prefetch, Q
 
@@ -12,6 +15,7 @@ from ..models import (
     ImpiantoSorgenteDati,
 )
 from .calculators import DefaultMetricsCalculator
+from .dtos import ProviderPlantSnapshot
 from .dtos import SyncOutcome
 from .persistence import (
     persist_metrics_to_fotovoltaico_metriche_tecniche,
@@ -19,6 +23,8 @@ from .persistence import (
 )
 from .registry import ProviderRegistry
 from .windows import MetricsWindow, rolling_12_months_until_yesterday
+
+logger = logging.getLogger(__name__)
 
 
 class MetricsSyncService:
@@ -93,19 +99,64 @@ class MetricsSyncService:
         missing: list[str] = []
         results: list[tuple] = []
 
-        for impianto in queryset:
-            sorgente = self._get_portale_source(impianto)
-            if sorgente is None:
+        impianti = list(queryset)
+        logger.warning(
+            "[portale-sync] source=%s window=%s..%s impianti=%s",
+            source_name,
+            active_window.start_date,
+            active_window.end_date,
+            len(impianti),
+        )
+
+        for impianto in impianti:
+            sorgenti = self._get_portale_sources(impianto, source_name)
+            logger.warning(
+                "[portale-sync] impianto=%s id=%s source=%s sorgenti_attive=%s tags=%s codice_impianto=%r",
+                impianto.nome_impianto,
+                impianto.pk,
+                source_name,
+                len(sorgenti),
+                [getattr(s, "identificativo_esterno", None) for s in sorgenti],
+                getattr(impianto, "codice_impianto", None),
+            )
+            if not sorgenti:
                 skipped += 1
                 missing.append(impianto.nome_impianto)
                 continue
 
-            provider = self.registry.get_provider(sorgente.nome_sorgente)
+            provider = self.registry.get_provider(source_name)
             try:
-                snapshot = provider.fetch_portale_snapshot(impianto, sorgente, active_window)
+                if source_name == self.ISC_SOURCE_NAME:
+                    snapshot = self._build_isc_portale_snapshot(
+                        impianto,
+                        sorgenti,
+                        provider,
+                        active_window,
+                    )
+                else:
+                    snapshot = provider.fetch_portale_snapshot(impianto, sorgenti[0], active_window)
                 metrics = self.calculator.compute(snapshot, active_window)
+                logger.warning(
+                    "[portale-sync] impianto=%s snapshot energy=%r irradiation=%r peak_power=%r status=%r inv_count=%r inv_ok=%r pr=%r missed=%r eq=%r",
+                    impianto.nome_impianto,
+                    snapshot.window_energy_kwh,
+                    snapshot.window_irradiation_kwh_m2,
+                    snapshot.peak_power_kw,
+                    snapshot.status,
+                    snapshot.inverters_count,
+                    snapshot.inverters_ok,
+                    metrics.performance_ratio,
+                    metrics.missed_production_kwh,
+                    metrics.equivalent_hours,
+                )
                 results.append((impianto, metrics, self._build_portale_sync_note(snapshot, source_name)))
-            except NotImplementedError:
+            except NotImplementedError as error:
+                logger.warning(
+                    "[portale-sync] impianto=%s source=%s skipped_not_implemented=%s",
+                    impianto.nome_impianto,
+                    source_name,
+                    error,
+                )
                 skipped += 1
                 missing.append(impianto.nome_impianto)
 
@@ -145,8 +196,6 @@ class MetricsSyncService:
                 potenza_installata_kw__gt=0,
             )
             .select_related("fotovoltaico_metadata")
-            .exclude(codice_impianto__isnull=True)
-            .exclude(codice_impianto="")
             .annotate(
                 isc_source_count=Count("sorgenti_dati", filter=source_filter, distinct=True),
                 inverter_count=Count("dispositivi", filter=inverter_filter, distinct=True),
@@ -222,11 +271,161 @@ class MetricsSyncService:
         )
 
     @staticmethod
-    def _get_portale_source(impianto):
-        sorgenti = list(impianto.sorgenti_dati.all())
-        if not sorgenti:
-            return None
-        return sorgenti[0]
+    def _get_portale_sources(impianto, source_name: str):
+        return [
+            sorgente
+            for sorgente in impianto.sorgenti_dati.all()
+            if sorgente.nome_sorgente == source_name and sorgente.attiva
+        ]
+
+    def _build_isc_portale_snapshot(self, impianto, sorgenti, provider, active_window):
+        logger.warning(
+            "[isc-aggregate] impianto=%s sorgenti=%s",
+            impianto.nome_impianto,
+            [
+                {
+                    "id": sorgente.id,
+                    "identificativo_esterno": getattr(sorgente, "identificativo_esterno", None),
+                    "nome_riferimento_esterno": getattr(sorgente, "nome_riferimento_esterno", None),
+                }
+                for sorgente in sorgenti
+            ],
+        )
+        snapshots = [
+            provider.fetch_portale_snapshot(impianto, sorgente, active_window)
+            for sorgente in sorgenti
+        ]
+        for index, snapshot in enumerate(snapshots, start=1):
+            logger.warning(
+                "[isc-aggregate] impianto=%s snapshot_index=%s plant=%s source_identifier=%r energy=%r irradiation=%r peak_power=%r status=%r inv_count=%r inv_ok=%r",
+                impianto.nome_impianto,
+                index,
+                snapshot.plant_name,
+                snapshot.raw_payload.get("source_identifier"),
+                snapshot.window_energy_kwh,
+                snapshot.window_irradiation_kwh_m2,
+                snapshot.peak_power_kw,
+                snapshot.status,
+                snapshot.inverters_count,
+                snapshot.inverters_ok,
+            )
+        if len(snapshots) == 1:
+            logger.warning("[isc-aggregate] impianto=%s single_snapshot_no_merge", impianto.nome_impianto)
+            return snapshots[0]
+        return self._aggregate_isc_snapshots(impianto, snapshots)
+
+    @staticmethod
+    def _aggregate_isc_snapshots(impianto, snapshots) -> ProviderPlantSnapshot:
+        first_snapshot = snapshots[0]
+
+        total_peak_power = sum(
+            snapshot.peak_power_kw
+            for snapshot in snapshots
+            if snapshot.peak_power_kw is not None
+        )
+        peak_power_kw = total_peak_power or None
+
+        window_energy_kwh = sum(
+            snapshot.window_energy_kwh
+            for snapshot in snapshots
+            if snapshot.window_energy_kwh is not None
+        )
+
+        inverters_count = sum(
+            snapshot.inverters_count
+            for snapshot in snapshots
+            if snapshot.inverters_count is not None
+        )
+        inverters_ok = sum(
+            snapshot.inverters_ok
+            for snapshot in snapshots
+            if snapshot.inverters_ok is not None
+        )
+        coverage = None
+        if inverters_count:
+            coverage = round(inverters_ok / inverters_count, 4)
+
+        available_irradiation = [
+            (snapshot.window_irradiation_kwh_m2, snapshot.peak_power_kw)
+            for snapshot in snapshots
+            if snapshot.window_irradiation_kwh_m2 is not None
+        ]
+        irradiation_kwh_m2 = None
+        if available_irradiation:
+            weighted_power = sum(
+                power
+                for _, power in available_irradiation
+                if power is not None and not isclose(power, 0.0)
+            )
+            if weighted_power:
+                irradiation_kwh_m2 = sum(
+                    irradiation * power
+                    for irradiation, power in available_irradiation
+                    if power is not None and not isclose(power, 0.0)
+                ) / weighted_power
+            else:
+                irradiation_kwh_m2 = available_irradiation[0][0]
+
+        statuses = {snapshot.status for snapshot in snapshots if snapshot.status}
+        if statuses == {"online"}:
+            status = "online"
+        elif statuses == {"offline"}:
+            status = "offline"
+        elif statuses:
+            status = "warning"
+        else:
+            status = None
+
+        missing_inverters: list[str] = []
+        for snapshot in snapshots:
+            for inverter in snapshot.missing_inverters:
+                if inverter not in missing_inverters:
+                    missing_inverters.append(inverter)
+
+        raw_payload = {
+            "aggregated_source_identifiers": [
+                snapshot.raw_payload.get("source_identifier")
+                for snapshot in snapshots
+            ],
+            "aggregated_plants": [
+                snapshot.raw_payload.get("api_plant", {}).get("ps_name")
+                for snapshot in snapshots
+            ],
+        }
+
+        logger.warning(
+            "[isc-aggregate] impianto=%s merged energy=%r irradiation=%r peak_power=%r status=%r inv_count=%r inv_ok=%r coverage=%r plants=%s",
+            impianto.nome_impianto,
+            window_energy_kwh,
+            irradiation_kwh_m2,
+            peak_power_kw,
+            status,
+            inverters_count,
+            inverters_ok,
+            coverage,
+            raw_payload["aggregated_plants"],
+        )
+
+        return ProviderPlantSnapshot(
+            source_name=first_snapshot.source_name,
+            plant_key=str(impianto.pk),
+            plant_name=impianto.nome_impianto,
+            window_start=first_snapshot.window_start,
+            window_end=first_snapshot.window_end,
+            peak_power_kw=peak_power_kw,
+            status=status,
+            daily_equivalent_hours=None,
+            total_equivalent_hours=None,
+            window_energy_kwh=window_energy_kwh,
+            window_irradiation_kwh_m2=irradiation_kwh_m2,
+            contractual_pr=first_snapshot.contractual_pr,
+            has_weather_station=irradiation_kwh_m2 is not None,
+            inverters_count=inverters_count or None,
+            inverters_ok=inverters_ok or None,
+            coverage=coverage,
+            missing_inverters=missing_inverters,
+            raw_payload=raw_payload,
+        )
 
     @staticmethod
     def _get_portale_sync_status(metrics) -> str:

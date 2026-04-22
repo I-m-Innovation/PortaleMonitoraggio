@@ -1,0 +1,42 @@
+{% load static %}
+<!doctype html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contratti Impianti — Zilio Service</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'PortaleZilioService/css/v2/home.css' %}">
+</head>
+<body>
+
+<header class="header">
+    <img
+        id="logo-homepage"
+        src="{% static 'PortaleZilioService/images/logoipsum-391.svg' %}"
+        alt="Zilio Service"
+        class="header-logo"
+    >
+    <span class="header-title">Portale Zilio Service</span>
+</header>
+
+<main class="layout">
+
+    {% comment %} ----------------------------SIDEBAR--------------------------------------- {% endcomment %}
+    {% include 'PortaleZilioService/v2/partials/_sidebar.html' %}
+    {% comment %} -------------------------------------------------------------------------- {% endcomment %}
+
+    {% comment %} ----------------------------CONTENT--------------------------------------- {% endcomment %}
+    {% include 'PortaleZilioService/v2/partials/_content.html' %}
+    {% comment %} -------------------------------------------------------------------------- {% endcomment %}
+</main>
+
+<footer>
+    <p>&copy; 2024 Zilio Service. Tutti i diritti riservati.</p>
+</footer>
+
+    <script src="{% static 'PortaleZilioService/js/v2/sidebar.js' %}" defer></script>
+</body>
+</html>

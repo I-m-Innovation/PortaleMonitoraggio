@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+import logging
 
 from ...models import ImpiantoDispositivo
 from ..dtos import ProviderPlantSnapshot
@@ -21,6 +22,8 @@ try:
 except ImportError:
     from API_inverter.api_config import LOGIN_PARAMS, PAGE_SIZE
 
+logger = logging.getLogger(__name__)
+
 
 class IscMetricsProvider:
     """
@@ -33,6 +36,14 @@ class IscMetricsProvider:
     source_name = "API_ISC"
     IRRADIATION_ALIAS_BY_PLANT_NAME = {
         "3F - Plastica": "3F - Ferro",
+    }
+    SPECIAL_PORTALE_PEAK_POWER_BY_SOURCE = {
+        ("3F - Ferro e Plastica", "5079244"): 300.25,
+        ("3F - Ferro e Plastica", "5079150"): 351.0,
+    }
+    SPECIAL_PORTALE_IRRADIATION_SOURCE_BY_SOURCE = {
+        ("3F - Ferro e Plastica", "5079244"): "3F - Ferro",
+        ("3F - Ferro e Plastica", "5079150"): "3F - Ferro",
     }
 
     def fetch_snapshot(self, impianto, window: MetricsWindow) -> ProviderPlantSnapshot:
@@ -103,9 +114,13 @@ class IscMetricsProvider:
 
         plant_id = int(api_plant["ps_id"])
         plant_name = api_plant.get("ps_name") or impianto.nome_impianto
-        peak_power_kw = self._safe_float(api_plant.get("installed_power")) or self._safe_float(
-            impianto.potenza_installata_kw
-        )
+        installed_power_raw = api_plant.get("installed_power")
+        peak_power_kw = self._safe_float(installed_power_raw)
+        special_peak_power_kw = self._get_special_portale_peak_power_kw(impianto, sorgente)
+        if special_peak_power_kw is not None:
+            peak_power_kw = special_peak_power_kw
+        if peak_power_kw is None:
+            peak_power_kw = self._safe_float(impianto.potenza_installata_kw)
         contractual_pr = self._extract_contractual_pr(impianto)
         status = "online" if api_plant.get("ps_status") == 1 else "offline"
 
@@ -115,10 +130,27 @@ class IscMetricsProvider:
             for d in devices
             if d.get("ps_key") and str(d.get("device_type")) != WEATHER_STATION_DEVICE_TYPE
         ]
-        local_inverters_count = impianto.dispositivi.filter(
-            tipo_dispositivo=ImpiantoDispositivo.TipoDispositivo.INVERTER,
-            attivo=True,
-        ).count()
+        local_inverter_keys = self._get_local_inverter_keys_for_source(impianto, sorgente)
+        if self._is_special_portale_3f_aggregate(impianto):
+            inverter_keys = [
+                key for key in inverter_keys
+                if key in local_inverter_keys
+            ]
+        local_inverters_count = self._count_local_inverters_for_source(impianto, sorgente)
+        logger.warning(
+            "[isc-provider] impianto=%s source_identifier=%r plant=%s plant_id=%s installed_power_raw=%r special_peak_power_kw=%r peak_power_kw=%r local_inverters_count=%s local_inverter_keys=%s remote_inverter_keys_count=%s remote_inverter_keys=%s",
+            impianto.nome_impianto,
+            getattr(sorgente, "identificativo_esterno", None),
+            plant_name,
+            plant_id,
+            installed_power_raw,
+            special_peak_power_kw,
+            peak_power_kw,
+            local_inverters_count,
+            local_inverter_keys,
+            len(inverter_keys),
+            inverter_keys,
+        )
 
         energy_kwh = self._fetch_energy_kwh(
             token=token,
@@ -129,6 +161,7 @@ class IscMetricsProvider:
         irradiation_kwh_m2, irradiation_source_name = self._fetch_portale_irradiation_kwh_m2(
             token=token,
             impianto=impianto,
+            sorgente=sorgente,
             plant_id=plant_id,
             window=window,
         )
@@ -162,6 +195,37 @@ class IscMetricsProvider:
                 "irradiation_source_name": irradiation_source_name,
             },
         )
+
+    @staticmethod
+    def _is_special_portale_3f_aggregate(impianto) -> bool:
+        return getattr(impianto, "nome_impianto", None) == "3F - Ferro e Plastica"
+
+    @classmethod
+    def _get_special_portale_peak_power_kw(cls, impianto, sorgente) -> float | None:
+        return cls.SPECIAL_PORTALE_PEAK_POWER_BY_SOURCE.get(
+            (getattr(impianto, "nome_impianto", None), getattr(sorgente, "identificativo_esterno", None))
+        )
+
+    @staticmethod
+    def _get_local_inverter_keys_for_source(impianto, sorgente) -> list[str]:
+        queryset = impianto.dispositivi.filter(
+            tipo_dispositivo=ImpiantoDispositivo.TipoDispositivo.INVERTER,
+            attivo=True,
+        ).order_by("codice_dispositivo")
+        source_identifier = getattr(sorgente, "identificativo_esterno", None)
+        if source_identifier:
+            queryset = queryset.filter(codice_dispositivo__startswith=f"{source_identifier}_")
+        return [device.codice_dispositivo for device in queryset]
+
+    @staticmethod
+    def _count_local_inverters_for_source(impianto, sorgente) -> int:
+        local_inverter_keys = IscMetricsProvider._get_local_inverter_keys_for_source(impianto, sorgente)
+        if local_inverter_keys:
+            return len(local_inverter_keys)
+        return impianto.dispositivi.filter(
+            tipo_dispositivo=ImpiantoDispositivo.TipoDispositivo.INVERTER,
+            attivo=True,
+        ).count()
 
     def _login(self) -> str:
         login_resp = login_ISC()
@@ -263,10 +327,17 @@ class IscMetricsProvider:
         self,
         token: str,
         impianto,
+        sorgente,
         plant_id: int,
         window: MetricsWindow,
     ) -> tuple[float | None, str | None]:
-        source_name = self.IRRADIATION_ALIAS_BY_PLANT_NAME.get(impianto.nome_impianto, impianto.nome_impianto)
+        special_source_name = self.SPECIAL_PORTALE_IRRADIATION_SOURCE_BY_SOURCE.get(
+            (getattr(impianto, "nome_impianto", None), getattr(sorgente, "identificativo_esterno", None))
+        )
+        source_name = special_source_name or self.IRRADIATION_ALIAS_BY_PLANT_NAME.get(
+            impianto.nome_impianto,
+            impianto.nome_impianto,
+        )
         source_plant_id = plant_id
         if source_name != impianto.nome_impianto:
             alias_plant = self._find_plant_by_name(token, source_name)
