@@ -32,7 +32,7 @@ class Impianto(models.Model):
 
 	# IDROELETTRICO
 	unita_misura = models.CharField(null=True, blank=True, editable=True, help_text="Unita misura portata (mc/s o l/s)", max_length=150, verbose_name='Unita misura')
-	portata_concessione = models.FloatField(null=True, blank=True, editable=True, help_text="Portata di concessione", verbose_name='Portata')
+	portata_concessione = models.FloatField(null=True, blank=True, editable=True, help_text="Portata di concessione in m3/s", verbose_name='Portata')
 	salto = models.FloatField(null=True, blank=True, editable=True, help_text="Salto impianto", verbose_name='Salto')
 	potenza_business_plan = models.FloatField(null=True, blank=True, editable=True, default=0, help_text="Potenza da Business Plan",
 										   verbose_name='Potenza Business Plan')
