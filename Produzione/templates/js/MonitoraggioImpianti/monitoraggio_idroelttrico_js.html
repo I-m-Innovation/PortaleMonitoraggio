@@ -211,6 +211,11 @@
 									rendimento: gauge_eta
 							});
 							
+							const portataDecimals = '{{ impianto.unita_misura }}' === 'mc/s' ? 4 : 1;
+							const roundPortata = (value) => {
+								const factor = Math.pow(10, portataDecimals);
+								return Math.round(value * factor) / factor;
+							};
 							const portataConcessioneDb  = {% if impianto.portata_concessione and impianto.portata_concessione > 0 %}{{ impianto.portata_concessione|stringformat:".2f" }}{% else %}0{% endif %};
 							const portataConcessione = '{{ impianto.unita_misura }}' === 'l/s' ? portataConcessioneDb * 1000 : portataConcessioneDb;
 							const maxGaugePortata = portataConcessione > 0 ? portataConcessione * 3 : gauge_port.MaxScala; // Prima il fondo scala del gauge portata usava direttamente gauge_port.MaxScala.
@@ -362,7 +367,7 @@
 											name: 'gauge Portata', type: 'gauge', radius: '95%', min: 0, max: maxGaugePortata,
 											data: [{
 												name: 'Portata',
-										  		value: Math.round(gauge_port.last_value *10)/10,
+										  		value: roundPortata(gauge_port.last_value),
 												}],
 											startAngle: 210, endAngle: -30, axisLabel: {fontSize: 10,}, title: {offsetCenter: [0, '50%'], fontSize: title_fontsize},
 											pointer: {itemStyle: {color: '#3d3d3d'}, length: '95%', width: '3%',},
@@ -370,7 +375,7 @@
 											axisLine: {
 												lineStyle: {color: [[gauge_port.Media - gauge_port.Dev, '#ff5858'], [gauge_port.Media + gauge_port.Dev, '#c9c9c9'], [1, '#8bcfea']]}
 											},
-											detail: {offsetCenter: [0, '30%'], fontSize: detail_fontsize, formatter: value => toLocaleAxis(value, 1) + ' {{impianto.unita_misura}}', color: gauge_colors.Var2},
+											detail: {offsetCenter: [0, '30%'], fontSize: detail_fontsize, formatter: value => toLocaleAxis(value, portataDecimals) + ' {{impianto.unita_misura}}', color: gauge_colors.Var2},
 											center: center_position,
 									},
 									
