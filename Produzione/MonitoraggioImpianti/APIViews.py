@@ -78,6 +78,7 @@ class DayChartData(APIView):
 				df_time_series['Eta'] = df_time_series['Eta'] * 100
 				print("DEBUG: Converted efficiency to percentage")
 				# PORTATA
+				# I CSV espongono la portata in mc/s; convertiamo solo quando la UI deve mostrare l/s.
 				if impianto.unita_misura == 'l/s':
 					df_time_series['Q'] = df_time_series['Q'] * 1000
 					print("DEBUG: Converted flow rate from mc/s to l/s")

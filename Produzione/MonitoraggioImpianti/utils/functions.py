@@ -79,6 +79,7 @@ def Gauges(impianto):
 			colors[col] = 'rgb(31,160,64)'
 			leds[col] = 'led-green'
 
+	# I CSV dei gauge espongono Var2/portata in mc/s; convertiamo solo per UI in l/s.
 	if impianto.tipo == 'Idroelettrico' and impianto.unita_misura == 'l/s':
 		dfGauge['Var2'] = dfGauge['Var2'] * 1000
 
