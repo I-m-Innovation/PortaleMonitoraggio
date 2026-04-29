@@ -272,7 +272,7 @@
 											}
 										},
 										axisLabel: {
-											formatter: '{value} {{ impianto.unita_misura }}'
+											formatter: value => toLocaleAxis(value, 2) + ' {{ impianto.unita_misura }}'
 										}, 
 										min: 0, 
 										max: maxPortataAsse
@@ -370,7 +370,7 @@
 											axisLine: {
 												lineStyle: {color: [[gauge_port.Media - gauge_port.Dev, '#ff5858'], [gauge_port.Media + gauge_port.Dev, '#c9c9c9'], [1, '#8bcfea']]}
 											},
-											detail: {offsetCenter: [0, '30%'], fontSize: detail_fontsize, formatter: '{value} {{impianto.unita_misura}}', color: gauge_colors.Var2},
+											detail: {offsetCenter: [0, '30%'], fontSize: detail_fontsize, formatter: value => toLocaleAxis(value, 1) + ' {{impianto.unita_misura}}', color: gauge_colors.Var2},
 											center: center_position,
 									},
 									
