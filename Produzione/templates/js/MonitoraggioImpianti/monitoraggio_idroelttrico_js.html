@@ -379,49 +379,71 @@
 							});
 							console.log('Opzioni gaugePor aggiornate');
 							/* GAUGE PRESSIONE */
-						  console.log('Imposto gauge pressione');
-						  gaugePre.setOption({
-							  series:[
-						  {
-								name: 'gauge Pressione', type: 'gauge', radius: '95%', min: 0, max: gauge_pres.MaxScala,
-								  data: [{
-										  name: 'Pressione',
-										  value: Math.round(gauge_pres.last_value * 10)/10,
-								  }],
-								  startAngle: 210, endAngle: -30, axisLabel: {fontSize: 10,}, title: {offsetCenter: [0, '50%'], fontSize: title_fontsize},
-									  pointer: {itemStyle: {color: '#3d3d3d'},length: '95%',width: '3%',},
-									  splitNumber: 8, axisTick: {distance: 3, lineStyle:{width: 1}}, splitLine: {distance: 3,lineStyle:{width: 2}},
-									  axisLine: {
-										  lineStyle: {color: [[gauge_pres.Media - gauge_pres.Dev , '#ff5858'], [ gauge_pres.Media + gauge_pres.Dev, '#c9c9c9'], [1, '#8bcfea']]}
-								  },
-								  detail: {offsetCenter: [0, '30%'], fontSize: detail_fontsize,formatter: '{value} Bar', color: gauge_colors.Var3},
-									  center: center_position,
-						  }
-							  ]
-						  });
-							console.log('Opzioni gaugePre aggiornate');
-							/* GAUGE RENDIMENTO */
-						  console.log('Imposto gauge rendimento');
-						  gaugeRend.setOption({
-							  series:[
-						  {
-								name: 'gauge Rendimento', type: 'gauge', radius: '95%', min: 0, max: gauge_eta.MaxScala,
-								  data: [{
-										  name: 'Rendimento',
-										  value: Math.round(gauge_eta.last_value * 100 * 100)/100,
-								  }],
-								  startAngle: 210, endAngle: -30, axisLabel: {fontSize: 10,}, title: {offsetCenter: [0, '50%'], fontSize: title_fontsize},
-									  pointer: {itemStyle: {color: '#3d3d3d'}, length: '95%', width: '3%',},
-									  splitNumber: 8, axisTick: {distance: 3, lineStyle:{width: 1}}, splitLine: {distance: 3,lineStyle:{width: 2}},
-									  axisLine: {
-										  lineStyle: {color: [[gauge_eta.Media - gauge_eta.Dev, '#ff5858'], [gauge_eta.Media + gauge_eta.Dev, '#c9c9c9'], [1, '#8bcfea']]}
-								  },
-								  detail: {offsetCenter: [0, '30%'], fontSize: detail_fontsize,formatter: '{value} %',color: gauge_colors.Eta},
-									  center: center_position,
-							},
-						]
-						  });
-							console.log('Opzioni gaugeRend aggiornate');
+							console.log('Imposto gauge pressione');
+							gaugePre.setOption({
+								series:[
+									{
+										name: 'gauge Pressione', type: 'gauge', radius: '95%', min: 0, max: gauge_pres.MaxScala,
+										data: [{
+										name: 'Pressione',
+										value: Math.round(gauge_pres.last_value * 10)/10,
+									}],
+									startAngle: 210, endAngle: -30, axisLabel: {fontSize: 10,}, title: {offsetCenter: [0, '50%'], fontSize: title_fontsize},
+									pointer: {itemStyle: {color: '#3d3d3d'},length: '95%',width: '3%',},
+									splitNumber: 8, axisTick: {distance: 3, lineStyle:{width: 1}}, splitLine: {distance: 3,lineStyle:{width: 2}},
+									axisLine: {
+										lineStyle: {color: [[gauge_pres.Media - gauge_pres.Dev , '#ff5858'], [ gauge_pres.Media + gauge_pres.Dev, '#c9c9c9'], [1, '#8bcfea']]}
+									},
+									detail: {offsetCenter: [0, '30%'], fontSize: detail_fontsize,formatter: '{value} Bar', color: gauge_colors.Var3},
+									center: center_position,
+									},
+								]
+							});
+						console.log('Opzioni gaugePre aggiornate');
+						/* GAUGE RENDIMENTO */
+						console.log('Imposto gauge rendimento');
+						gaugeRend.setOption({
+							series:[{
+								name: 'gauge Rendimento', 
+								type: 'gauge', 
+								radius: '95%', 
+								min: 0, 
+								max: gauge_eta.MaxScala,
+								data: [{
+										name: 'Rendimento',
+										value: Math.max(Math.round(gauge_eta.last_value * 100 * 100)/100, 0),
+									}],
+								startAngle: 210, 
+								endAngle: -30, 
+								axisLabel: {fontSize: 10,}, 
+								title: {offsetCenter: [0, '50%'], 
+								fontSize: title_fontsize},
+								pointer: {
+									itemStyle: {color: '#3d3d3d'}, 
+									length: '95%', width: '3%',},
+									splitNumber: 8, 
+									axisTick: {
+										distance: 3, 
+										lineStyle:{width: 1}
+									}, 
+									splitLine: {
+										distance: 3,
+										lineStyle:{width: 2}},
+									axisLine: {
+										lineStyle: {
+											color: [
+												[gauge_eta.Media - gauge_eta.Dev, '#ff5858'], 
+												[gauge_eta.Media + gauge_eta.Dev, '#c9c9c9'], 
+												[1, '#8bcfea']
+											]
+										}
+								},
+								detail: {offsetCenter: [0, '30%'], fontSize: detail_fontsize,formatter: '{value} %',color: gauge_colors.Eta},
+								center: center_position,
+								},
+							]
+						});
+						console.log('Opzioni gaugeRend aggiornate');
 					})
 					/* AGGIORNAMENTO OGNI 120 SECONDI */
 					console.log("Imposto prossimo aggiornamento tra 120 secondi");
