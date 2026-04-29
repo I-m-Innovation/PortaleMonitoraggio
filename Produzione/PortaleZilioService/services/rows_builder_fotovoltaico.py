@@ -220,8 +220,9 @@ def _calcola_anni_contratto(data_inizio: date | None, data_fine: date | None) ->
     return f"{anni:.1f}"
 
 
-def _maturato_value(stato_economico) -> Decimal | None:
+def _maturato_value(stato_economico, today: date | None = None) -> Decimal | None:
     if stato_economico is None:
+        logger.debug("[maturato-annuale] stato_economico assente")
         return None
 
     data_inizio = getattr(stato_economico, "data_inizio_contratto", None)
@@ -231,29 +232,64 @@ def _maturato_value(stato_economico) -> Decimal | None:
         importo_canone_periodico = getattr(stato_economico, "importo_canone_periodico", None)
 
     if not data_inizio or periodicita_mesi in (None, 0) or importo_canone_periodico is None:
+        logger.debug(
+            "[maturato-annuale] dati insufficienti impianto=%s data_inizio=%s periodicita=%s importo_canone=%s",
+            getattr(getattr(stato_economico, "impianto", None), "nome_impianto", "-"),
+            data_inizio,
+            periodicita_mesi,
+            importo_canone_periodico,
+        )
         return None
 
-    today = date.today()
+    today = today or date.today()
+    year_start = date(today.year, 1, 1)
+    year_end = date(today.year, 12, 31)
+
     if data_inizio > today:
+        logger.debug(
+            "[maturato-annuale] contratto non ancora iniziato impianto=%s anno=%s data_inizio=%s today=%s",
+            getattr(getattr(stato_economico, "impianto", None), "nome_impianto", "-"),
+            today.year,
+            data_inizio,
+            today,
+        )
         return Decimal("0")
 
     data_fine = getattr(stato_economico, "data_fine_contratto", None)
     effective_end = min(today, data_fine) if data_fine else today
-    if effective_end < data_inizio:
+    effective_end = min(effective_end, year_end)
+    if effective_end < year_start or effective_end < data_inizio:
+        logger.debug(
+            "[maturato-annuale] nessun periodo utile impianto=%s anno=%s data_inizio=%s data_fine=%s effective_end=%s",
+            getattr(getattr(stato_economico, "impianto", None), "nome_impianto", "-"),
+            today.year,
+            data_inizio,
+            data_fine,
+            effective_end,
+        )
         return Decimal("0")
 
-    elapsed_months = (
-        (effective_end.year - data_inizio.year) * 12
-        + (effective_end.month - data_inizio.month)
+    numero_canoni_maturati = 0
+    scadenze_maturate: list[str] = []
+    scadenza = _add_months(data_inizio, periodicita_mesi)
+
+    while scadenza <= effective_end:
+        if scadenza >= year_start:
+            numero_canoni_maturati += 1
+            scadenze_maturate.append(scadenza.isoformat())
+        scadenza = _add_months(scadenza, periodicita_mesi)
+
+    maturato = Decimal(numero_canoni_maturati) * Decimal(str(importo_canone_periodico))
+    logger.debug(
+        "[maturato-annuale] impianto=%s anno=%s canoni=%s importo_canone=%s maturato=%s scadenze=%s",
+        getattr(getattr(stato_economico, "impianto", None), "nome_impianto", "-"),
+        today.year,
+        numero_canoni_maturati,
+        importo_canone_periodico,
+        maturato,
+        scadenze_maturate,
     )
-    if effective_end.day < data_inizio.day:
-        elapsed_months -= 1
-
-    if elapsed_months < periodicita_mesi:
-        return Decimal("0")
-
-    numero_canoni_maturati = elapsed_months // periodicita_mesi
-    return Decimal(numero_canoni_maturati) * Decimal(str(importo_canone_periodico))
+    return maturato
 
 
 def _add_months(base_date: date, months: int) -> date:
