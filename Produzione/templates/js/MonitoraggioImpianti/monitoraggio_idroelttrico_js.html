@@ -211,11 +211,15 @@
 									rendimento: gauge_eta
 							});
 							
-							const portataConcessione  = {% if impianto.portata_concessione and impianto.portata_concessione > 0 %}{{ impianto.portata_concessione|stringformat:".2f" }}{% else %}0{% endif %};
+							const portataConcessioneDb  = {% if impianto.portata_concessione and impianto.portata_concessione > 0 %}{{ impianto.portata_concessione|stringformat:".2f" }}{% else %}0{% endif %};
+							const portataConcessione = '{{ impianto.unita_misura }}' === 'l/s' ? portataConcessioneDb * 1000 : portataConcessioneDb;
+							const maxGaugePortata = portataConcessione > 0 ? portataConcessione * 3 : gauge_port.MaxScala; // Prima il fondo scala del gauge portata usava direttamente gauge_port.MaxScala.
 							const maxPortataDati = Math.max(...portata.filter(val => val !== null && !isNaN(val)));
 							const maxPortataAsse = Math.max(maxPortataDati || 0, portataConcessione) * 1.1; // +10%
 							console.log('Calcolo asse portata:', {
+								portataConcessioneDb: portataConcessioneDb,
 								portataConcessione: portataConcessione,
+								maxGaugePortata: maxGaugePortata,
 								maxPortataDati: maxPortataDati,
 								maxPortataAsse: maxPortataAsse
 							});
@@ -314,8 +318,8 @@
 													{yAxis: {{ QMedia_anno|default_if_none:"0"|stringformat:".2f" }}, label: {position:'insideEndTop', backgroundColor: '#efefef', formatter: params => toLocale(params.value,2) + ' {{ impianto.unita_misura }}'}},
 													{yAxis: {{ QMedia_anno|default_if_none:"0"|stringformat:".2f" }}, label: {formatter: 'Portata media anno', position: 'insideStartTop'}},
 													{% if impianto.portata_concessione and impianto.portata_concessione > 0 %}
-													{yAxis: {{ impianto.portata_concessione|stringformat:".2f" }}, label: {position:'insideEndBottom', backgroundColor: '#ffcccc', formatter: params => toLocale(params.value,2) + ' {{ impianto.unita_misura }}'}, lineStyle: {color: '#ff4444', type: 'dashed'}},
-													{yAxis: {{ impianto.portata_concessione|stringformat:".2f" }}, label: {formatter: 'Portata concessione', position: 'insideStartBottom'}, lineStyle: {color: '#ff4444', type: 'dashed'}}
+													{yAxis: portataConcessione, label: {position:'insideEndBottom', backgroundColor: '#ffcccc', formatter: params => toLocale(params.value,2) + ' {{ impianto.unita_misura }}'}, lineStyle: {color: '#ff4444', type: 'dashed'}},
+													{yAxis: portataConcessione, label: {formatter: 'Portata concessione', position: 'insideStartBottom'}, lineStyle: {color: '#ff4444', type: 'dashed'}}
 													{% endif %}
 												]
 											},
@@ -352,26 +356,27 @@
 							});
 							console.log('Opzioni gaugePot aggiornate');
 							/* GAUGE PORTATA */
-						  console.log('Imposto gauge portata');
-						  gaugePor.setOption({
-							  series:[
-						  {
-								name: 'gauge Portata', type: 'gauge', radius: '95%', min: 0, max: gauge_port.MaxScala,
-								  data: [{
-										  name: 'Portata',
-										  value: Math.round(gauge_port.last_value *10)/10,
-								  }],
-								  startAngle: 210, endAngle: -30, axisLabel: {fontSize: 10,}, title: {offsetCenter: [0, '50%'], fontSize: title_fontsize},
-									  pointer: {itemStyle: {color: '#3d3d3d'}, length: '95%', width: '3%',},
-									  splitNumber: 8, axisTick: {distance: 3, lineStyle:{width: 1}}, splitLine: {distance: 3,lineStyle:{width: 2}},
-									  axisLine: {
-										  lineStyle: {color: [[gauge_port.Media - gauge_port.Dev, '#ff5858'], [gauge_port.Media + gauge_port.Dev, '#c9c9c9'], [1, '#8bcfea']]}
-								  },
-								  detail: {offsetCenter: [0, '30%'], fontSize: detail_fontsize, formatter: '{value} {{impianto.unita_misura}}', color: gauge_colors.Var2},
-									  center: center_position,
-							}
-							  ]
-						  });
+							console.log('Imposto gauge portata');
+							gaugePor.setOption({
+								series:[{
+											name: 'gauge Portata', type: 'gauge', radius: '95%', min: 0, max: maxGaugePortata,
+											data: [{
+												name: 'Portata',
+										  		value: Math.round(gauge_port.last_value *10)/10,
+												}],
+											startAngle: 210, endAngle: -30, axisLabel: {fontSize: 10,}, title: {offsetCenter: [0, '50%'], fontSize: title_fontsize},
+											pointer: {itemStyle: {color: '#3d3d3d'}, length: '95%', width: '3%',},
+											splitNumber: 8, axisTick: {distance: 3, lineStyle:{width: 1}}, splitLine: {distance: 3,lineStyle:{width: 2}},
+											axisLine: {
+												lineStyle: {color: [[gauge_port.Media - gauge_port.Dev, '#ff5858'], [gauge_port.Media + gauge_port.Dev, '#c9c9c9'], [1, '#8bcfea']]}
+											},
+											detail: {offsetCenter: [0, '30%'], fontSize: detail_fontsize, formatter: '{value} {{impianto.unita_misura}}', color: gauge_colors.Var2},
+											center: center_position,
+									},
+									
+									],
+												
+							});
 							console.log('Opzioni gaugePor aggiornate');
 							/* GAUGE PRESSIONE */
 						  console.log('Imposto gauge pressione');
