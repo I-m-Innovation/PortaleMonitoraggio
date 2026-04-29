@@ -79,8 +79,8 @@ def Gauges(impianto):
 			colors[col] = 'rgb(31,160,64)'
 			leds[col] = 'led-green'
 
-	if impianto.tipo == 'Idroelettrico' and impianto.unita_misura == 'mc/s':
-		dfGauge['Var2'] = dfGauge['Var2'] / 1000
+	if impianto.tipo == 'Idroelettrico' and impianto.unita_misura == 'l/s':
+		dfGauge['Var2'] = dfGauge['Var2'] * 1000
 
 	# ULTIMO STEP: MEDIA E DEVIAZIONE STANDARD VANNO PASSATI AL FRONT-END IN PERCENTUALE
 	x = dfGauge.iloc[[0, 1]]

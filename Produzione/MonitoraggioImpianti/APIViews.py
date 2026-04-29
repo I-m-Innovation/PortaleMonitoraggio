@@ -78,9 +78,9 @@ class DayChartData(APIView):
 				df_time_series['Eta'] = df_time_series['Eta'] * 100
 				print("DEBUG: Converted efficiency to percentage")
 				# PORTATA
-				if impianto.unita_misura == 'mc/s':
-					df_time_series['Q'] = df_time_series['Q'] / 1000
-					print("DEBUG: Converted flow rate from l/s to mc/s")
+				if impianto.unita_misura == 'l/s':
+					df_time_series['Q'] = df_time_series['Q'] * 1000
+					print("DEBUG: Converted flow rate from mc/s to l/s")
 
 			except Exception as error:
 				print(f"DEBUG: Exception in CSV processing: {type(error).__name__} - {error}")
