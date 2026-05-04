@@ -211,7 +211,7 @@
 									rendimento: gauge_eta
 							});
 							
-							const portataConcessioneDb  = {% if impianto.portata_concessione and impianto.portata_concessione > 0 %}{{ impianto.portata_concessione|stringformat:".2f" }}{% else %}0{% endif %};
+							const portataConcessioneDb  = {% if impianto.portata_concessione and impianto.portata_concessione > 0 %}{{ impianto.portata_concessione|stringformat:".6f" }}{% else %}0{% endif %};
 							const portataConcessione = '{{ impianto.unita_misura }}' === 'l/s' ? portataConcessioneDb * 1000 : portataConcessioneDb;
 							const maxGaugePortata = portataConcessione > 0 ? portataConcessione * 3 : gauge_port.MaxScala; // Prima il fondo scala del gauge portata usava direttamente gauge_port.MaxScala.
 							const maxPortataDati = Math.max(...portata.filter(val => val !== null && !isNaN(val)));
