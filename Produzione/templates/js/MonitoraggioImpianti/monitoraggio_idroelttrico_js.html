@@ -213,12 +213,14 @@
 							
 							const portataConcessioneDb  = {% if impianto.portata_concessione and impianto.portata_concessione > 0 %}{{ impianto.portata_concessione|stringformat:".6f" }}{% else %}0{% endif %};
 							const portataConcessione = '{{ impianto.unita_misura }}' === 'l/s' ? portataConcessioneDb * 1000 : portataConcessioneDb;
-							const maxGaugePortata = portataConcessione > 0 ? portataConcessione * 3 : gauge_port.MaxScala; // Prima il fondo scala del gauge portata usava direttamente gauge_port.MaxScala.
+							const maxGaugePortataCustom = {% if impianto.max_gauge_portata and impianto.max_gauge_portata > 0 %}{{ impianto.max_gauge_portata|stringformat:".6f" }}{% else %}0{% endif %};
+							const maxGaugePortata = maxGaugePortataCustom > 0 ? maxGaugePortataCustom : (portataConcessione > 0 ? portataConcessione * 3 : gauge_port.MaxScala); // Prima il fondo scala del gauge portata usava direttamente gauge_port.MaxScala.
 							const maxPortataDati = Math.max(...portata.filter(val => val !== null && !isNaN(val)));
 							const maxPortataAsse = Math.max(maxPortataDati || 0, portataConcessione) * 1.1; // +10%
 							console.log('Calcolo asse portata:', {
 								portataConcessioneDb: portataConcessioneDb,
 								portataConcessione: portataConcessione,
+								maxGaugePortataCustom: maxGaugePortataCustom,
 								maxGaugePortata: maxGaugePortata,
 								maxPortataDati: maxPortataDati,
 								maxPortataAsse: maxPortataAsse
