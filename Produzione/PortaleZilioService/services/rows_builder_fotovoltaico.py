@@ -636,9 +636,11 @@ def build_fotovoltaico_in_costruzione_rows_portale(
 
         rows.append(
             FotovoltaicoInCostruzioneRow(
+                impianto_id=impianto.id,
                 status_class=_status_class_portale(metriche),
                 nome_impianto=impianto.nome_impianto or "--",
                 nome_cliente=_fmt_not_defined(impianto.nome_cliente),
+                categoria_fv=getattr(metadata, "categoria_fv", "") or "",
                 tipologia_contratto="--",
                 potenza=_fmt_power(impianto.potenza_installata_kw),
                 pr_contrattuale=_fmt_contractual_pr(getattr(metadata, "pr_contrattuale", None)),

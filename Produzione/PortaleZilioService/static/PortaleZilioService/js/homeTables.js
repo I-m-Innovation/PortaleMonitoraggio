@@ -277,6 +277,56 @@ document.addEventListener("DOMContentLoaded", () => {
         return match ? decodeURIComponent(match[1]) : "";
     };
 
+    const bindConstructionCategorySelects = () => {
+        const endpoint = syncBanner?.dataset.fvConstructionCategoryUrl || "";
+        if (!endpoint) {
+            return;
+        }
+
+        document.querySelectorAll("[data-fv-construction-category]").forEach((select) => {
+            if (select.dataset.bound === "true") {
+                return;
+            }
+            select.dataset.bound = "true";
+            select.dataset.lastValue = select.value || "";
+
+            select.addEventListener("change", async () => {
+                const previousValue = select.dataset.lastValue || "";
+                const selectedValue = select.value;
+                if (!selectedValue) {
+                    select.value = previousValue;
+                    return;
+                }
+
+                select.disabled = true;
+                try {
+                    const formData = new FormData();
+                    formData.append("impianto_id", select.dataset.impiantoId || "");
+                    formData.append("categoria_fv", selectedValue);
+
+                    const response = await fetch(endpoint, {
+                        method: "POST",
+                        headers: {
+                            "X-CSRFToken": getCsrfToken(),
+                            "X-Requested-With": "XMLHttpRequest",
+                        },
+                        body: formData,
+                    });
+                    const payload = await response.json();
+                    if (!response.ok || !payload.ok) {
+                        throw new Error(payload.message || "Aggiornamento categoria non riuscito.");
+                    }
+                    select.dataset.lastValue = selectedValue;
+                } catch (error) {
+                    select.value = previousValue;
+                    setBannerState(error.message || "Errore durante l'aggiornamento categoria.", "is-error");
+                } finally {
+                    select.disabled = false;
+                }
+            });
+        });
+    };
+
     const applyUpdatedTables = (tables) => {
         Object.entries(syncPanelMap).forEach(([payloadKey, panelId]) => {
             if (!tables[payloadKey]) {
@@ -290,6 +340,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         rebuildTableControllers();
+        bindConstructionCategorySelects();
         requestAnimationFrame(refreshTables);
         setTimeout(refreshTables, 60);
         setTimeout(refreshTables, 180);
@@ -378,6 +429,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     rebuildTableControllers();
+    bindConstructionCategorySelects();
     const defaultFvButton = document.getElementById("clienti-tab-button");
     if (defaultFvButton) {
         activateButton(defaultFvButton);

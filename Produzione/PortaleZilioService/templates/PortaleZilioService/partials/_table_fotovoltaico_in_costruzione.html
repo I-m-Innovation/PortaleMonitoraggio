@@ -2,13 +2,14 @@
 <table>
     <thead>
         <tr>
-            <th colspan="20" class="section-header">O&amp;M Ordinaria {% now "Y" %}</th>
+            <th colspan="21" class="section-header">O&amp;M Ordinaria {% now "Y" %}</th>
             <th colspan="5" class="section-header straord-start straord-col">Straordinario</th>
         </tr>
         <tr>
             <th aria-label="Stato"></th>
             <th>Impianto</th>
             <th>Cliente</th>
+            <th>Categoria</th>
             <th>Tipologia Contratto</th>
             <th class="table-align-right">Potenza</th>
             <th class="table-align-right">PR Contrattuale</th>
@@ -39,6 +40,18 @@
                 <td><span class="{{ row.status_class }}" aria-hidden="true"></span></td>
                 <td><a class="impianto-detail-link" href="{% url 'PortaleZilioService:impianto-detail' %}?nome={{ row.nome_impianto|urlencode }}">{{ row.nome_impianto }}</a></td>
                 <td>{{ row.nome_cliente }}</td>
+                <td>
+                    <select
+                        class="fv-construction-category-select"
+                        data-fv-construction-category
+                        data-impianto-id="{{ row.impianto_id }}"
+                        aria-label="Categoria fotovoltaico per {{ row.nome_impianto }}"
+                    >
+                        <option value="" {% if not row.categoria_fv %}selected{% endif %}>--</option>
+                        <option value="cliente" {% if row.categoria_fv == "cliente" %}selected{% endif %}>Cliente</option>
+                        <option value="proprieta" {% if row.categoria_fv == "proprieta" %}selected{% endif %}>Proprieta</option>
+                    </select>
+                </td>
                 <td>{{ row.tipologia_contratto }}</td>
                 <td class="table-align-right">{{ row.potenza }}</td>
                 <td class="table-align-right">{{ row.pr_contrattuale }}</td>
@@ -76,7 +89,7 @@
                 <td class="table-align-center straord-col">{% if row.numero_fatture_straordinarie_totali == "API ERR" %}<span class="endpoint-error-badge">{{ row.numero_fatture_straordinarie_totali }}</span>{% else %}{{ row.numero_fatture_straordinarie_totali }}{% endif %}</td>
             </tr>
         {% empty %}
-            <tr><td colspan="25">Nessun dato disponibile.</td></tr>
+            <tr><td colspan="26">Nessun dato disponibile.</td></tr>
         {% endfor %}
     </tbody>
 </table>

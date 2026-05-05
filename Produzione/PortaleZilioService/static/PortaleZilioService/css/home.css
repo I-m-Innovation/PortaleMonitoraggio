@@ -1010,6 +1010,21 @@ p.empty-state {
     text-align: center;
 }
 
+.fv-construction-category-select {
+    min-width: 118px;
+    border: 1px solid #ccd9e2;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #17384d;
+    font: inherit;
+    font-size: 0.9rem;
+    padding: 5px 28px 5px 8px;
+}
+
+.fv-construction-category-select:disabled {
+    opacity: 0.65;
+}
+
 /* Small visual gap between grouped header row and column header row */
 .category-panel table thead tr:first-child th {
     padding-bottom: 16px;

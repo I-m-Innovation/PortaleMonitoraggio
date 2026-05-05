@@ -80,9 +80,11 @@ class FotovoltaicoProprietaRow:
 @dataclass(frozen=True)
 class FotovoltaicoInCostruzioneRow:
     # COLONNE ORDINARIO 
+    impianto_id: int
     status_class: str
     nome_impianto: str
     nome_cliente: str
+    categoria_fv: str
     tipologia_contratto: str
     potenza: str
     pr_contrattuale: str  # 78% di solito 
