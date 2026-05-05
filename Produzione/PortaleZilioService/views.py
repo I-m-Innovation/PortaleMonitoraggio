@@ -10,7 +10,7 @@ from django.views.decorators.http import require_POST
 
 from PortaleZilioService.API_inverter.API_iSolarCloud import get_all_devices, login_ISC
 
-from .models import DocumentoImpianto, ImpiantoAnagrafica
+from .models import DocumentoImpianto, FotovoltaicoMetadata, ImpiantoAnagrafica
 from .services.fatturato import (
     get_canoni_incassati_oem_per_impianto,
     get_costo_straordinario_totale_per_impianto,
@@ -690,6 +690,53 @@ def sync_provider_metrics_view(request):
             },
             status=500,
         )
+
+
+@require_POST
+def update_fv_construction_category_view(request):
+    impianto_id = request.POST.get("impianto_id")
+    categoria_fv = request.POST.get("categoria_fv")
+
+    valid_categories = {
+        FotovoltaicoMetadata.CategoriaFV.CLIENTE,
+        FotovoltaicoMetadata.CategoriaFV.PROPRIETA,
+    }
+    if categoria_fv not in valid_categories:
+        return JsonResponse(
+            {"ok": False, "message": "Categoria fotovoltaico non valida."},
+            status=400,
+        )
+
+    impianto = (
+        ImpiantoAnagrafica.objects.filter(
+            pk=impianto_id,
+            tipo_impianto=ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO,
+            stato_impianto=ImpiantoAnagrafica.StatoImpianto.IN_COSTRUZIONE,
+        )
+        .first()
+    )
+    if impianto is None:
+        return JsonResponse(
+            {"ok": False, "message": "Impianto fotovoltaico in costruzione non trovato."},
+            status=404,
+        )
+
+    metadata, _ = FotovoltaicoMetadata.objects.get_or_create(
+        impianto=impianto,
+        defaults={"categoria_fv": categoria_fv},
+    )
+    if metadata.categoria_fv != categoria_fv:
+        metadata.categoria_fv = categoria_fv
+        metadata.save(update_fields=["categoria_fv"])
+
+    return JsonResponse(
+        {
+            "ok": True,
+            "message": "Categoria fotovoltaico aggiornata.",
+            "impianto_id": impianto.id,
+            "categoria_fv": metadata.categoria_fv,
+        }
+    )
 
 
 def home_v2_view(request):
