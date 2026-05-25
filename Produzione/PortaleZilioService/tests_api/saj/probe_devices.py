@@ -23,10 +23,7 @@ def main() -> None:
     # ENDPOINTS:
     plants = saj_client.get_plants(headers)
     plants_ids = [str(plant.get("plantId", "")).strip() for plant in plants if str(plant.get("plantId", "")).strip()]
-    devices = saj_client.get_devices(headers, plant_id=plants_ids[0]) if plants_ids else []
-    
-    
-    
+
     print("== SAJ devices probe ==")
     print(f"plants_found: {len(plants)}")
     i = 1
@@ -43,16 +40,16 @@ def main() -> None:
     for plant in plants_ids: 
         # print actual name of the plant correlated to the plant id 
         plant_name = next((p.get("plantName") for p in plants if p.get("plantId") == plant), "Unknown")
+        devices = saj_client.get_devices(headers, plant_id=plant)
         print(f"plant name: {plant_name} (id: {plant})")
         for device in devices:
-            if device.get('plantId') == plant:
-                print(f"deviceSn: {device.get('deviceSn')}, "
-                        f"deviceType: {device.get('deviceType')}, "
-                        f"plantId: {device.get('plantId')}, "
-                        f"plantName: {device.get('plantName')}, "
-                        f"isOnline: {device.get('isOnline')}, "
-                        f"isAlarm: {device.get('isAlarm')}, "
-                        f"country: {device.get('country')}")
+            print(f"deviceSn: {device.get('deviceSn')}, "
+                  f"deviceType: {device.get('deviceType')}, "
+                  f"plantId: {device.get('plantId')}, "
+                  f"plantName: {device.get('plantName')}, "
+                  f"isOnline: {device.get('isOnline')}, "
+                  f"isAlarm: {device.get('isAlarm')}, "
+                  f"country: {device.get('country')}")
         print("------------------------------------------------------------------------------------------------")
     
 
