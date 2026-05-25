@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import os
 import tempfile
 import time
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import matplotlib
 import requests
@@ -230,6 +232,111 @@ def _print_row_excerpt(row: dict) -> None:
 def _print_generic_row_excerpt(row: dict, max_items: int = 20) -> None:
     excerpt = {key: row[key] for key in list(row.keys())[:max_items]}
     print(json.dumps(excerpt, ensure_ascii=False, indent=2))
+
+
+def run_device_power_compare(headers: dict[str, str], args: argparse.Namespace) -> None:
+    start_time = args.start_time or f"{args.date} 00:00:00"
+    end_time = args.end_time or f"{args.date} 23:59:59"
+    fields = (
+        "deviceSn,dataTime,totalGridPowerWatt,totalPVPower,todayPvEnergy,totalPvEnergy,"
+        + ",".join(f"pv{index}power" for index in range(1, 17))
+    )
+    payload = get_device_history(
+        headers=headers,
+        device_sn=args.device_sn,
+        start_time=start_time,
+        end_time=end_time,
+        fields=fields,
+    )
+    rows = payload.get("data") or []
+    parsed_rows = []
+    for row in rows:
+        dt_raw = row.get("dataTime")
+        if not dt_raw:
+            continue
+        try:
+            dt = datetime.strptime(dt_raw, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            continue
+        pv_values = [_safe_float(row.get(f"pv{index}power")) for index in range(1, 17)]
+        pv_values = [value for value in pv_values if value is not None]
+        parsed_rows.append(
+            {
+                "timestamp": dt,
+                "totalGridPowerWatt_kw": (_safe_float(row.get("totalGridPowerWatt")) or 0.0) / 1000.0,
+                "sum_pv_channels_dc_kw": sum(pv_values) / 1000.0 if pv_values else None,
+                "totalPVPower_kw": (_safe_float(row.get("totalPVPower")) or 0.0) / 1000.0,
+                "todayPvEnergy_kwh": _safe_float(row.get("todayPvEnergy")),
+            }
+        )
+    parsed_rows.sort(key=lambda row: row["timestamp"])
+    if not parsed_rows:
+        raise RuntimeError("No device history records available for the requested window")
+
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_stem = f"saj_{args.plant_id}_power_compare_{args.date.replace('-', '')}"
+    html_path = output_dir / f"{output_stem}.html"
+    csv_path = output_dir / f"{output_stem}.csv"
+
+    with csv_path.open("w", encoding="utf-8", newline="") as report_csv:
+        writer = csv.DictWriter(report_csv, fieldnames=parsed_rows[0].keys())
+        writer.writeheader()
+        writer.writerows(parsed_rows)
+
+    display_name = args.plant_name or args.plant_id
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=[row["timestamp"] for row in parsed_rows],
+            y=[row["totalGridPowerWatt_kw"] for row in parsed_rows],
+            mode="lines",
+            name="totalGridPowerWatt AC [kW]",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=[row["timestamp"] for row in parsed_rows],
+            y=[row["sum_pv_channels_dc_kw"] for row in parsed_rows],
+            mode="lines",
+            name="sum(pv1power..pv16power) DC [kW]",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=[row["timestamp"] for row in parsed_rows],
+            y=[row["totalPVPower_kw"] for row in parsed_rows],
+            mode="lines",
+            name="totalPVPower [kW]",
+        )
+    )
+    fig.update_layout(
+        title=f"SAJ - {display_name} - confronto potenza {args.date}",
+        xaxis_title="Timestamp",
+        yaxis_title="Potenza [kW]",
+        hovermode="x unified",
+        template="plotly_white",
+    )
+    fig.write_html(str(html_path), auto_open=False, include_plotlyjs=True)
+
+    ac_peak = max(row["totalGridPowerWatt_kw"] for row in parsed_rows)
+    dc_peak = max(
+        (row["sum_pv_channels_dc_kw"] for row in parsed_rows if row["sum_pv_channels_dc_kw"] is not None),
+        default=0.0,
+    )
+    energy_kwh = next(
+        (row["todayPvEnergy_kwh"] for row in reversed(parsed_rows) if row["todayPvEnergy_kwh"] is not None),
+        None,
+    )
+    print("== SAJ device power compare ==")
+    print(f"plant: {display_name} ({args.plant_id})")
+    print(f"device_sn: {args.device_sn}")
+    print(f"records: {len(parsed_rows)}")
+    print(f"totalGridPowerWatt_peak_kw: {ac_peak:.3f}")
+    print(f"sum_pv_channels_dc_peak_kw: {dc_peak:.3f}")
+    print(f"todayPvEnergy_kwh: {energy_kwh}")
+    print(f"html_report: {html_path.resolve()}")
+    print(f"csv_report: {csv_path.resolve()}")
 
 
 def run_ems_meter_debug(headers: dict[str, str], args: argparse.Namespace) -> None:
@@ -1094,11 +1201,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--endpoint",
-        choices=["plant-stats", "device-history", "plant-devices-compare", "zilio-debug", "ems-meter", "ems-history", "plant-stats-day", "plant-energy-day", "col-roigo-ems-last-hour"],
+        choices=["plant-stats", "device-history", "device-power-compare", "plant-devices-compare", "zilio-debug", "ems-meter", "ems-history", "plant-stats-day", "plant-energy-day", "col-roigo-ems-last-hour"],
         default="zilio-debug",
         help="Which SAJ endpoint to probe.",
     )
     parser.add_argument("--plant-id", default=ZILIO_GROUP_490KW_PLANT_ID, help="SAJ plantId to query.")
+    parser.add_argument("--plant-name", default=None, help="Optional plant display name used in generated report titles.")
     parser.add_argument("--device-sn", default="CSV6503J2416E00004", help="SAJ device serial number.")
     parser.add_argument("--ems-sn", default=None, help="SAJ EMS serial number for ems-meter mode.")
     parser.add_argument(
@@ -1138,6 +1246,11 @@ def parse_args() -> argparse.Namespace:
         "--dump-json",
         action="store_true",
         help="Print the full JSON payload for each request.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default="temporary/saj_reports",
+        help="Output directory for generated HTML/CSV reports.",
     )
     return parser.parse_args()
 
@@ -1194,6 +1307,10 @@ def main() -> None:
 
     if args.endpoint == "plant-energy-day":
         run_plant_energy_day_probe(headers, args)
+        return
+
+    if args.endpoint == "device-power-compare":
+        run_device_power_compare(headers, args)
         return
 
     if args.endpoint == "ems-history":

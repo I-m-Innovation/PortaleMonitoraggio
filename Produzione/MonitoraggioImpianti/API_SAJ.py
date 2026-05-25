@@ -51,7 +51,26 @@ PLANT_DEVICE_OVERRIDES = {
         "energy_source": "ems_history",
         "energy_field_name": "parallTodayPVEnergy",
     },
-    
+    "acquanova1150": {
+        "device_serial_numbers_to_query": [
+            "C6V9104J2421E01334",
+        ],
+        "bucket_aggregation": "nearest_grid",
+        "timestamp_rounding": "none",
+        "power_extraction_mode": "field",
+        "power_field_name": "totalGridPowerWatt",
+        "energy_field_name": "todayPvEnergy",
+    },
+    "acquanova290": {
+        "device_serial_numbers_to_query": [
+            "C6T9104J2314E00560",
+        ],
+        "bucket_aggregation": "nearest_grid",
+        "timestamp_rounding": "none",
+        "power_extraction_mode": "field",
+        "power_field_name": "totalGridPowerWatt",
+        "energy_field_name": "todayPvEnergy",
+    },
 }
 
 
@@ -86,6 +105,14 @@ def _round_timestamp_to_5min(timestamp: datetime) -> datetime:
 
 
 def _extract_power_watts(record: dict, config: dict) -> float | None:
+    if config.get("power_extraction_mode") == "pv_channels_sum":
+        channel_values = [
+            _parse_float(record.get(f"pv{index}power"))
+            for index in range(1, 17)
+        ]
+        measured_values = [value for value in channel_values if value is not None]
+        return sum(measured_values) if measured_values else None
+
     field_name = config.get("power_field_name")
     if not field_name:
         return None
@@ -100,7 +127,7 @@ def _get_history_records(headers: dict[str, str], device_sn: str, start: datetim
             "deviceSn": device_sn,
             "startTime": start.strftime("%Y-%m-%d %H:%M:%S"),
             "endTime": end.strftime("%Y-%m-%d %H:%M:%S"),
-            "fields": "deviceSn,dataTime,totalPVPower,todayPvEnergy,totalPvEnergy,pv1power,pv2power,pv3power,pv4power,pv5power,pv6power,pv7power,pv8power,pv9power,pv10power,pv11power,pv12power,pv13power,pv14power,pv15power,pv16power",
+            "fields": "deviceSn,dataTime,totalGridPowerWatt,totalPVPower,todayPvEnergy,totalPvEnergy,pv1power,pv2power,pv3power,pv4power,pv5power,pv6power,pv7power,pv8power,pv9power,pv10power,pv11power,pv12power,pv13power,pv14power,pv15power,pv16power",
         },
         timeout=30,
     )
