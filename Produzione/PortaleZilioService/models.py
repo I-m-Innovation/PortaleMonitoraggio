@@ -140,6 +140,25 @@ class FotovoltaicoStatoEconomico(models.Model):
     # Dati manuali
     data_inizio_contratto = models.DateField(blank=True, null=True)
     data_fine_contratto = models.DateField(blank=True, null=True)
+    tariffa_ppu_mwh = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        verbose_name="Tariffa PPU (EUR/MWh)",
+    )
+    strumento_contabilizzazione_ppu = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="Strumento di contabilizzazione PPU",
+    )
+    tipologia_pagamento_ppu = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="Tipologia di pagamento PPU",
+    )
     importo_stimato_contratto_annuo = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     totale_contratto = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
 
@@ -277,6 +296,13 @@ class FotovoltaicoMetricheTecniche(models.Model):
     pr_ultimi_12_mesi = models.DecimalField(max_digits=6, decimal_places=4, blank=True, null=True)
     mancata_produzione = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     ore_equivalenti_ultimi_12_mesi = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    energia_prodotta_anno_corrente_kwh = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        verbose_name="Energia prodotta anno corrente (kWh)",
+    )
     stato_operativo = models.CharField(
         max_length=20,
         choices=StatoOperativo.choices,
