@@ -303,6 +303,11 @@ class FotovoltaicoMetricheTecniche(models.Model):
         null=True,
         verbose_name="Energia prodotta anno corrente (kWh)",
     )
+    energia_prodotta_anno_corrente_aggiornata_al = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Energia prodotta anno corrente aggiornata al",
+    )
     stato_operativo = models.CharField(
         max_length=20,
         choices=StatoOperativo.choices,

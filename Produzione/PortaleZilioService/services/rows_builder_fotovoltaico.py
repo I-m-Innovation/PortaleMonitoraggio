@@ -836,6 +836,7 @@ def build_fotovoltaico_ppu_rows_portale():
     rows: list[FotovoltaicoPPURow] = []
     for impianto in queryset:
         stato_economico = getattr(impianto, "fotovoltaico_stato_economico", None)
+        metriche = getattr(impianto, "fotovoltaico_metriche_tecniche", None)
 
         rows.append(
             FotovoltaicoPPURow(
@@ -848,7 +849,13 @@ def build_fotovoltaico_ppu_rows_portale():
                 strumento_di_contabilizzazione=(
                     getattr(stato_economico, "strumento_contabilizzazione_ppu", None) or "--"
                 ),
-                energia_prodotta_anno_corrente="--",
+                energia_prodotta_anno_corrente=_fmt_with_unit(
+                    _fmt_number_it(
+                        getattr(metriche, "energia_prodotta_anno_corrente_kwh", None),
+                        decimals=2,
+                    ),
+                    "kWh",
+                ),
                 energia_autoconsumata_anno_corrente="--",
                 percentuale_autoconsumo_anno_corrente="--",
                 maturato_ppu_anno_corrente_kwh="--",

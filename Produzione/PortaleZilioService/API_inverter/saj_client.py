@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, time as datetime_time, timedelta
 import threading
 import time
 
@@ -95,3 +95,26 @@ def get_device_energy_snapshot(headers: dict[str, str], device_sn: str, at_time:
     if not records:
         return None
     return float(records[-1].get("totalPvEnergy", 0) or 0)
+
+
+def get_device_daily_pv_energy_kwh(headers: dict[str, str], device_sn: str, energy_date: date) -> float | None:
+    start_dt = datetime.combine(energy_date, datetime_time(0, 0, 0))
+    end_dt = datetime.combine(energy_date, datetime_time(23, 59, 59))
+    response = requests.get(
+        f"{BASE_URL}/open/api/device/historyDataCommon",
+        headers=headers,
+        params={
+            "deviceSn": device_sn,
+            "startTime": start_dt.strftime("%Y-%m-%d %H:%M:%S"),
+            "endTime": end_dt.strftime("%Y-%m-%d %H:%M:%S"),
+            "fields": "deviceSn,dataTime,todayPvEnergy",
+        },
+        timeout=30,
+    )
+    response.raise_for_status()
+    records = response.json().get("data", [])
+    if not records:
+        return None
+    latest = max(records, key=lambda record: str(record.get("dataTime") or ""))
+    value = latest.get("todayPvEnergy")
+    return float(value) if value not in (None, "") else None

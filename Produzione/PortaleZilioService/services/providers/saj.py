@@ -1,11 +1,15 @@
 from __future__ import annotations
 
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
+import logging
 
 from ...API_inverter import saj_client
 from ...models import ImpiantoDispositivo
 from ..dtos import ProviderPlantSnapshot
 from ..windows import MetricsWindow
+
+
+logger = logging.getLogger(__name__)
 
 
 class SajMetricsProvider:
@@ -82,16 +86,92 @@ class SajMetricsProvider:
             )
 
         matched_serials, _ = self._get_portale_energy_device_serials(headers, impianto, plant)
-        energy_kwh, devices_with_data, _ = self._compute_window_energy_kwh(
+        logger.warning(
+            "[saj-annual-energy] impianto=%s range=%s..%s devices=%s",
+            impianto.nome_impianto,
+            window.start_date,
+            window.end_date,
+            matched_serials,
+        )
+        energy_kwh, devices_with_data, missing_serials = self._compute_range_daily_energy_kwh(
             headers=headers,
             selected_serials=matched_serials,
-            window=window,
+            start_date=window.start_date,
+            end_date=window.end_date,
         )
-        if devices_with_data == 0:
+        if devices_with_data == 0 or missing_serials:
             raise NotImplementedError(
-                f"No usable SAJ energy data found for plant {impianto.nome_impianto!r}"
+                f"No usable SAJ energy data found for plant {impianto.nome_impianto!r}; "
+                f"incomplete devices: {', '.join(missing_serials)}"
             )
+        logger.warning(
+            "[saj-annual-energy] impianto=%s completed energy_kwh=%s range=%s..%s",
+            impianto.nome_impianto,
+            energy_kwh,
+            window.start_date,
+            window.end_date,
+        )
         return energy_kwh
+
+    @staticmethod
+    def _compute_range_daily_energy_kwh(
+        headers: dict[str, str],
+        selected_serials: list[str],
+        start_date: date,
+        end_date: date,
+    ) -> tuple[float, int, list[str]]:
+        total_energy_kwh = 0.0
+        devices_with_data = 0
+        missing_serials: list[str] = []
+
+        for device_sn in selected_serials:
+            device_total_kwh = 0.0
+            current_date = start_date
+            days_with_data = 0
+            logger.warning(
+                "[saj-annual-energy] device=%s start range=%s..%s",
+                device_sn,
+                start_date,
+                end_date,
+            )
+            while current_date <= end_date:
+                daily_energy_kwh = saj_client.get_device_daily_pv_energy_kwh(
+                    headers,
+                    device_sn,
+                    current_date,
+                )
+                if daily_energy_kwh is None:
+                    logger.warning(
+                        "[saj-annual-energy] device=%s no records date=%s skipped accumulated_kwh=%s",
+                        device_sn,
+                        current_date,
+                        round(device_total_kwh, 2),
+                    )
+                else:
+                    device_total_kwh += daily_energy_kwh
+                    days_with_data += 1
+                    logger.warning(
+                        "[saj-annual-energy] device=%s date=%s daily_kwh=%s accumulated_kwh=%s",
+                        device_sn,
+                        current_date,
+                        round(daily_energy_kwh, 2),
+                        round(device_total_kwh, 2),
+                    )
+                current_date += timedelta(days=1)
+
+            if days_with_data == 0:
+                missing_serials.append(device_sn)
+                continue
+            total_energy_kwh += device_total_kwh
+            devices_with_data += 1
+            logger.warning(
+                "[saj-annual-energy] device=%s completed days_with_data=%s energy_kwh=%s",
+                device_sn,
+                days_with_data,
+                round(device_total_kwh, 2),
+            )
+
+        return round(total_energy_kwh, 2), devices_with_data, missing_serials
 
     def _get_portale_energy_device_serials(self, headers: dict[str, str], impianto, plant) -> tuple[list[str], str]:
         local_devices = list(impianto.dispositivi.filter(attivo=True).order_by("codice_dispositivo"))
@@ -125,7 +205,6 @@ class SajMetricsProvider:
         )
 
     def _find_matching_portale_plant(self, headers: dict[str, str], impianto, sorgente):
-        plants = saj_client.get_plants(headers)
         candidates = {
             self._normalize(getattr(sorgente, "identificativo_esterno", None)),
             self._normalize(getattr(impianto, "codice_impianto", None)),
@@ -134,13 +213,39 @@ class SajMetricsProvider:
             self._normalize(getattr(impianto, "nome_impianto", None)),
         }
         candidates.discard("")
-        for plant in plants:
-            plant_keys = {
-                self._normalize(str(plant.get("plantId"))),
-                self._normalize(plant.get("plantName")),
-            }
-            if candidates & plant_keys:
-                return plant
+        for attempt in range(1, 3):
+            plants = saj_client.get_plants(headers)
+            logger.warning(
+                "[saj-plant-match] impianto=%s attempt=%s candidates=%s remote_plants_count=%s remote_plants=%s",
+                impianto.nome_impianto,
+                attempt,
+                sorted(candidates),
+                len(plants),
+                [
+                    {
+                        "plantId": plant.get("plantId"),
+                        "plantName": plant.get("plantName"),
+                    }
+                    for plant in plants
+                ],
+            )
+            for plant in plants:
+                plant_keys = {
+                    self._normalize(str(plant.get("plantId"))),
+                    self._normalize(plant.get("plantName")),
+                }
+                if candidates & plant_keys:
+                    logger.warning(
+                        "[saj-plant-match] impianto=%s matched_plant_id=%s matched_plant_name=%s attempt=%s",
+                        impianto.nome_impianto,
+                        plant.get("plantId"),
+                        plant.get("plantName"),
+                        attempt,
+                    )
+                    return plant
+            if attempt == 1:
+                logger.warning("[saj-plant-match] impianto=%s no_match retrying", impianto.nome_impianto)
+        logger.warning("[saj-plant-match] impianto=%s no_match", impianto.nome_impianto)
         return None
 
     def _select_energy_devices(self, local_devices):
