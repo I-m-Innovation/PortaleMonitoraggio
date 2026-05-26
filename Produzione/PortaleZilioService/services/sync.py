@@ -96,7 +96,9 @@ class MetricsSyncService:
         current_day = today or date.today()
         end_date = current_day - timedelta(days=1)
         start_of_year = date(end_date.year, 1, 1)
-        queryset = self._get_portale_saj_queryset().filter(fotovoltaico_metadata__is_ppu=True)
+        queryset = self._get_portale_saj_queryset(
+            include_historical_devices=True
+        ).filter(fotovoltaico_metadata__is_ppu=True)
         provider = self.registry.get_provider(self.SAJ_SOURCE_NAME)
         skipped = 0
         missing: list[str] = []
@@ -322,14 +324,33 @@ class MetricsSyncService:
             .order_by("nome_impianto")
         )
 
-    def _get_portale_saj_queryset(self):
+    def _get_portale_saj_queryset(self, include_historical_devices: bool = False):
         energetic_device_filter = Q(
             dispositivi__tipo_dispositivo__in=[
                 ImpiantoDispositivo.TipoDispositivo.INVERTER,
                 ImpiantoDispositivo.TipoDispositivo.STORAGE_INVERTER,
             ],
-            dispositivi__attivo=True,
         )
+        local_device_filter = Q(
+            tipo_dispositivo__in=[
+                ImpiantoDispositivo.TipoDispositivo.INVERTER,
+                ImpiantoDispositivo.TipoDispositivo.STORAGE_INVERTER,
+            ],
+        )
+        if include_historical_devices:
+            energetic_device_filter &= (
+                Q(dispositivi__attivo=True)
+                | Q(dispositivi__data_inizio_monitoraggio__isnull=False)
+                | Q(dispositivi__data_fine_monitoraggio__isnull=False)
+            )
+            local_device_filter &= (
+                Q(attivo=True)
+                | Q(data_inizio_monitoraggio__isnull=False)
+                | Q(data_fine_monitoraggio__isnull=False)
+            )
+        else:
+            energetic_device_filter &= Q(dispositivi__attivo=True)
+            local_device_filter &= Q(attivo=True)
         source_filter = Q(
             sorgenti_dati__tipo_sorgente=ImpiantoSorgenteDati.TipoSorgente.MONITORAGGIO_TECNICO,
             sorgenti_dati__nome_sorgente=self.SAJ_SOURCE_NAME,
@@ -360,13 +381,7 @@ class MetricsSyncService:
                 ),
                 Prefetch(
                     "dispositivi",
-                    queryset=ImpiantoDispositivo.objects.filter(
-                        tipo_dispositivo__in=[
-                            ImpiantoDispositivo.TipoDispositivo.INVERTER,
-                            ImpiantoDispositivo.TipoDispositivo.STORAGE_INVERTER,
-                        ],
-                        attivo=True,
-                    ).order_by("id"),
+                    queryset=ImpiantoDispositivo.objects.filter(local_device_filter).order_by("id"),
                 ),
             )
             .order_by("nome_impianto")

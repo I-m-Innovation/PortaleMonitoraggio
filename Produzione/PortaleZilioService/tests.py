@@ -51,7 +51,12 @@ class SajEnergyRangeTests(SimpleTestCase):
         sorgente = SimpleNamespace(identificativo_esterno="saj-1")
 
         provider._find_matching_portale_plant = Mock(return_value={"plantId": "42"})
-        provider._get_portale_energy_device_serials = Mock(return_value=(["inv-1"], "inverter"))
+        device = SimpleNamespace(
+            codice_dispositivo="inv-1",
+            data_inizio_monitoraggio=None,
+            data_fine_monitoraggio=None,
+        )
+        provider._get_portale_annual_energy_devices = Mock(return_value=([device], "inverter"))
         provider._compute_range_daily_energy_kwh = Mock(return_value=(456.78, 1, []))
 
         result = provider.fetch_portale_energy_kwh_for_range(
@@ -81,7 +86,10 @@ class SajEnergyRangeTests(SimpleTestCase):
 
         result = SajMetricsProvider._compute_range_daily_energy_kwh(
             headers={},
-            selected_serials=["inv-1", "inv-2"],
+            selected_devices=[
+                SimpleNamespace(codice_dispositivo="inv-1"),
+                SimpleNamespace(codice_dispositivo="inv-2"),
+            ],
             start_date=date(2026, 1, 1),
             end_date=date(2026, 1, 2),
         )
@@ -94,7 +102,7 @@ class SajEnergyRangeTests(SimpleTestCase):
 
         result = SajMetricsProvider._compute_range_daily_energy_kwh(
             headers={},
-            selected_serials=["inv-1"],
+            selected_devices=[SimpleNamespace(codice_dispositivo="inv-1")],
             start_date=date(2026, 1, 1),
             end_date=date(2026, 1, 3),
         )
@@ -107,12 +115,46 @@ class SajEnergyRangeTests(SimpleTestCase):
 
         result = SajMetricsProvider._compute_range_daily_energy_kwh(
             headers={},
-            selected_serials=["inv-1"],
+            selected_devices=[SimpleNamespace(codice_dispositivo="inv-1")],
             start_date=date(2026, 1, 1),
             end_date=date(2026, 1, 2),
         )
 
         self.assertEqual(result, (0.0, 0, ["inv-1"]))
+
+    @patch("PortaleZilioService.services.providers.saj.saj_client.get_device_daily_pv_energy_kwh")
+    def test_compute_range_daily_energy_limits_each_device_to_monitoring_dates(self, get_daily_energy):
+        get_daily_energy.side_effect = [10.0, 11.0, 20.0, 21.0]
+
+        result = SajMetricsProvider._compute_range_daily_energy_kwh(
+            headers={},
+            selected_devices=[
+                SimpleNamespace(
+                    codice_dispositivo="old-device",
+                    data_inizio_monitoraggio=None,
+                    data_fine_monitoraggio=date(2026, 1, 2),
+                ),
+                SimpleNamespace(
+                    codice_dispositivo="new-device",
+                    data_inizio_monitoraggio=date(2026, 1, 3),
+                    data_fine_monitoraggio=None,
+                ),
+            ],
+            start_date=date(2026, 1, 1),
+            end_date=date(2026, 1, 4),
+        )
+
+        self.assertEqual(result, (62.0, 2, []))
+        queried_dates = [call.args[2] for call in get_daily_energy.call_args_list]
+        self.assertEqual(
+            queried_dates,
+            [
+                date(2026, 1, 1),
+                date(2026, 1, 2),
+                date(2026, 1, 3),
+                date(2026, 1, 4),
+            ],
+        )
 
 
 class SajAnnualProducedEnergySyncTests(SimpleTestCase):

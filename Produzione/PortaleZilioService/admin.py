@@ -269,9 +269,11 @@ class ImpiantoDispositivoAdmin(admin.ModelAdmin):
         "impianto",
         "tipo_dispositivo",
         "codice_dispositivo",
+        "data_inizio_monitoraggio",
+        "data_fine_monitoraggio",
         "attivo",
     )
-    list_filter = ("tipo_dispositivo", "attivo")
+    list_filter = ("tipo_dispositivo", "attivo", "data_inizio_monitoraggio", "data_fine_monitoraggio")
     search_fields = (
         "impianto__nome_impianto",
         "impianto__tag_impianto",

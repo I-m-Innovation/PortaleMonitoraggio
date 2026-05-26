@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import date, datetime, time, timedelta
 import logging
 
+from django.db.models import Q
+
 from ...API_inverter import saj_client
 from ...models import ImpiantoDispositivo
 from ..dtos import ProviderPlantSnapshot
@@ -85,17 +87,17 @@ class SajMetricsProvider:
                 f"{getattr(sorgente, 'identificativo_esterno', None)!r}"
             )
 
-        matched_serials, _ = self._get_portale_energy_device_serials(headers, impianto, plant)
+        matched_devices, _ = self._get_portale_annual_energy_devices(impianto)
         logger.warning(
             "[saj-annual-energy] impianto=%s range=%s..%s devices=%s",
             impianto.nome_impianto,
             window.start_date,
             window.end_date,
-            matched_serials,
+            [device.codice_dispositivo for device in matched_devices],
         )
         energy_kwh, devices_with_data, missing_serials = self._compute_range_daily_energy_kwh(
             headers=headers,
-            selected_serials=matched_serials,
+            selected_devices=matched_devices,
             start_date=window.start_date,
             end_date=window.end_date,
         )
@@ -116,7 +118,7 @@ class SajMetricsProvider:
     @staticmethod
     def _compute_range_daily_energy_kwh(
         headers: dict[str, str],
-        selected_serials: list[str],
+        selected_devices: list,
         start_date: date,
         end_date: date,
     ) -> tuple[float, int, list[str]]:
@@ -124,17 +126,38 @@ class SajMetricsProvider:
         devices_with_data = 0
         missing_serials: list[str] = []
 
-        for device_sn in selected_serials:
+        for device in selected_devices:
+            device_sn = device.codice_dispositivo
+            device_start_date = max(
+                start_date,
+                getattr(device, "data_inizio_monitoraggio", None) or start_date,
+            )
+            device_end_date = min(
+                end_date,
+                getattr(device, "data_fine_monitoraggio", None) or end_date,
+            )
+            if device_start_date > device_end_date:
+                logger.warning(
+                    "[saj-annual-energy] device=%s skipped outside_monitoring_period requested=%s..%s monitoring=%s..%s",
+                    device_sn,
+                    start_date,
+                    end_date,
+                    getattr(device, "data_inizio_monitoraggio", None),
+                    getattr(device, "data_fine_monitoraggio", None),
+                )
+                continue
             device_total_kwh = 0.0
-            current_date = start_date
+            current_date = device_start_date
             days_with_data = 0
             logger.warning(
-                "[saj-annual-energy] device=%s start range=%s..%s",
+                "[saj-annual-energy] device=%s start range=%s..%s monitoring=%s..%s",
                 device_sn,
-                start_date,
-                end_date,
+                device_start_date,
+                device_end_date,
+                getattr(device, "data_inizio_monitoraggio", None),
+                getattr(device, "data_fine_monitoraggio", None),
             )
-            while current_date <= end_date:
+            while current_date <= device_end_date:
                 daily_energy_kwh = saj_client.get_device_daily_pv_energy_kwh(
                     headers,
                     device_sn,
@@ -174,6 +197,20 @@ class SajMetricsProvider:
         return round(total_energy_kwh, 2), devices_with_data, missing_serials
 
     def _get_portale_energy_device_serials(self, headers: dict[str, str], impianto, plant) -> tuple[list[str], str]:
+        matched_devices, selection_mode = self._get_portale_energy_devices(headers, impianto, plant)
+        return [device.codice_dispositivo for device in matched_devices], selection_mode
+
+    def _get_portale_annual_energy_devices(self, impianto) -> tuple[list, str]:
+        local_devices = list(
+            impianto.dispositivi.filter(
+                Q(attivo=True)
+                | Q(data_inizio_monitoraggio__isnull=False)
+                | Q(data_fine_monitoraggio__isnull=False)
+            ).order_by("codice_dispositivo")
+        )
+        return self._select_energy_devices(local_devices)
+
+    def _get_portale_energy_devices(self, headers: dict[str, str], impianto, plant) -> tuple[list, str]:
         local_devices = list(impianto.dispositivi.filter(attivo=True).order_by("codice_dispositivo"))
         selected_devices, selection_mode = self._select_energy_devices(local_devices)
         remote_devices = saj_client.get_devices(headers, plant_id=str(plant["plantId"]))
@@ -183,16 +220,16 @@ class SajMetricsProvider:
             if device.get("deviceSn")
         }
 
-        matched_serials = [
-            device.codice_dispositivo
+        matched_devices = [
+            device
             for device in selected_devices
             if device.codice_dispositivo in remote_serials
         ]
-        if not matched_serials:
+        if not matched_devices:
             raise NotImplementedError(
                 f"No matching SAJ devices found for plant {impianto.nome_impianto!r}"
             )
-        return matched_serials, selection_mode
+        return matched_devices, selection_mode
 
     @staticmethod
     def _energy_window_for_range(start_date: date, end_date: date) -> MetricsWindow:

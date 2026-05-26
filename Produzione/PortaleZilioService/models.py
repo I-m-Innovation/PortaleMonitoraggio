@@ -384,6 +384,8 @@ class ImpiantoDispositivo(models.Model):
     )
     tipo_dispositivo = models.CharField(max_length=50, choices=TipoDispositivo.choices)
     codice_dispositivo = models.CharField(max_length=100)
+    data_inizio_monitoraggio = models.DateField(blank=True, null=True)
+    data_fine_monitoraggio = models.DateField(blank=True, null=True)
     attivo = models.BooleanField(default=True)
     note = models.TextField(blank=True, null=True)
     
@@ -393,6 +395,16 @@ class ImpiantoDispositivo(models.Model):
         verbose_name_plural = "Dispositivi impianto"
         ordering = ["impianto__nome_impianto", "tipo_dispositivo", "codice_dispositivo"]
         unique_together = ("impianto", "codice_dispositivo")
+        constraints = [
+            models.CheckConstraint(
+                check=(
+                    Q(data_fine_monitoraggio__isnull=True)
+                    | Q(data_inizio_monitoraggio__isnull=True)
+                    | Q(data_fine_monitoraggio__gte=F("data_inizio_monitoraggio"))
+                ),
+                name="ck_dispositivo_monitoraggio_dates",
+            ),
+        ]
 
     def clean(self):
         if self.impianto.tipo_impianto != ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO:
