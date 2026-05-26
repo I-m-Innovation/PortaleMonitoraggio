@@ -6,11 +6,11 @@
                 <th>Cliente</th>
                 <th>Tariffa MWh</th>
                 <th>Strumento di Contabilizzazione</th>
-                <th>Energia Prodotta 2026</th>
-                <th>Energia Autoconsumata 2026</th>
-                <th>Percentuale di Autoconsumo 2026</th>
-                <th>Maturato PPU 2026 in kWh</th>
-                <th>Maturato PPU 2026 in €</th> <!-- autoconsumato x tariffa- Unita di misura: euro/MWh -->
+                <th>Energia Prodotta {{ year }}</th>
+                <th>Energia Autoconsumata {{ year }}</th>
+                <th>Percentuale di Autoconsumo {{ year }}</th>
+                <th>Maturato PPU {{ year }} in kWh</th>
+                <th>Maturato PPU {{ year }} in €</th> <!-- autoconsumato x tariffa- Unita di misura: euro/MWh -->
                 <th>Fatturato dall'Inizio</th> 
                 <th>Tipologia di Pagamento</th>
                 <th>Data Inizio</th>
@@ -29,11 +29,11 @@
                     <td>{{ row.nome_cliente }}</td>
                     <td>{{ row.tariffa_mwh }}</td>
                     <td>{{ row.strumento_di_contabilizzazione }}</td>
-                    <td>{{ row.energia_prodotta_2026 }}</td>
-                    <td>{{ row.energia_autoconsumata_2026 }}</td>
-                    <td>{{ row.percentuale_autoconsumo_2026 }}</td>
-                    <td>{{ row.maturato_ppu_2026_kwh }}</td>
-                    <td>{{ row.maturato_ppu_2026_euro }}</td>
+                    <td>{{ row.energia_prodotta_anno_corrente }}</td>
+                    <td>{{ row.energia_autoconsumata_anno_corrente }}</td>
+                    <td>{{ row.percentuale_autoconsumo_anno_corrente }}</td>
+                    <td>{{ row.maturato_ppu_anno_corrente_kwh }}</td>
+                    <td>{{ row.maturato_ppu_anno_corrente_euro }}</td>
                     <td>{{ row.fatturato_dall_inizio }}</td>
                     <td>{{ row.tipologia_di_pagamento }}</td>
                     <td>{{ row.data_di_inizio }}</td>

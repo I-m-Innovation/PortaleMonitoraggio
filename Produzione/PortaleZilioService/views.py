@@ -429,6 +429,7 @@ def _build_home_context():
             fatture_straordinarie_annuo_by_impianto,
             fatture_straordinarie_totali_by_impianto,
         ),
+        "year": date.today().year,
         "fv_ppu_rows": build_fotovoltaico_ppu_rows_portale(),
         "idr_gse_rows": build_idroelettrico_gse_rows(),
         "idr_proprieta_rows": build_idroelettrico_proprieta_rows(),
@@ -570,7 +571,7 @@ def _build_tables_payload(request):
         ),
         "fv_ppu": render_to_string(
             "PortaleZilioService/partials/_table_fotovoltaico_PPU.html",
-            {"rows": context["fv_ppu_rows"]},
+            {"rows": context["fv_ppu_rows"], "year": context["year"]},
             request=request,
         ),
         "idr_proprieta": render_to_string(

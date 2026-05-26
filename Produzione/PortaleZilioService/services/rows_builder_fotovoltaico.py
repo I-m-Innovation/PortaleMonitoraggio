@@ -848,11 +848,11 @@ def build_fotovoltaico_ppu_rows_portale():
                 strumento_di_contabilizzazione=(
                     getattr(stato_economico, "strumento_contabilizzazione_ppu", None) or "--"
                 ),
-                energia_prodotta_2026="--",
-                energia_autoconsumata_2026="--",
-                percentuale_autoconsumo_2026="--",
-                maturato_ppu_2026_kwh="--",
-                maturato_ppu_2026_euro="--",
+                energia_prodotta_anno_corrente="--",
+                energia_autoconsumata_anno_corrente="--",
+                percentuale_autoconsumo_anno_corrente="--",
+                maturato_ppu_anno_corrente_kwh="--",
+                maturato_ppu_anno_corrente_euro="--",
                 fatturato_dall_inizio="--",
                 tipologia_di_pagamento=(
                     getattr(stato_economico, "tipologia_pagamento_ppu", None) or "--"
