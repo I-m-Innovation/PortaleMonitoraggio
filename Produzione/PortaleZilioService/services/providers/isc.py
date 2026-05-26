@@ -124,18 +124,8 @@ class IscMetricsProvider:
         contractual_pr = self._extract_contractual_pr(impianto)
         status = "online" if api_plant.get("ps_status") == 1 else "offline"
 
-        devices = get_all_devices(token=token, plant_id=plant_id)
-        inverter_keys = [
-            d["ps_key"]
-            for d in devices
-            if d.get("ps_key") and str(d.get("device_type")) != WEATHER_STATION_DEVICE_TYPE
-        ]
+        inverter_keys = self._get_portale_inverter_keys(token, plant_id, impianto, sorgente)
         local_inverter_keys = self._get_local_inverter_keys_for_source(impianto, sorgente)
-        if self._is_special_portale_3f_aggregate(impianto):
-            inverter_keys = [
-                key for key in inverter_keys
-                if key in local_inverter_keys
-            ]
         local_inverters_count = self._count_local_inverters_for_source(impianto, sorgente)
         logger.warning(
             "[isc-provider] impianto=%s source_identifier=%r plant=%s plant_id=%s installed_power_raw=%r special_peak_power_kw=%r peak_power_kw=%r local_inverters_count=%s local_inverter_keys=%s remote_inverter_keys_count=%s remote_inverter_keys=%s",
@@ -194,6 +184,57 @@ class IscMetricsProvider:
                 "source_identifier": getattr(sorgente, "identificativo_esterno", None),
                 "irradiation_source_name": irradiation_source_name,
             },
+        )
+
+    def fetch_portale_energy_kwh_for_range(
+        self,
+        impianto,
+        sorgente,
+        start_date: date,
+        end_date: date,
+    ) -> float:
+        window = self._energy_window_for_range(start_date, end_date)
+        token = self._login()
+        api_plant = self._find_matching_portale_plant(token, impianto, sorgente)
+        if api_plant is None:
+            raise NotImplementedError(
+                f"Plant {impianto.nome_impianto!r} not found on iSolarCloud for source "
+                f"{getattr(sorgente, 'identificativo_esterno', None)!r}"
+            )
+
+        plant_id = int(api_plant["ps_id"])
+        inverter_keys = self._get_portale_inverter_keys(token, plant_id, impianto, sorgente)
+        return self._fetch_energy_kwh(
+            token=token,
+            inverter_keys=inverter_keys,
+            plant_id=plant_id,
+            window=window,
+        )
+
+    def _get_portale_inverter_keys(self, token: str, plant_id: int, impianto, sorgente) -> list[str]:
+        devices = get_all_devices(token=token, plant_id=plant_id)
+        inverter_keys = [
+            device["ps_key"]
+            for device in devices
+            if device.get("ps_key") and str(device.get("device_type")) != WEATHER_STATION_DEVICE_TYPE
+        ]
+        if self._is_special_portale_3f_aggregate(impianto):
+            local_inverter_keys = self._get_local_inverter_keys_for_source(impianto, sorgente)
+            inverter_keys = [
+                key
+                for key in inverter_keys
+                if key in local_inverter_keys
+            ]
+        return inverter_keys
+
+    @staticmethod
+    def _energy_window_for_range(start_date: date, end_date: date) -> MetricsWindow:
+        if end_date < start_date:
+            raise ValueError("end_date must be greater than or equal to start_date")
+        return MetricsWindow(
+            start_date=start_date,
+            end_date=end_date,
+            label=f"energy {start_date.isoformat()} -> {end_date.isoformat()}",
         )
 
     @staticmethod

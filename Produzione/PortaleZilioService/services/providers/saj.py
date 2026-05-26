@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, time
+from datetime import date, datetime, time
 
 from ...API_inverter import saj_client
 from ...models import ImpiantoDispositivo
@@ -22,21 +22,11 @@ class SajMetricsProvider:
                 f"{getattr(sorgente, 'identificativo_esterno', None)!r}"
             )
 
-        local_devices = list(impianto.dispositivi.filter(attivo=True).order_by("codice_dispositivo"))
-        selected_devices, selection_mode = self._select_energy_devices(local_devices)
-        remote_devices = saj_client.get_devices(headers, plant_id=str(plant["plantId"]))
-        remote_devices_by_sn = {
-            str(device.get("deviceSn")): device
-            for device in remote_devices
-            if device.get("deviceSn")
-        }
-
-        selected_serials = [device.codice_dispositivo for device in selected_devices]
-        matched_serials = [serial for serial in selected_serials if serial in remote_devices_by_sn]
-        if not matched_serials:
-            raise NotImplementedError(
-                f"No matching SAJ devices found for plant {impianto.nome_impianto!r}"
-            )
+        matched_serials, selection_mode = self._get_portale_energy_device_serials(
+            headers,
+            impianto,
+            plant,
+        )
 
         energy_kwh, devices_with_data, missing_serials = self._compute_window_energy_kwh(
             headers=headers,
@@ -71,6 +61,67 @@ class SajMetricsProvider:
                 "selected_serials": matched_serials,
                 "remote_plant_id": plant.get("plantId"),
             },
+        )
+
+    def fetch_portale_energy_kwh_for_range(
+        self,
+        impianto,
+        sorgente,
+        start_date: date,
+        end_date: date,
+    ) -> float:
+        window = self._energy_window_for_range(start_date, end_date)
+        token = saj_client.get_token()
+        headers = saj_client.build_headers(token)
+
+        plant = self._find_matching_portale_plant(headers, impianto, sorgente)
+        if plant is None:
+            raise NotImplementedError(
+                f"Plant {impianto.nome_impianto!r} not found on SAJ for source "
+                f"{getattr(sorgente, 'identificativo_esterno', None)!r}"
+            )
+
+        matched_serials, _ = self._get_portale_energy_device_serials(headers, impianto, plant)
+        energy_kwh, devices_with_data, _ = self._compute_window_energy_kwh(
+            headers=headers,
+            selected_serials=matched_serials,
+            window=window,
+        )
+        if devices_with_data == 0:
+            raise NotImplementedError(
+                f"No usable SAJ energy data found for plant {impianto.nome_impianto!r}"
+            )
+        return energy_kwh
+
+    def _get_portale_energy_device_serials(self, headers: dict[str, str], impianto, plant) -> tuple[list[str], str]:
+        local_devices = list(impianto.dispositivi.filter(attivo=True).order_by("codice_dispositivo"))
+        selected_devices, selection_mode = self._select_energy_devices(local_devices)
+        remote_devices = saj_client.get_devices(headers, plant_id=str(plant["plantId"]))
+        remote_serials = {
+            str(device.get("deviceSn"))
+            for device in remote_devices
+            if device.get("deviceSn")
+        }
+
+        matched_serials = [
+            device.codice_dispositivo
+            for device in selected_devices
+            if device.codice_dispositivo in remote_serials
+        ]
+        if not matched_serials:
+            raise NotImplementedError(
+                f"No matching SAJ devices found for plant {impianto.nome_impianto!r}"
+            )
+        return matched_serials, selection_mode
+
+    @staticmethod
+    def _energy_window_for_range(start_date: date, end_date: date) -> MetricsWindow:
+        if end_date < start_date:
+            raise ValueError("end_date must be greater than or equal to start_date")
+        return MetricsWindow(
+            start_date=start_date,
+            end_date=end_date,
+            label=f"energy {start_date.isoformat()} -> {end_date.isoformat()}",
         )
 
     def _find_matching_portale_plant(self, headers: dict[str, str], impianto, sorgente):
