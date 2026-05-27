@@ -114,6 +114,9 @@ class FotovoltaicoStatoEconomicoAdmin(admin.ModelAdmin):
         "impianto",
         "data_inizio_contratto",
         "data_fine_contratto",
+        "tariffa_ppu_mwh",
+        "strumento_contabilizzazione_ppu",
+        "tipologia_pagamento_ppu",
         "importo_stimato_contratto_annuo",
         "totale_contratto",
         "anni_contratto",
@@ -156,6 +159,9 @@ class FotovoltaicoStatoEconomicoAdmin(admin.ModelAdmin):
         "impianto",
         "data_inizio_contratto",
         "data_fine_contratto",
+        "tariffa_ppu_mwh",
+        "strumento_contabilizzazione_ppu",
+        "tipologia_pagamento_ppu",
         "importo_stimato_contratto_annuo",
         "totale_contratto",
         "anni_contratto",
@@ -191,14 +197,17 @@ class FotovoltaicoMetricheTecnicheAdmin(admin.ModelAdmin):
     list_display = (
         "impianto_nome",
         "impianto",
+        "stato_operativo",
         "pr_ultimi_12_mesi",
         "mancata_produzione",
         "ore_equivalenti_ultimi_12_mesi",
+        "energia_prodotta_anno_corrente_kwh",
+        "energia_prodotta_anno_corrente_aggiornata_al",
         "sync_status",
         "last_sync_at",
         "updated_at",
     )
-    list_filter = ("sync_status",)
+    list_filter = ("sync_status", "stato_operativo")
     search_fields = (
         "impianto__nome_impianto",
         "impianto__tag_impianto",
@@ -207,9 +216,12 @@ class FotovoltaicoMetricheTecnicheAdmin(admin.ModelAdmin):
     list_select_related = ("impianto",)
     ordering = ("impianto__nome_impianto",)
     readonly_fields = (
+        "stato_operativo",
         "pr_ultimi_12_mesi",
         "mancata_produzione",
         "ore_equivalenti_ultimi_12_mesi",
+        "energia_prodotta_anno_corrente_kwh",
+        "energia_prodotta_anno_corrente_aggiornata_al",
         "last_sync_at",
         "sync_status",
         "sync_note",
@@ -218,9 +230,12 @@ class FotovoltaicoMetricheTecnicheAdmin(admin.ModelAdmin):
     )
     fields = (
         "impianto",
+        "stato_operativo",
         "pr_ultimi_12_mesi",
         "mancata_produzione",
         "ore_equivalenti_ultimi_12_mesi",
+        "energia_prodotta_anno_corrente_kwh",
+        "energia_prodotta_anno_corrente_aggiornata_al",
         "last_sync_at",
         "sync_status",
         "sync_note",
@@ -257,9 +272,11 @@ class ImpiantoDispositivoAdmin(admin.ModelAdmin):
         "impianto",
         "tipo_dispositivo",
         "codice_dispositivo",
+        "data_inizio_monitoraggio",
+        "data_fine_monitoraggio",
         "attivo",
     )
-    list_filter = ("tipo_dispositivo", "attivo")
+    list_filter = ("tipo_dispositivo", "attivo", "data_inizio_monitoraggio", "data_fine_monitoraggio")
     search_fields = (
         "impianto__nome_impianto",
         "impianto__tag_impianto",

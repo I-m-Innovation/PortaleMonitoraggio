@@ -140,6 +140,25 @@ class FotovoltaicoStatoEconomico(models.Model):
     # Dati manuali
     data_inizio_contratto = models.DateField(blank=True, null=True)
     data_fine_contratto = models.DateField(blank=True, null=True)
+    tariffa_ppu_mwh = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        verbose_name="Tariffa PPU (EUR/MWh)",
+    )
+    strumento_contabilizzazione_ppu = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="Strumento di contabilizzazione PPU",
+    )
+    tipologia_pagamento_ppu = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="Tipologia di pagamento PPU",
+    )
     importo_stimato_contratto_annuo = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     totale_contratto = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
 
@@ -277,6 +296,18 @@ class FotovoltaicoMetricheTecniche(models.Model):
     pr_ultimi_12_mesi = models.DecimalField(max_digits=6, decimal_places=4, blank=True, null=True)
     mancata_produzione = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     ore_equivalenti_ultimi_12_mesi = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    energia_prodotta_anno_corrente_kwh = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        verbose_name="Energia prodotta anno corrente (kWh)",
+    )
+    energia_prodotta_anno_corrente_aggiornata_al = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Energia prodotta anno corrente aggiornata al",
+    )
     stato_operativo = models.CharField(
         max_length=20,
         choices=StatoOperativo.choices,
@@ -353,6 +384,8 @@ class ImpiantoDispositivo(models.Model):
     )
     tipo_dispositivo = models.CharField(max_length=50, choices=TipoDispositivo.choices)
     codice_dispositivo = models.CharField(max_length=100)
+    data_inizio_monitoraggio = models.DateField(blank=True, null=True)
+    data_fine_monitoraggio = models.DateField(blank=True, null=True)
     attivo = models.BooleanField(default=True)
     note = models.TextField(blank=True, null=True)
     
@@ -362,6 +395,16 @@ class ImpiantoDispositivo(models.Model):
         verbose_name_plural = "Dispositivi impianto"
         ordering = ["impianto__nome_impianto", "tipo_dispositivo", "codice_dispositivo"]
         unique_together = ("impianto", "codice_dispositivo")
+        constraints = [
+            models.CheckConstraint(
+                check=(
+                    Q(data_fine_monitoraggio__isnull=True)
+                    | Q(data_inizio_monitoraggio__isnull=True)
+                    | Q(data_fine_monitoraggio__gte=F("data_inizio_monitoraggio"))
+                ),
+                name="ck_dispositivo_monitoraggio_dates",
+            ),
+        ]
 
     def clean(self):
         if self.impianto.tipo_impianto != ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO:

@@ -52,6 +52,7 @@ PLANT_DEVICE_OVERRIDES = {
         "energy_field_name": "parallTodayPVEnergy",
     },
     "acquanova1150": {
+        "plant_id": "26049021801",
         "device_serial_numbers_to_query": [
             "C6V9104J2421E01334",
         ],
@@ -62,6 +63,7 @@ PLANT_DEVICE_OVERRIDES = {
         "energy_field_name": "todayPvEnergy",
     },
     "acquanova290": {
+        "plant_id": "26051023789",
         "device_serial_numbers_to_query": [
             "C6T9104J2314E00560",
         ],
@@ -363,12 +365,15 @@ def get_saj_day_data(impianto, start: datetime, end: datetime) -> tuple[pd.DataF
     token = saj_client.get_token()
     headers = saj_client.build_headers(token)
 
-    plants = saj_client.get_plants(headers)
-    plant = _find_matching_plant(plants, impianto)
-    if plant is None:
-        raise saj_client.SajApiError(f"Plant SAJ non trovato per {impianto.nome_impianto!r}")
+    plant_id = config.get("plant_id")
+    if not plant_id:
+        plants = saj_client.get_plants(headers)
+        plant = _find_matching_plant(plants, impianto)
+        if plant is None:
+            raise saj_client.SajApiError(f"Plant SAJ non trovato per {impianto.nome_impianto!r}")
+        plant_id = str(plant["plantId"])
 
-    devices = saj_client.get_devices(headers, plant_id=str(plant["plantId"]))
+    devices = saj_client.get_devices(headers, plant_id=str(plant_id))
     available_device_serials = {
         str(device.get("deviceSn"))
         for device in devices
@@ -396,7 +401,7 @@ def get_saj_day_data(impianto, start: datetime, end: datetime) -> tuple[pd.DataF
 
         ems_records = _get_ems_history_records(
             headers=headers,
-            plant_id=str(plant["plantId"]),
+            plant_id=str(plant_id),
             ems_sn=ems_sn,
             start=start,
             end=end,

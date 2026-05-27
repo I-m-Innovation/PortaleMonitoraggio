@@ -78,6 +78,10 @@
 	        let idPLast = 'PLast_'.concat('{{ nickname_id }}');
 			    {# id div ENERGIA #}
 	        let idEnergy = 'Energy_'.concat('{{ nickname_id }}');
+	        let isSajPlant = '{{ impianto.lettura_dati }}' === 'API_SAJ';
+	        let ledRetryCount = 0;
+	        const ledRetryLimit = 3;
+	        const ledRetryDelay = 15000;
 		      
 		      /* ID GRAFICO */
 	        let miniChart = echarts.init(document.getElementById(idMiniChart));
@@ -95,7 +99,7 @@
 	        });
 		      
 		      /* FUNZIONE DI AGGIORNAMENTO AUTOMATICO PER I DATI */
-		      (function ajaxPlant() {
+		      function ajaxPlant(scheduleRefresh) {
 				      /* CHIAMATA AJAX PER I DATI */
 				      {# endpoint --> MonitoraggioImpianti.APIVIEWS #}
 	            $.ajax(endpoint).done(function(data) {
@@ -118,12 +122,25 @@
 	                    series: [{
 	                        data: potenza,
 	                    }]
-	                })
+	                });
+
+	                if (isSajPlant && data.led === 'led-gray' && ledRetryCount < ledRetryLimit) {
+	                    ledRetryCount += 1;
+	                    setTimeout(function() { ajaxPlant(false); }, ledRetryDelay);
+	                } else if (data.led !== 'led-gray') {
+	                    ledRetryCount = 0;
+	                }
 	            });
-				      /* AGGIORNAMENTO DATI OGNI 5 MINUTI */
-				      {# ANCHE SE LA PAGINA FA UN REFRESH IN AUTOMATICO #}
-				      setTimeout(ajaxPlant, 5*60000);
-		      })()
+				      if (scheduleRefresh) {
+					      /* AGGIORNAMENTO DATI OGNI 5 MINUTI */
+					      {# ANCHE SE LA PAGINA FA UN REFRESH IN AUTOMATICO #}
+					      setTimeout(function() {
+						      ledRetryCount = 0;
+						      ajaxPlant(true);
+					      }, 5*60000);
+				      }
+		      }
+		      ajaxPlant(true);
 	    })
 	  </script>
 		{% endwith %}

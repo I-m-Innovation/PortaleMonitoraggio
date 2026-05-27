@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import logging
+from datetime import date, timedelta
+from decimal import Decimal
 from math import isclose
 
 from django.db import transaction
@@ -86,6 +88,107 @@ class MetricsSyncService:
             queryset=self._get_portale_saj_queryset(),
             window=window,
         )
+
+    def sync_portale_fotovoltaico_saj_annual_produced_energy(
+        self,
+        today: date | None = None,
+    ) -> SyncOutcome:
+        current_day = today or date.today()
+        end_date = current_day - timedelta(days=1)
+        start_of_year = date(end_date.year, 1, 1)
+        queryset = self._get_portale_saj_queryset(
+            include_historical_devices=True
+        ).filter(fotovoltaico_metadata__is_ppu=True)
+        provider = self.registry.get_provider(self.SAJ_SOURCE_NAME)
+        skipped = 0
+        missing: list[str] = []
+        updated = 0
+
+        for impianto in queryset:
+            sorgenti = self._get_portale_sources(impianto, self.SAJ_SOURCE_NAME)
+            if not sorgenti:
+                skipped += 1
+                missing.append(impianto.nome_impianto)
+                continue
+
+            metriche = getattr(impianto, "fotovoltaico_metriche_tecniche", None)
+            start_date, base_energy_kwh = self._annual_energy_resume_state(metriche, end_date)
+
+            if start_date > end_date:
+                logger.warning(
+                    "[ppu-energy-sync] impianto=%s already_updated_through=%s energy_kwh=%s",
+                    impianto.nome_impianto,
+                    end_date,
+                    base_energy_kwh,
+                )
+                continue
+
+            logger.warning(
+                "[ppu-energy-sync] impianto=%s calculating range=%s..%s base_energy_kwh=%s",
+                impianto.nome_impianto,
+                start_date,
+                end_date,
+                base_energy_kwh,
+            )
+            try:
+                added_energy_kwh = provider.fetch_portale_energy_kwh_for_range(
+                    impianto,
+                    sorgenti[0],
+                    start_date,
+                    end_date,
+                )
+            except NotImplementedError as error:
+                logger.warning(
+                    "[ppu-energy-sync] impianto=%s skipped=%s",
+                    impianto.nome_impianto,
+                    error,
+                )
+                skipped += 1
+                missing.append(impianto.nome_impianto)
+                continue
+
+            total_energy_kwh = base_energy_kwh + Decimal(str(added_energy_kwh))
+            logger.warning(
+                "[ppu-energy-sync] impianto=%s calculated added_energy_kwh=%s total_energy_kwh=%s updated_through=%s",
+                impianto.nome_impianto,
+                added_energy_kwh,
+                total_energy_kwh,
+                end_date,
+            )
+            with transaction.atomic():
+                metriche, _ = FotovoltaicoMetricheTecniche.objects.get_or_create(impianto=impianto)
+                metriche.energia_prodotta_anno_corrente_kwh = total_energy_kwh
+                metriche.energia_prodotta_anno_corrente_aggiornata_al = end_date
+                metriche.save(
+                    update_fields=[
+                        "energia_prodotta_anno_corrente_kwh",
+                        "energia_prodotta_anno_corrente_aggiornata_al",
+                    ]
+                )
+            updated += 1
+            logger.warning(
+                "[ppu-energy-sync] impianto=%s saved total_energy_kwh=%s updated_through=%s",
+                impianto.nome_impianto,
+                total_energy_kwh,
+                end_date,
+            )
+
+        return SyncOutcome(
+            updated=updated,
+            skipped=skipped,
+            missing=missing,
+            window_start=start_of_year,
+            window_end=end_date,
+        )
+
+    @staticmethod
+    def _annual_energy_resume_state(metriche, end_date: date) -> tuple[date, Decimal]:
+        start_of_year = date(end_date.year, 1, 1)
+        updated_through = getattr(metriche, "energia_prodotta_anno_corrente_aggiornata_al", None)
+        stored_energy = getattr(metriche, "energia_prodotta_anno_corrente_kwh", None)
+        if updated_through and updated_through.year == end_date.year:
+            return updated_through + timedelta(days=1), Decimal(str(stored_energy or 0))
+        return start_of_year, Decimal("0")
 
     def _sync_portale_source_metrics(
         self,
@@ -221,14 +324,33 @@ class MetricsSyncService:
             .order_by("nome_impianto")
         )
 
-    def _get_portale_saj_queryset(self):
+    def _get_portale_saj_queryset(self, include_historical_devices: bool = False):
         energetic_device_filter = Q(
             dispositivi__tipo_dispositivo__in=[
                 ImpiantoDispositivo.TipoDispositivo.INVERTER,
                 ImpiantoDispositivo.TipoDispositivo.STORAGE_INVERTER,
             ],
-            dispositivi__attivo=True,
         )
+        local_device_filter = Q(
+            tipo_dispositivo__in=[
+                ImpiantoDispositivo.TipoDispositivo.INVERTER,
+                ImpiantoDispositivo.TipoDispositivo.STORAGE_INVERTER,
+            ],
+        )
+        if include_historical_devices:
+            energetic_device_filter &= (
+                Q(dispositivi__attivo=True)
+                | Q(dispositivi__data_inizio_monitoraggio__isnull=False)
+                | Q(dispositivi__data_fine_monitoraggio__isnull=False)
+            )
+            local_device_filter &= (
+                Q(attivo=True)
+                | Q(data_inizio_monitoraggio__isnull=False)
+                | Q(data_fine_monitoraggio__isnull=False)
+            )
+        else:
+            energetic_device_filter &= Q(dispositivi__attivo=True)
+            local_device_filter &= Q(attivo=True)
         source_filter = Q(
             sorgenti_dati__tipo_sorgente=ImpiantoSorgenteDati.TipoSorgente.MONITORAGGIO_TECNICO,
             sorgenti_dati__nome_sorgente=self.SAJ_SOURCE_NAME,
@@ -242,6 +364,7 @@ class MetricsSyncService:
             )
             .exclude(codice_impianto__isnull=True)
             .exclude(codice_impianto="")
+            .select_related("fotovoltaico_metadata", "fotovoltaico_metriche_tecniche")
             .annotate(
                 saj_source_count=Count("sorgenti_dati", filter=source_filter, distinct=True),
                 energetic_device_count=Count("dispositivi", filter=energetic_device_filter, distinct=True),
@@ -258,13 +381,7 @@ class MetricsSyncService:
                 ),
                 Prefetch(
                     "dispositivi",
-                    queryset=ImpiantoDispositivo.objects.filter(
-                        tipo_dispositivo__in=[
-                            ImpiantoDispositivo.TipoDispositivo.INVERTER,
-                            ImpiantoDispositivo.TipoDispositivo.STORAGE_INVERTER,
-                        ],
-                        attivo=True,
-                    ).order_by("id"),
+                    queryset=ImpiantoDispositivo.objects.filter(local_device_filter).order_by("id"),
                 ),
             )
             .order_by("nome_impianto")

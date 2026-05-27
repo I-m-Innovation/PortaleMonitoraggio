@@ -429,6 +429,7 @@ def _build_home_context():
             fatture_straordinarie_annuo_by_impianto,
             fatture_straordinarie_totali_by_impianto,
         ),
+        "year": date.today().year,
         "fv_ppu_rows": build_fotovoltaico_ppu_rows_portale(),
         "idr_gse_rows": build_idroelettrico_gse_rows(),
         "idr_proprieta_rows": build_idroelettrico_proprieta_rows(),
@@ -570,7 +571,7 @@ def _build_tables_payload(request):
         ),
         "fv_ppu": render_to_string(
             "PortaleZilioService/partials/_table_fotovoltaico_PPU.html",
-            {"rows": context["fv_ppu_rows"]},
+            {"rows": context["fv_ppu_rows"], "year": context["year"]},
             request=request,
         ),
         "idr_proprieta": render_to_string(
@@ -660,6 +661,7 @@ def sync_provider_metrics_view(request):
         service = MetricsSyncService()
         portale_outcome = service.sync_portale_fotovoltaico_isc_metrics()
         saj_outcome = service.sync_portale_fotovoltaico_saj_metrics()
+        saj_annual_energy_outcome = service.sync_portale_fotovoltaico_saj_annual_produced_energy()
         tables = _build_tables_payload(request)
         return JsonResponse(
             {
@@ -667,7 +669,8 @@ def sync_provider_metrics_view(request):
                 "message": (
                     "Aggiornamento completato. "
                     f"Nuove metriche FV ISC aggiornate: {portale_outcome.updated}. "
-                    f"Nuove metriche FV SAJ aggiornate: {saj_outcome.updated}."
+                    f"Nuove metriche FV SAJ aggiornate: {saj_outcome.updated}. "
+                    f"Energia PPU SAJ aggiornata: {saj_annual_energy_outcome.updated}."
                 ),
                 "result": {
                     "portale_updated": portale_outcome.updated,
@@ -678,6 +681,9 @@ def sync_provider_metrics_view(request):
                     "saj_updated": saj_outcome.updated,
                     "saj_skipped": saj_outcome.skipped,
                     "saj_missing": saj_outcome.missing,
+                    "saj_annual_energy_updated": saj_annual_energy_outcome.updated,
+                    "saj_annual_energy_skipped": saj_annual_energy_outcome.skipped,
+                    "saj_annual_energy_missing": saj_annual_energy_outcome.missing,
                 },
                 "tables": tables,
             }

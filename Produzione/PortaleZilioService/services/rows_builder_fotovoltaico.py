@@ -836,16 +836,34 @@ def build_fotovoltaico_ppu_rows_portale():
     rows: list[FotovoltaicoPPURow] = []
     for impianto in queryset:
         stato_economico = getattr(impianto, "fotovoltaico_stato_economico", None)
+        metriche = getattr(impianto, "fotovoltaico_metriche_tecniche", None)
 
         rows.append(
             FotovoltaicoPPURow(
                 nome_impianto=impianto.nome_impianto or "--",
                 nome_cliente=_fmt_not_defined(impianto.nome_cliente),
-                tariffa_mwh="--",
-                strumento_di_contabilizzazione="--",
-                maturato_dall_inizio="--",
+                tariffa_mwh=_fmt_with_unit(
+                    _fmt_number_it(getattr(stato_economico, "tariffa_ppu_mwh", None), decimals=2),
+                    "EUR/MWh",
+                ),
+                strumento_di_contabilizzazione=(
+                    getattr(stato_economico, "strumento_contabilizzazione_ppu", None) or "--"
+                ),
+                energia_prodotta_anno_corrente=_fmt_with_unit(
+                    _fmt_number_it(
+                        getattr(metriche, "energia_prodotta_anno_corrente_kwh", None),
+                        decimals=2,
+                    ),
+                    "kWh",
+                ),
+                energia_autoconsumata_anno_corrente="--",
+                percentuale_autoconsumo_anno_corrente="--",
+                maturato_ppu_anno_corrente_kwh="--",
+                maturato_ppu_anno_corrente_euro="--",
                 fatturato_dall_inizio="--",
-                tipologia_di_pagamento="--",
+                tipologia_di_pagamento=(
+                    getattr(stato_economico, "tipologia_pagamento_ppu", None) or "--"
+                ),
                 data_di_inizio=_fmt_date(
                     getattr(stato_economico, "data_inizio_contratto", None)
                 ),
@@ -860,7 +878,6 @@ def build_fotovoltaico_ppu_rows_portale():
                 energia_stimata_annua="--",
                 mancata_produzione="--",
                 fatturato_previsto="--",
-                importo_reale_annuo="--",
             )
         )
 

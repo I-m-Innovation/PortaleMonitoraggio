@@ -1,3 +1,230 @@
-from django.test import TestCase
+from datetime import date
+from decimal import Decimal
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
-# Create your tests here.
+from django.test import SimpleTestCase
+from .services.providers.isc import IscMetricsProvider
+from .services.providers.saj import SajMetricsProvider
+from .services.sync import MetricsSyncService
+
+
+class IscEnergyRangeTests(SimpleTestCase):
+    def test_fetch_portale_energy_kwh_for_range_uses_requested_window(self):
+        provider = IscMetricsProvider()
+        impianto = SimpleNamespace(nome_impianto="Impianto PPU")
+        sorgente = SimpleNamespace(identificativo_esterno="isc-1")
+
+        provider._login = Mock(return_value="token")
+        provider._find_matching_portale_plant = Mock(return_value={"ps_id": "42"})
+        provider._get_portale_inverter_keys = Mock(return_value=["inv-1"])
+        provider._fetch_energy_kwh = Mock(return_value=123.45)
+
+        result = provider.fetch_portale_energy_kwh_for_range(
+            impianto,
+            sorgente,
+            date(2026, 1, 1),
+            date(2026, 5, 25),
+        )
+
+        self.assertEqual(result, 123.45)
+        window = provider._fetch_energy_kwh.call_args.kwargs["window"]
+        self.assertEqual(window.start_date, date(2026, 1, 1))
+        self.assertEqual(window.end_date, date(2026, 5, 25))
+
+    def test_fetch_portale_energy_kwh_for_range_rejects_inverted_dates(self):
+        with self.assertRaises(ValueError):
+            IscMetricsProvider().fetch_portale_energy_kwh_for_range(
+                SimpleNamespace(nome_impianto="Impianto PPU"),
+                SimpleNamespace(identificativo_esterno="isc-1"),
+                date(2026, 5, 25),
+                date(2026, 1, 1),
+            )
+
+
+class IscPortaleSnapshotTests(SimpleTestCase):
+    def test_fetch_snapshot_keeps_remote_offline_status_without_inverters(self):
+        provider = IscMetricsProvider()
+        impianto = SimpleNamespace(
+            nome_impianto="CFFT",
+            potenza_installata_kw=Decimal("2000"),
+            fotovoltaico_metadata=SimpleNamespace(pr_contrattuale=Decimal("78")),
+        )
+        sorgente = SimpleNamespace(
+            identificativo_esterno="5646781",
+            nome_sorgente="iSolarCloud",
+        )
+        window = SimpleNamespace(start_date=date(2025, 5, 27), end_date=date(2026, 5, 26))
+
+        provider._login = Mock(return_value="token")
+        provider._find_matching_portale_plant = Mock(
+            return_value={"ps_id": "5646781", "ps_name": "CFFT", "ps_status": 0}
+        )
+        provider._get_portale_inverter_keys = Mock(return_value=[])
+        provider._get_local_inverter_keys_for_source = Mock(return_value=["inv-1", "inv-2"])
+        provider._count_local_inverters_for_source = Mock(return_value=2)
+        provider._fetch_energy_kwh = Mock()
+        provider._fetch_portale_irradiation_kwh_m2 = Mock(return_value=(None, None))
+
+        snapshot = provider.fetch_portale_snapshot(impianto, sorgente, window)
+
+        self.assertEqual(snapshot.status, "offline")
+        self.assertIsNone(snapshot.window_energy_kwh)
+        self.assertEqual(snapshot.inverters_ok, 0)
+        self.assertEqual(snapshot.coverage, 0.0)
+        self.assertEqual(snapshot.missing_inverters, ["inv-1", "inv-2"])
+        provider._fetch_energy_kwh.assert_not_called()
+
+
+class SajEnergyRangeTests(SimpleTestCase):
+    @patch("PortaleZilioService.services.providers.saj.saj_client.build_headers", return_value={"token": "token"})
+    @patch("PortaleZilioService.services.providers.saj.saj_client.get_token", return_value="token")
+    def test_fetch_portale_energy_kwh_for_range_uses_requested_window(self, _get_token, _build_headers):
+        provider = SajMetricsProvider()
+        impianto = SimpleNamespace(nome_impianto="Impianto PPU")
+        sorgente = SimpleNamespace(identificativo_esterno="saj-1")
+
+        provider._find_matching_portale_plant = Mock(return_value={"plantId": "42"})
+        device = SimpleNamespace(
+            codice_dispositivo="inv-1",
+            data_inizio_monitoraggio=None,
+            data_fine_monitoraggio=None,
+        )
+        provider._get_portale_annual_energy_devices = Mock(return_value=([device], "inverter"))
+        provider._compute_range_daily_energy_kwh = Mock(return_value=(456.78, 1, []))
+
+        result = provider.fetch_portale_energy_kwh_for_range(
+            impianto,
+            sorgente,
+            date(2026, 1, 1),
+            date(2026, 5, 25),
+        )
+
+        self.assertEqual(result, 456.78)
+        call_args = provider._compute_range_daily_energy_kwh.call_args.kwargs
+        self.assertEqual(call_args["start_date"], date(2026, 1, 1))
+        self.assertEqual(call_args["end_date"], date(2026, 5, 25))
+
+    def test_fetch_portale_energy_kwh_for_range_rejects_inverted_dates(self):
+        with self.assertRaises(ValueError):
+            SajMetricsProvider().fetch_portale_energy_kwh_for_range(
+                SimpleNamespace(nome_impianto="Impianto PPU"),
+                SimpleNamespace(identificativo_esterno="saj-1"),
+                date(2026, 5, 25),
+                date(2026, 1, 1),
+            )
+
+    @patch("PortaleZilioService.services.providers.saj.saj_client.get_device_daily_pv_energy_kwh")
+    def test_compute_range_daily_energy_sums_devices_and_days(self, get_daily_energy):
+        get_daily_energy.side_effect = [1.25, 2.25, 3.50, 4.00]
+
+        result = SajMetricsProvider._compute_range_daily_energy_kwh(
+            headers={},
+            selected_devices=[
+                SimpleNamespace(codice_dispositivo="inv-1"),
+                SimpleNamespace(codice_dispositivo="inv-2"),
+            ],
+            start_date=date(2026, 1, 1),
+            end_date=date(2026, 1, 2),
+        )
+
+        self.assertEqual(result, (11.0, 2, []))
+
+    @patch("PortaleZilioService.services.providers.saj.saj_client.get_device_daily_pv_energy_kwh")
+    def test_compute_range_daily_energy_skips_day_without_records(self, get_daily_energy):
+        get_daily_energy.side_effect = [1.25, None, 2.50]
+
+        result = SajMetricsProvider._compute_range_daily_energy_kwh(
+            headers={},
+            selected_devices=[SimpleNamespace(codice_dispositivo="inv-1")],
+            start_date=date(2026, 1, 1),
+            end_date=date(2026, 1, 3),
+        )
+
+        self.assertEqual(result, (3.75, 1, []))
+
+    @patch("PortaleZilioService.services.providers.saj.saj_client.get_device_daily_pv_energy_kwh")
+    def test_compute_range_daily_energy_reports_device_without_any_records(self, get_daily_energy):
+        get_daily_energy.side_effect = [None, None]
+
+        result = SajMetricsProvider._compute_range_daily_energy_kwh(
+            headers={},
+            selected_devices=[SimpleNamespace(codice_dispositivo="inv-1")],
+            start_date=date(2026, 1, 1),
+            end_date=date(2026, 1, 2),
+        )
+
+        self.assertEqual(result, (0.0, 0, ["inv-1"]))
+
+    @patch("PortaleZilioService.services.providers.saj.saj_client.get_device_daily_pv_energy_kwh")
+    def test_compute_range_daily_energy_limits_each_device_to_monitoring_dates(self, get_daily_energy):
+        get_daily_energy.side_effect = [10.0, 11.0, 20.0, 21.0]
+
+        result = SajMetricsProvider._compute_range_daily_energy_kwh(
+            headers={},
+            selected_devices=[
+                SimpleNamespace(
+                    codice_dispositivo="old-device",
+                    data_inizio_monitoraggio=None,
+                    data_fine_monitoraggio=date(2026, 1, 2),
+                ),
+                SimpleNamespace(
+                    codice_dispositivo="new-device",
+                    data_inizio_monitoraggio=date(2026, 1, 3),
+                    data_fine_monitoraggio=None,
+                ),
+            ],
+            start_date=date(2026, 1, 1),
+            end_date=date(2026, 1, 4),
+        )
+
+        self.assertEqual(result, (62.0, 2, []))
+        queried_dates = [call.args[2] for call in get_daily_energy.call_args_list]
+        self.assertEqual(
+            queried_dates,
+            [
+                date(2026, 1, 1),
+                date(2026, 1, 2),
+                date(2026, 1, 3),
+                date(2026, 1, 4),
+            ],
+        )
+
+
+class SajAnnualProducedEnergySyncTests(SimpleTestCase):
+    def test_initial_sync_starts_at_first_day_of_year(self):
+        start_date, base_energy = MetricsSyncService._annual_energy_resume_state(
+            None,
+            date(2026, 5, 25),
+        )
+
+        self.assertEqual(start_date, date(2026, 1, 1))
+        self.assertEqual(base_energy, Decimal("0"))
+
+    def test_incremental_sync_starts_after_checkpoint(self):
+        metriche = SimpleNamespace(
+            energia_prodotta_anno_corrente_kwh=Decimal("100.00"),
+            energia_prodotta_anno_corrente_aggiornata_al=date(2026, 5, 23),
+        )
+
+        start_date, base_energy = MetricsSyncService._annual_energy_resume_state(
+            metriche,
+            date(2026, 5, 25),
+        )
+
+        self.assertEqual(start_date, date(2026, 5, 24))
+        self.assertEqual(base_energy, Decimal("100.00"))
+
+    def test_new_year_resets_accumulated_energy(self):
+        metriche = SimpleNamespace(
+            energia_prodotta_anno_corrente_kwh=Decimal("999.00"),
+            energia_prodotta_anno_corrente_aggiornata_al=date(2025, 12, 31),
+        )
+
+        start_date, base_energy = MetricsSyncService._annual_energy_resume_state(
+            metriche,
+            date(2026, 1, 2),
+        )
+
+        self.assertEqual(start_date, date(2026, 1, 1))
+        self.assertEqual(base_energy, Decimal("0"))
