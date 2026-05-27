@@ -42,6 +42,40 @@ class IscEnergyRangeTests(SimpleTestCase):
             )
 
 
+class IscPortaleSnapshotTests(SimpleTestCase):
+    def test_fetch_snapshot_keeps_remote_offline_status_without_inverters(self):
+        provider = IscMetricsProvider()
+        impianto = SimpleNamespace(
+            nome_impianto="CFFT",
+            potenza_installata_kw=Decimal("2000"),
+            fotovoltaico_metadata=SimpleNamespace(pr_contrattuale=Decimal("78")),
+        )
+        sorgente = SimpleNamespace(
+            identificativo_esterno="5646781",
+            nome_sorgente="iSolarCloud",
+        )
+        window = SimpleNamespace(start_date=date(2025, 5, 27), end_date=date(2026, 5, 26))
+
+        provider._login = Mock(return_value="token")
+        provider._find_matching_portale_plant = Mock(
+            return_value={"ps_id": "5646781", "ps_name": "CFFT", "ps_status": 0}
+        )
+        provider._get_portale_inverter_keys = Mock(return_value=[])
+        provider._get_local_inverter_keys_for_source = Mock(return_value=["inv-1", "inv-2"])
+        provider._count_local_inverters_for_source = Mock(return_value=2)
+        provider._fetch_energy_kwh = Mock()
+        provider._fetch_portale_irradiation_kwh_m2 = Mock(return_value=(None, None))
+
+        snapshot = provider.fetch_portale_snapshot(impianto, sorgente, window)
+
+        self.assertEqual(snapshot.status, "offline")
+        self.assertIsNone(snapshot.window_energy_kwh)
+        self.assertEqual(snapshot.inverters_ok, 0)
+        self.assertEqual(snapshot.coverage, 0.0)
+        self.assertEqual(snapshot.missing_inverters, ["inv-1", "inv-2"])
+        provider._fetch_energy_kwh.assert_not_called()
+
+
 class SajEnergyRangeTests(SimpleTestCase):
     @patch("PortaleZilioService.services.providers.saj.saj_client.build_headers", return_value={"token": "token"})
     @patch("PortaleZilioService.services.providers.saj.saj_client.get_token", return_value="token")

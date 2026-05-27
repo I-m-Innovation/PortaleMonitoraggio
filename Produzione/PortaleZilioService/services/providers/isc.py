@@ -142,12 +142,14 @@ class IscMetricsProvider:
             inverter_keys,
         )
 
-        energy_kwh = self._fetch_energy_kwh(
-            token=token,
-            inverter_keys=inverter_keys,
-            plant_id=plant_id,
-            window=window,
-        )
+        energy_kwh = None
+        if inverter_keys:
+            energy_kwh = self._fetch_energy_kwh(
+                token=token,
+                inverter_keys=inverter_keys,
+                plant_id=plant_id,
+                window=window,
+            )
         irradiation_kwh_m2, irradiation_source_name = self._fetch_portale_irradiation_kwh_m2(
             token=token,
             impianto=impianto,
@@ -157,6 +159,7 @@ class IscMetricsProvider:
         )
 
         inverters_ok = len(inverter_keys)
+        missing_inverters = local_inverter_keys if not inverter_keys else []
         coverage = None
         if local_inverters_count:
             coverage = round(inverters_ok / local_inverters_count, 4)
@@ -178,7 +181,7 @@ class IscMetricsProvider:
             inverters_count=local_inverters_count,
             inverters_ok=inverters_ok,
             coverage=coverage,
-            missing_inverters=[],
+            missing_inverters=missing_inverters,
             raw_payload={
                 "api_plant": api_plant,
                 "source_identifier": getattr(sorgente, "identificativo_esterno", None),
