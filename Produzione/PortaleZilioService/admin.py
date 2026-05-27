@@ -197,6 +197,7 @@ class FotovoltaicoMetricheTecnicheAdmin(admin.ModelAdmin):
     list_display = (
         "impianto_nome",
         "impianto",
+        "stato_operativo",
         "pr_ultimi_12_mesi",
         "mancata_produzione",
         "ore_equivalenti_ultimi_12_mesi",
@@ -206,7 +207,7 @@ class FotovoltaicoMetricheTecnicheAdmin(admin.ModelAdmin):
         "last_sync_at",
         "updated_at",
     )
-    list_filter = ("sync_status",)
+    list_filter = ("sync_status", "stato_operativo")
     search_fields = (
         "impianto__nome_impianto",
         "impianto__tag_impianto",
@@ -215,6 +216,7 @@ class FotovoltaicoMetricheTecnicheAdmin(admin.ModelAdmin):
     list_select_related = ("impianto",)
     ordering = ("impianto__nome_impianto",)
     readonly_fields = (
+        "stato_operativo",
         "pr_ultimi_12_mesi",
         "mancata_produzione",
         "ore_equivalenti_ultimi_12_mesi",
@@ -228,6 +230,7 @@ class FotovoltaicoMetricheTecnicheAdmin(admin.ModelAdmin):
     )
     fields = (
         "impianto",
+        "stato_operativo",
         "pr_ultimi_12_mesi",
         "mancata_produzione",
         "ore_equivalenti_ultimi_12_mesi",
