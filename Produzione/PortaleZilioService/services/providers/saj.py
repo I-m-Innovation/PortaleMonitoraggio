@@ -17,6 +17,22 @@ logger = logging.getLogger(__name__)
 class SajMetricsProvider:
     source_name = "Saj - Elekeeper"
 
+    # Configurazione per il calcolo dell'energia immessa per impianto.
+    # Chiave: sorgente.identificativo_esterno (codice corto nel DB, es. "121AG2").
+    # strategy "ems"    → legge parallYearSellEnergy via emsHistoryData (YTD, si azzera a inizio anno).
+    # strategy "device" → delta totalSellEnergy via historyDataCommon (contatore lifetime cumulativo).
+    #
+    # plant_id = SAJ plantId numerico (necessario per la chiamata emsHistoryData).
+    # Fonte: probe_ems_yearly_energy_multi.py (EMS_PLANTS) + shell Django (ImpiantoSorgenteDati).
+    # Col Roigo usa "device" perché il suo EMS (M5380J2415071297) risponde con data vuota.
+    _SAJ_EXPORTED_ENERGY_CONFIG: dict[str, dict] = {
+        "121AG2": {"strategy": "ems",    "plant_id": "26049021801", "ems_sn": "M5530J2541000285"},  # Acquanova 1 - 150 kWp
+        "39ERI0": {"strategy": "ems",    "plant_id": "26051023789", "ems_sn": "M5530J2541000287"},  # Acquanova 2 - 90 kWp
+        "168UEE": {"strategy": "ems",    "plant_id": "24031286133", "ems_sn": "M5530J2428000038"},  # Zilio Group 281 kW
+        "7269Q6": {"strategy": "ems",    "plant_id": "25520042620", "ems_sn": "M5530J2428000023"},  # RCT 2 - Bramante
+        "529SGS": {"strategy": "device", "device_sn": "CSV6503J2416E00004"},                        # Col Roigo 50 kWp
+    }
+
     def fetch_portale_snapshot(self, impianto, sorgente, window: MetricsWindow) -> ProviderPlantSnapshot:
         token = saj_client.get_token()
         headers = saj_client.build_headers(token)
@@ -68,6 +84,85 @@ class SajMetricsProvider:
                 "remote_plant_id": plant.get("plantId"),
             },
         )
+
+    def fetch_portale_exported_kwh_for_range(
+        self,
+        impianto,
+        sorgente,
+        start_date: date,
+        end_date: date,
+    ) -> float:
+        """Calcola l'energia immessa in rete YTD per il range start_date..end_date.
+
+        Strategia per impianto definita in _SAJ_EXPORTED_ENERGY_CONFIG:
+        - "ems":    legge parallYearSellEnergy via emsHistoryData (valore YTD che si
+                    azzera a inizio anno — nessun delta necessario).
+        - "device": delta totalSellEnergy via historyDataCommon (contatore lifetime,
+                    usato per Col Roigo dove l'EMS non restituisce dati).
+        """
+        window = self._energy_window_for_range(start_date, end_date)
+        id_esterno = str(getattr(sorgente, "identificativo_esterno", None) or "")
+        config = self._SAJ_EXPORTED_ENERGY_CONFIG.get(id_esterno)
+        if config is None:
+            raise NotImplementedError(
+                f"No exported energy config for plant {impianto.nome_impianto!r} "
+                f"(identificativo_esterno={id_esterno!r}). Aggiungere una voce a _SAJ_EXPORTED_ENERGY_CONFIG."
+            )
+
+        token = saj_client.get_token()
+        headers = saj_client.build_headers(token)
+        strategy = config["strategy"]
+
+        logger.warning(
+            "[saj-annual-exported] impianto=%s strategy=%s id_esterno=%s range=%s..%s",
+            impianto.nome_impianto,
+            strategy,
+            id_esterno,
+            window.start_date,
+            window.end_date,
+        )
+
+        if strategy == "ems":
+            plant_id = config["plant_id"]
+            ems_sn = config["ems_sn"]
+            # Per i contatori YTD EMS (parallYearSellEnergy) si legge il valore
+            # corrente in tempo reale: si usa date.today() invece di window.end_date
+            # per garantire di avere almeno un record EMS nelle ore di luce odierne.
+            exported_kwh = saj_client.get_ems_year_sell_energy_kwh(
+                headers, plant_id, ems_sn, date.today()
+            )
+            if exported_kwh is None:
+                raise NotImplementedError(
+                    f"EMS returned no data for plant {impianto.nome_impianto!r} "
+                    f"(ems_sn={ems_sn!r}, plant_id={plant_id!r})"
+                )
+            result = round(exported_kwh, 2)
+
+        else:  # strategy == "device"
+            device_sn = config["device_sn"]
+            start_dt = datetime.combine(window.start_date, time(23, 59, 59))
+            end_dt = datetime.combine(window.end_date, time(23, 59, 59))
+            sell_start = saj_client.get_device_sell_energy_snapshot(headers, device_sn, start_dt)
+            sell_end = saj_client.get_device_sell_energy_snapshot(headers, device_sn, end_dt)
+            logger.warning(
+                "[saj-annual-exported] device=%s sell_start=%s sell_end=%s",
+                device_sn,
+                sell_start,
+                sell_end,
+            )
+            if sell_start is None or sell_end is None:
+                raise NotImplementedError(
+                    f"No device snapshot data for plant {impianto.nome_impianto!r} "
+                    f"(device_sn={device_sn!r})"
+                )
+            result = round(max(0.0, sell_end - sell_start), 2)
+
+        logger.warning(
+            "[saj-annual-exported] impianto=%s exported_kwh=%s",
+            impianto.nome_impianto,
+            result,
+        )
+        return result
 
     def fetch_portale_energy_kwh_for_range(
         self,

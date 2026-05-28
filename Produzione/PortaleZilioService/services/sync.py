@@ -190,6 +190,98 @@ class MetricsSyncService:
             return updated_through + timedelta(days=1), Decimal(str(stored_energy or 0))
         return start_of_year, Decimal("0")
 
+    def sync_portale_fotovoltaico_saj_annual_exported_energy(
+        self,
+        today: date | None = None,
+    ) -> SyncOutcome:
+        """Sincronizza energia_immessa_anno_corrente_kwh per gli impianti SAJ PPU.
+
+        Usa il delta del contatore cumulativo totalSellEnergy tra 2 snapshot
+        (inizio e fine range), quindi richiede solo 2 chiamate HTTP per
+        dispositivo indipendentemente dalla lunghezza del range.
+
+        Il campo aggiornata_al evita di rifare la chiamata se i dati sono già
+        aggiornati a ieri. A inizio anno il contatore riparte da zero automaticamente.
+        """
+        current_day = today or date.today()
+        end_date = current_day - timedelta(days=1)
+        start_of_year = date(end_date.year, 1, 1)
+        queryset = self._get_portale_saj_queryset(
+            include_historical_devices=True
+        ).filter(fotovoltaico_metadata__is_ppu=True)
+        provider = self.registry.get_provider(self.SAJ_SOURCE_NAME)
+        skipped = 0
+        missing: list[str] = []
+        updated = 0
+
+        for impianto in queryset:
+            sorgenti = self._get_portale_sources(impianto, self.SAJ_SOURCE_NAME)
+            if not sorgenti:
+                skipped += 1
+                missing.append(impianto.nome_impianto)
+                continue
+
+            metriche = getattr(impianto, "fotovoltaico_metriche_tecniche", None)
+            updated_through = getattr(metriche, "energia_immessa_anno_corrente_aggiornata_al", None)
+
+            if updated_through and updated_through >= end_date and updated_through.year == end_date.year:
+                logger.warning(
+                    "[ppu-exported-sync] impianto=%s already_updated_through=%s",
+                    impianto.nome_impianto,
+                    updated_through,
+                )
+                continue
+
+            logger.warning(
+                "[ppu-exported-sync] impianto=%s calculating range=%s..%s",
+                impianto.nome_impianto,
+                start_of_year,
+                end_date,
+            )
+            try:
+                exported_kwh = provider.fetch_portale_exported_kwh_for_range(
+                    impianto,
+                    sorgenti[0],
+                    start_of_year,
+                    end_date,
+                )
+            except NotImplementedError as error:
+                logger.warning(
+                    "[ppu-exported-sync] impianto=%s skipped=%s",
+                    impianto.nome_impianto,
+                    error,
+                )
+                skipped += 1
+                missing.append(impianto.nome_impianto)
+                continue
+
+            total_exported_kwh = Decimal(str(exported_kwh))
+            logger.warning(
+                "[ppu-exported-sync] impianto=%s exported_kwh=%s updated_through=%s",
+                impianto.nome_impianto,
+                total_exported_kwh,
+                end_date,
+            )
+            with transaction.atomic():
+                metriche, _ = FotovoltaicoMetricheTecniche.objects.get_or_create(impianto=impianto)
+                metriche.energia_immessa_anno_corrente_kwh = total_exported_kwh
+                metriche.energia_immessa_anno_corrente_aggiornata_al = end_date
+                metriche.save(
+                    update_fields=[
+                        "energia_immessa_anno_corrente_kwh",
+                        "energia_immessa_anno_corrente_aggiornata_al",
+                    ]
+                )
+            updated += 1
+
+        return SyncOutcome(
+            updated=updated,
+            skipped=skipped,
+            missing=missing,
+            window_start=start_of_year,
+            window_end=end_date,
+        )
+
     def _sync_portale_source_metrics(
         self,
         *,
