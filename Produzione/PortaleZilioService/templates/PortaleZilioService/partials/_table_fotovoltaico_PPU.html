@@ -7,9 +7,9 @@
                 <th>Tariffa MWh</th>
                 <th>Strumento di Contabilizzazione</th>
                 <th>Energia Prodotta {{ year }}</th>
+                <th>Energia Immessa {{ year }}</th>
                 <th>Energia Autoconsumata {{ year }}</th>
                 <th>Percentuale di Autoconsumo {{ year }}</th>
-                <th>Maturato PPU {{ year }} in kWh</th>
                 <th>Maturato PPU {{ year }} in €</th> <!-- autoconsumato x tariffa- Unita di misura: euro/MWh -->
                 <th>Fatturato dall'Inizio</th> 
                 <th>Tipologia di Pagamento</th>
@@ -30,9 +30,9 @@
                     <td>{{ row.tariffa_mwh }}</td>
                     <td>{{ row.strumento_di_contabilizzazione }}</td>
                     <td>{{ row.energia_prodotta_anno_corrente }}</td>
+                    <td>{{ row.energia_immessa_anno_corrente }}</td>
                     <td>{{ row.energia_autoconsumata_anno_corrente }}</td>
                     <td>{{ row.percentuale_autoconsumo_anno_corrente }}</td>
-                    <td>{{ row.maturato_ppu_anno_corrente_kwh }}</td>
                     <td>{{ row.maturato_ppu_anno_corrente_euro }}</td>
                     <td>{{ row.fatturato_dall_inizio }}</td>
                     <td>{{ row.tipologia_di_pagamento }}</td>

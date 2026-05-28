@@ -60,6 +60,69 @@ Questa scelta e' stata fatta perche' l'endpoint EMS, con gli identificativi oggi
 
 Per Zilio la potenza non viene piu' ricostruita dalla somma dei singoli inverter. Il dato corretto della dashboard SAJ e' risultato essere il valore EMS `parallMeterPower`.
 
+### Acquanova
+
+Per `Acquanova 1 - 150`, l'energia prodotta giornaliera letta da `historyDataCommon`
+tramite `todayPvEnergy` e' coerente con la supervisione SAJ, ma i campi
+device-level `todaySellEnergy` e `todayFeedInEnergy` non sono affidabili per
+ricostruire l'autoconsumo: nel test del `2026-05-27` tornavano a `0`.
+
+Per ricostruire i valori della card energia della supervisione SAJ bisogna
+usare l'endpoint EMS:
+
+```text
+GET /open/api/device/emsHistoryData
+```
+
+con:
+
+```text
+plantId = 26049021801
+emsSn = M5530J2541000285
+```
+
+L'endpoint EMS va interrogato a finestre inferiori a 2 ore, ad esempio chunk da
+`1h55`, per evitare risposte vuote o rate limit.
+
+Campi verificati su `Acquanova 1 - 150` per il giorno `2026-05-27`:
+
+| Campo SAJ | Valore |
+| --- | ---: |
+| `parallTodayPVEnergy` | `281.930 kWh` |
+| `parallTodaySellEnergy` | `1.780 kWh` |
+| `parallTodayFeedInEnergy` | `1295.420 kWh` |
+| `parallTodayTotalLoadEnergy` | `1575.570 kWh` |
+| `parallTodayBatChgEnergy` | `0.000 kWh` |
+| `parallTodayBatDisEnergy` | `0.000 kWh` |
+
+La supervisione SAJ mostrava:
+
+| Voce supervisione | Valore |
+| --- | ---: |
+| Electric energy production | `281.93 kWh` |
+| Self-Consumption | `280.15 kWh` |
+| Export | `1.78 kWh` |
+
+La formula coerente con la supervisione e':
+
+```text
+Self-Consumption = parallTodayPVEnergy - parallTodaySellEnergy
+```
+
+Esempio verificato:
+
+```text
+281.930 - 1.780 = 280.150 kWh
+```
+
+Quindi, per Acquanova EMS:
+
+- energia prodotta: `parallTodayPVEnergy`
+- energia immessa/esportata: `parallTodaySellEnergy`
+- energia autoconsumata: `parallTodayPVEnergy - parallTodaySellEnergy`
+- non usare `parallTodayFeedInEnergy` per questa card: nel test non coincide
+  con il valore `Export` della supervisione
+
 ## Problemi incontrati
 
 Durante l'integrazione SAJ sono emerse alcune criticita' importanti.

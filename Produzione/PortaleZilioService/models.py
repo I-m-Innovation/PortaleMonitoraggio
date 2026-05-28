@@ -308,6 +308,18 @@ class FotovoltaicoMetricheTecniche(models.Model):
         null=True,
         verbose_name="Energia prodotta anno corrente aggiornata al",
     )
+    energia_immessa_anno_corrente_kwh = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        verbose_name="Energia immessa in rete anno corrente (kWh)",
+    )
+    energia_immessa_anno_corrente_aggiornata_al = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Energia immessa anno corrente aggiornata al",
+    )
     stato_operativo = models.CharField(
         max_length=20,
         choices=StatoOperativo.choices,

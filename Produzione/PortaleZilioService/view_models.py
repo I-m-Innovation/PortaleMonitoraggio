@@ -156,9 +156,9 @@ class FotovoltaicoPPURow:
     tariffa_mwh: str
     strumento_di_contabilizzazione: str   # contatore, supervisione SAJ, Sungrow
     energia_prodotta_anno_corrente: str
+    energia_immessa_anno_corrente: str
     energia_autoconsumata_anno_corrente: str
     percentuale_autoconsumo_anno_corrente: str
-    maturato_ppu_anno_corrente_kwh: str
     maturato_ppu_anno_corrente_euro: str
     fatturato_dall_inizio: str  # fatturato preso da gestionale esolver 
     tipologia_di_pagamento: str  # mensile, trimestrale, semestrale, annuale
