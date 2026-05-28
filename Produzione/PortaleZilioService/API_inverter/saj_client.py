@@ -97,6 +97,72 @@ def get_device_energy_snapshot(headers: dict[str, str], device_sn: str, at_time:
     return float(records[-1].get("totalPvEnergy", 0) or 0)
 
 
+def get_device_sell_energy_snapshot(headers: dict[str, str], device_sn: str, at_time: datetime) -> float | None:
+    """Restituisce il valore cumulativo lifetime di totalSellEnergy (kWh) del
+    dispositivo nell'ultima misurazione disponibile nella finestra di 24h che
+    termina a `at_time`.
+
+    Usato per calcolare l'energia immessa in rete su un intervallo come delta
+    tra due snapshot: sell_end - sell_start.
+    """
+    response = requests.get(
+        f"{BASE_URL}/open/api/device/historyDataCommon",
+        headers=headers,
+        params={
+            "deviceSn": device_sn,
+            "startTime": (at_time - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S"),
+            "endTime": at_time.strftime("%Y-%m-%d %H:%M:%S"),
+            "fields": "deviceSn,dataTime,totalSellEnergy",
+        },
+        timeout=30,
+    )
+    response.raise_for_status()
+    records = response.json().get("data", [])
+    if not records:
+        return None
+    latest = max(records, key=lambda record: str(record.get("dataTime") or ""))
+    value = latest.get("totalSellEnergy")
+    return float(value) if value not in (None, "") else None
+
+
+def get_ems_year_sell_energy_kwh(
+    headers: dict[str, str],
+    plant_id: str,
+    ems_sn: str,
+    at_date: date,
+) -> float | None:
+    """Legge parallYearSellEnergy dall'EMS (energia immessa YTD, si azzera a inizio anno).
+
+    Replica esattamente fetch_ems_year_snapshot_rows del probe: finestra di 10 minuti
+    che termina a min(at_date 23:59:59, now). Finestre più lunghe causano codice 10171.
+    """
+    now = datetime.now()
+    end_dt = min(datetime.combine(at_date, datetime_time(23, 59, 59)), now)
+    start_dt = end_dt - timedelta(minutes=10)
+    response = requests.get(
+        f"{BASE_URL}/open/api/device/emsHistoryData",
+        headers={
+            **headers,
+            "Content-Type": "application/json",
+            "content-language": "en_US",
+        },
+        params={
+            "startTime": start_dt.strftime("%Y-%m-%d %H:%M:%S"),
+            "endTime": end_dt.strftime("%Y-%m-%d %H:%M:%S"),
+            "emsSn": ems_sn,
+            "plantId": plant_id,
+        },
+        timeout=30,
+    )
+    response.raise_for_status()
+    records = response.json().get("data") or []
+    if not records:
+        return None
+    latest = max(records, key=lambda record: str(record.get("dataTime") or ""))
+    value = latest.get("parallYearSellEnergy")
+    return float(value) if value not in (None, "") else None
+
+
 def get_device_daily_pv_energy_kwh(headers: dict[str, str], device_sn: str, energy_date: date) -> float | None:
     start_dt = datetime.combine(energy_date, datetime_time(0, 0, 0))
     end_dt = datetime.combine(energy_date, datetime_time(23, 59, 59))
