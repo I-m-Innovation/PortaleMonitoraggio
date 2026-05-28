@@ -850,6 +850,12 @@ def build_fotovoltaico_ppu_rows_portale():
             if _autoconsumata_kwh is not None and _prodotta_kwh and _prodotta_kwh > 0
             else None
         )
+        _tariffa_ppu_mwh: Decimal | None = getattr(stato_economico, "tariffa_ppu_mwh", None)
+        _maturato_ppu_euro: Decimal | None = (
+            _autoconsumata_kwh * _tariffa_ppu_mwh / 1000
+            if _autoconsumata_kwh is not None and _tariffa_ppu_mwh is not None
+            else None
+        )
 
         rows.append(
             FotovoltaicoPPURow(
@@ -879,8 +885,10 @@ def build_fotovoltaico_ppu_rows_portale():
                     "%",
                     unit_class="metric-unit metric-unit-strong",
                 ),
-                maturato_ppu_anno_corrente_kwh="--",
-                maturato_ppu_anno_corrente_euro="--",
+                maturato_ppu_anno_corrente_euro=_fmt_with_unit(
+                    _fmt_number_it(_maturato_ppu_euro, decimals=2),
+                    "€",
+                ),
                 fatturato_dall_inizio="--",
                 tipologia_di_pagamento=(
                     getattr(stato_economico, "tipologia_pagamento_ppu", None) or "--"
