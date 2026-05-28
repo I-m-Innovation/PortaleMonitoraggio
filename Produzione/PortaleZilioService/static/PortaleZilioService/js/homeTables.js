@@ -372,6 +372,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
             applyUpdatedTables(payload.tables || {});
             setBannerState(payload.message || "Aggiornamento metriche provider completato.", "is-success");
+            const missingExported = payload.result?.saj_exported_energy_missing;
+            if (missingExported && missingExported.length > 0) {
+                console.warn(
+                    "[SAJ energia immessa] Impianti senza configurazione — aggiungere una voce a _SAJ_EXPORTED_ENERGY_CONFIG:",
+                    missingExported,
+                );
+            }
         } catch (error) {
             setBannerState(error.message || "Errore durante l'aggiornamento delle metriche provider.", "is-error");
         }

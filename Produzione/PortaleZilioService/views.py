@@ -662,6 +662,7 @@ def sync_provider_metrics_view(request):
         portale_outcome = service.sync_portale_fotovoltaico_isc_metrics()
         saj_outcome = service.sync_portale_fotovoltaico_saj_metrics()
         saj_annual_energy_outcome = service.sync_portale_fotovoltaico_saj_annual_produced_energy()
+        saj_exported_energy_outcome = service.sync_portale_fotovoltaico_saj_annual_exported_energy()
         tables = _build_tables_payload(request)
         return JsonResponse(
             {
@@ -670,7 +671,8 @@ def sync_provider_metrics_view(request):
                     "Aggiornamento completato. "
                     f"Nuove metriche FV ISC aggiornate: {portale_outcome.updated}. "
                     f"Nuove metriche FV SAJ aggiornate: {saj_outcome.updated}. "
-                    f"Energia PPU SAJ aggiornata: {saj_annual_energy_outcome.updated}."
+                    f"Energia PPU SAJ aggiornata: {saj_annual_energy_outcome.updated}. "
+                    f"Energia immessa PPU SAJ aggiornata: {saj_exported_energy_outcome.updated}."
                 ),
                 "result": {
                     "portale_updated": portale_outcome.updated,
@@ -684,6 +686,9 @@ def sync_provider_metrics_view(request):
                     "saj_annual_energy_updated": saj_annual_energy_outcome.updated,
                     "saj_annual_energy_skipped": saj_annual_energy_outcome.skipped,
                     "saj_annual_energy_missing": saj_annual_energy_outcome.missing,
+                    "saj_exported_energy_updated": saj_exported_energy_outcome.updated,
+                    "saj_exported_energy_skipped": saj_exported_energy_outcome.skipped,
+                    "saj_exported_energy_missing": saj_exported_energy_outcome.missing,
                 },
                 "tables": tables,
             }

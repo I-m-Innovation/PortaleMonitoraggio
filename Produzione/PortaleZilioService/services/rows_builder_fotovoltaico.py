@@ -838,6 +838,19 @@ def build_fotovoltaico_ppu_rows_portale():
         stato_economico = getattr(impianto, "fotovoltaico_stato_economico", None)
         metriche = getattr(impianto, "fotovoltaico_metriche_tecniche", None)
 
+        _prodotta_kwh: Decimal | None = getattr(metriche, "energia_prodotta_anno_corrente_kwh", None)
+        _immessa_kwh: Decimal | None = getattr(metriche, "energia_immessa_anno_corrente_kwh", None)
+        _autoconsumata_kwh: Decimal | None = (
+            _prodotta_kwh - _immessa_kwh
+            if _prodotta_kwh is not None and _immessa_kwh is not None
+            else None
+        )
+        _percentuale_autoconsumo: float | None = (
+            float(_autoconsumata_kwh) / float(_prodotta_kwh) * 100
+            if _autoconsumata_kwh is not None and _prodotta_kwh and _prodotta_kwh > 0
+            else None
+        )
+
         rows.append(
             FotovoltaicoPPURow(
                 nome_impianto=impianto.nome_impianto or "--",
@@ -850,14 +863,22 @@ def build_fotovoltaico_ppu_rows_portale():
                     getattr(stato_economico, "strumento_contabilizzazione_ppu", None) or "--"
                 ),
                 energia_prodotta_anno_corrente=_fmt_with_unit(
-                    _fmt_number_it(
-                        getattr(metriche, "energia_prodotta_anno_corrente_kwh", None),
-                        decimals=2,
-                    ),
+                    _fmt_number_it(_prodotta_kwh, decimals=2),
                     "kWh",
                 ),
-                energia_autoconsumata_anno_corrente="--",
-                percentuale_autoconsumo_anno_corrente="--",
+                energia_immessa_anno_corrente=_fmt_with_unit(
+                    _fmt_number_it(_immessa_kwh, decimals=2),
+                    "kWh",
+                ),
+                energia_autoconsumata_anno_corrente=_fmt_with_unit(
+                    _fmt_number_it(_autoconsumata_kwh, decimals=2),
+                    "kWh",
+                ),
+                percentuale_autoconsumo_anno_corrente=_fmt_with_unit(
+                    _fmt_number_it(_percentuale_autoconsumo, decimals=1),
+                    "%",
+                    unit_class="metric-unit metric-unit-strong",
+                ),
                 maturato_ppu_anno_corrente_kwh="--",
                 maturato_ppu_anno_corrente_euro="--",
                 fatturato_dall_inizio="--",
@@ -891,7 +912,7 @@ def _build_fotovoltaico_overview_base_queryset():
             "fotovoltaico_stato_economico",
             "fotovoltaico_metriche_tecniche",
         )
-        .prefetch_related("dispositivi")
+        .prefetch_related("dispositivi", "sorgenti_dati")
         .filter(
             tipo_impianto=ImpiantoAnagrafica.TipoImpianto.FOTOVOLTAICO,
         )
