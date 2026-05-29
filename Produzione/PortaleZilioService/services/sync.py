@@ -111,6 +111,36 @@ class MetricsSyncService:
                 missing.append(impianto.nome_impianto)
                 continue
 
+            try:
+                absolute_ytd_kwh = provider.fetch_portale_produced_ytd_kwh(
+                    impianto,
+                    sorgenti[0],
+                    end_date,
+                )
+            except NotImplementedError:
+                absolute_ytd_kwh = None
+
+            if absolute_ytd_kwh is not None:
+                total_energy_kwh = Decimal(str(absolute_ytd_kwh))
+                logger.warning(
+                    "[ppu-energy-sync] impianto=%s absolute_ytd_energy_kwh=%s updated_through=%s",
+                    impianto.nome_impianto,
+                    total_energy_kwh,
+                    end_date,
+                )
+                with transaction.atomic():
+                    metriche, _ = FotovoltaicoMetricheTecniche.objects.get_or_create(impianto=impianto)
+                    metriche.energia_prodotta_anno_corrente_kwh = total_energy_kwh
+                    metriche.energia_prodotta_anno_corrente_aggiornata_al = end_date
+                    metriche.save(
+                        update_fields=[
+                            "energia_prodotta_anno_corrente_kwh",
+                            "energia_prodotta_anno_corrente_aggiornata_al",
+                        ]
+                    )
+                updated += 1
+                continue
+
             metriche = getattr(impianto, "fotovoltaico_metriche_tecniche", None)
             start_date, base_energy_kwh = self._annual_energy_resume_state(metriche, end_date)
 
