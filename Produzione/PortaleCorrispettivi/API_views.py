@@ -1083,8 +1083,8 @@ def datitabellaconsorzi(request, anno, nickname):
     # print(f"[DEBUG] datitabellaconsorzi - nickname: {nickname}")
     
     # Lista degli anni da elaborare
-    anni_da_elaborare = [2021, 2022, 2023, 2024, 2025]
-    
+    anno_corrente = datetime.now().year
+    anni_da_elaborare = list(range(2021, anno_corrente + 1))    
     # Nomi dei mesi in italiano
     nomi_mesi = [
         'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',

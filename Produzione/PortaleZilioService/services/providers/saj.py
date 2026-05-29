@@ -34,6 +34,7 @@ class SajMetricsProvider:
     }
     _SAJ_PRODUCED_YTD_CONFIG: dict[str, dict] = {
         "168UEE": {"plant_id": "24031286133", "ems_sn": "M5530J2428000038"},  # Zilio Group
+        "7269Q6": {"plant_id": "25520042620", "ems_sn": "M5530J2428000023"},  # RCT 2 - Bramante
     }
 
     def fetch_portale_snapshot(self, impianto, sorgente, window: MetricsWindow) -> ProviderPlantSnapshot:
