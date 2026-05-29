@@ -41,6 +41,7 @@ class ComputedPlantMetrics:
     irradiation_kwh_m2: float | None = None
     performance_ratio: float | None = None
     missed_production_kwh: float | None = None
+    expected_energy_kwh: float | None = None
     has_weather_station: bool | None = None
     inverters_count: int | None = None
     inverters_ok: int | None = None

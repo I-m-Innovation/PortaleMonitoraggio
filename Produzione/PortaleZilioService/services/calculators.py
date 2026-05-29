@@ -24,6 +24,7 @@ class DefaultMetricsCalculator:
             )
 
         missed_production_kwh = None
+        expected_energy_kwh = None
         if (
             snapshot.window_energy_kwh is not None
             and snapshot.window_irradiation_kwh_m2 is not None
@@ -50,6 +51,7 @@ class DefaultMetricsCalculator:
             irradiation_kwh_m2=snapshot.window_irradiation_kwh_m2,
             performance_ratio=round(performance_ratio, 4) if performance_ratio is not None else None,
             missed_production_kwh=round(missed_production_kwh, 2) if missed_production_kwh is not None else None,
+            expected_energy_kwh=round(expected_energy_kwh, 2) if expected_energy_kwh is not None else None,
             has_weather_station=snapshot.has_weather_station,
             inverters_count=snapshot.inverters_count,
             inverters_ok=snapshot.inverters_ok,

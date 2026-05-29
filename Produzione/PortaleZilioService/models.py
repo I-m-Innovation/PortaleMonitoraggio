@@ -296,6 +296,13 @@ class FotovoltaicoMetricheTecniche(models.Model):
     pr_ultimi_12_mesi = models.DecimalField(max_digits=6, decimal_places=4, blank=True, null=True)
     mancata_produzione = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     ore_equivalenti_ultimi_12_mesi = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    energia_stimata_anno_corrente_kwh = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        verbose_name="Energia stimata anno corrente (kWh)",
+    )
     energia_prodotta_anno_corrente_kwh = models.DecimalField(
         max_digits=14,
         decimal_places=2,
