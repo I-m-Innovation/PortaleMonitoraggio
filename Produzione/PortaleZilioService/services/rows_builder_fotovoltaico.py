@@ -348,15 +348,16 @@ def _next_invoice_amount_cell(stato_economico) -> str:
     return _fmt_currency_accounting(importo_canone_periodico)
 
 
-def _pr_ultimi_12_mesi_text(impianto, metriche) -> str:
+def _pr_ultimi_12_mesi_text(impianto, metriche, has_weather_station: bool | None = None) -> str:
     pr_value = getattr(metriche, "pr_ultimi_12_mesi", None)
     if pr_value is not None:
         return _fmt_performance_ratio(pr_value)
 
-    has_weather_station = impianto.dispositivi.filter(
-        tipo_dispositivo=ImpiantoDispositivo.TipoDispositivo.WEATHER_STATION,
-        attivo=True,
-    ).exists()
+    if has_weather_station is None:
+        has_weather_station = impianto.dispositivi.filter(
+            tipo_dispositivo=ImpiantoDispositivo.TipoDispositivo.WEATHER_STATION,
+            attivo=True,
+        ).exists()
     if not has_weather_station:
         return "SM"
     return "ERR"
@@ -837,6 +838,10 @@ def build_fotovoltaico_ppu_rows_portale():
     for impianto in queryset:
         stato_economico = getattr(impianto, "fotovoltaico_stato_economico", None)
         metriche = getattr(impianto, "fotovoltaico_metriche_tecniche", None)
+        _has_weather_station = impianto.dispositivi.filter(
+            tipo_dispositivo=ImpiantoDispositivo.TipoDispositivo.WEATHER_STATION,
+            attivo=True,
+        ).exists()
 
         _prodotta_kwh: Decimal | None = getattr(metriche, "energia_prodotta_anno_corrente_kwh", None)
         _immessa_kwh: Decimal | None = getattr(metriche, "energia_immessa_anno_corrente_kwh", None)
@@ -903,9 +908,17 @@ def build_fotovoltaico_ppu_rows_portale():
                     getattr(stato_economico, "data_inizio_contratto", None),
                     getattr(stato_economico, "data_fine_contratto", None),
                 ),
-                pr_stimato_annuo="--",
-                energia_stimata_annua="--",
-                mancata_produzione="--",
+                pr_stimato_annuo=_pr_ultimi_12_mesi_text(impianto, metriche, _has_weather_station),
+                energia_stimata_annua=(
+                    _fmt_with_unit(_fmt_number_it(getattr(metriche, "energia_stimata_anno_corrente_kwh", None), decimals=2), "kWh")
+                    if _has_weather_station
+                    else "SM"
+                ),
+                mancata_produzione=(
+                    _fmt_with_unit(_fmt_number_it(getattr(metriche, "mancata_produzione", None), decimals=2), "kWh")
+                    if _has_weather_station
+                    else "SM"
+                ),
                 fatturato_previsto="--",
             )
         )

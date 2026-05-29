@@ -21,12 +21,12 @@ class SajApiError(RuntimeError):
     pass
 
 
-def get_token() -> str:
+def get_token(force_refresh: bool = False) -> str:
     global _cached_token, _cached_token_valid_until
 
     now = time.monotonic()
     with _token_lock:
-        if _cached_token and now < _cached_token_valid_until:
+        if not force_refresh and _cached_token and now < _cached_token_valid_until:
             return _cached_token
 
         response = requests.get(
@@ -53,6 +53,8 @@ def build_headers(token: str) -> dict[str, str]:
 
 
 def get_plants(headers: dict[str, str], page_size: int = 100) -> list[dict]:
+    import logging as _logging
+    _log = _logging.getLogger(__name__)
     response = requests.get(
         f"{BASE_URL}/open/api/developer/plant/page",
         headers=headers,
@@ -60,7 +62,11 @@ def get_plants(headers: dict[str, str], page_size: int = 100) -> list[dict]:
         timeout=30,
     )
     response.raise_for_status()
-    return response.json().get("rows", [])
+    body = response.json()
+    rows = body.get("rows", [])
+    if not rows:
+        _log.warning("[saj-get-plants] raw_response=%s", body)
+    return rows
 
 
 def get_devices(headers: dict[str, str], plant_id: str, page_size: int = 100) -> list[dict]:
@@ -160,6 +166,40 @@ def get_ems_year_sell_energy_kwh(
         return None
     latest = max(records, key=lambda record: str(record.get("dataTime") or ""))
     value = latest.get("parallYearSellEnergy")
+    return float(value) if value not in (None, "") else None
+
+
+def get_ems_year_pv_energy_kwh(
+    headers: dict[str, str],
+    plant_id: str,
+    ems_sn: str,
+    at_date: date,
+) -> float | None:
+    """Legge parallYearPVEnergy dall'EMS (energia prodotta YTD)."""
+    now = datetime.now()
+    end_dt = min(datetime.combine(at_date, datetime_time(23, 59, 59)), now)
+    start_dt = end_dt - timedelta(minutes=10)
+    response = requests.get(
+        f"{BASE_URL}/open/api/device/emsHistoryData",
+        headers={
+            **headers,
+            "Content-Type": "application/json",
+            "content-language": "en_US",
+        },
+        params={
+            "startTime": start_dt.strftime("%Y-%m-%d %H:%M:%S"),
+            "endTime": end_dt.strftime("%Y-%m-%d %H:%M:%S"),
+            "emsSn": ems_sn,
+            "plantId": plant_id,
+        },
+        timeout=30,
+    )
+    response.raise_for_status()
+    records = response.json().get("data") or []
+    if not records:
+        return None
+    latest = max(records, key=lambda record: str(record.get("dataTime") or ""))
+    value = latest.get("parallYearPVEnergy")
     return float(value) if value not in (None, "") else None
 
 

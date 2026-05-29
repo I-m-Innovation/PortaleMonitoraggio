@@ -32,6 +32,9 @@ class SajMetricsProvider:
         "7269Q6": {"strategy": "ems",    "plant_id": "25520042620", "ems_sn": "M5530J2428000023"},  # RCT 2 - Bramante
         "529SGS": {"strategy": "device", "device_sn": "CSV6503J2416E00004"},                        # Col Roigo 50 kWp
     }
+    _SAJ_PRODUCED_YTD_CONFIG: dict[str, dict] = {
+        "168UEE": {"plant_id": "24031286133", "ems_sn": "M5530J2428000038"},  # Zilio Group
+    }
 
     def fetch_portale_snapshot(self, impianto, sorgente, window: MetricsWindow) -> ProviderPlantSnapshot:
         token = saj_client.get_token()
@@ -164,6 +167,49 @@ class SajMetricsProvider:
         )
         return result
 
+    def fetch_portale_produced_ytd_kwh(
+        self,
+        impianto,
+        sorgente,
+        end_date: date,
+    ) -> float:
+        """Legge energia prodotta YTD da EMS per impianti configurati.
+
+        Attualmente usato solo per Zilio Group, dove la supervisione SAJ usa
+        il dato aggregato EMS e non la somma dei singoli inverter storici.
+        """
+        id_esterno = str(getattr(sorgente, "identificativo_esterno", None) or "")
+        config = self._SAJ_PRODUCED_YTD_CONFIG.get(id_esterno)
+        if config is None:
+            raise NotImplementedError(
+                f"No produced YTD EMS config for plant {impianto.nome_impianto!r} "
+                f"(identificativo_esterno={id_esterno!r})"
+            )
+
+        token = saj_client.get_token()
+        headers = saj_client.build_headers(token)
+        produced_kwh = saj_client.get_ems_year_pv_energy_kwh(
+            headers,
+            config["plant_id"],
+            config["ems_sn"],
+            end_date,
+        )
+        if produced_kwh is None:
+            raise NotImplementedError(
+                f"EMS returned no produced YTD data for plant {impianto.nome_impianto!r} "
+                f"(ems_sn={config['ems_sn']!r}, plant_id={config['plant_id']!r})"
+            )
+
+        result = round(produced_kwh, 2)
+        logger.warning(
+            "[saj-annual-produced-ytd] impianto=%s id_esterno=%s produced_kwh=%s end_date=%s",
+            impianto.nome_impianto,
+            id_esterno,
+            result,
+            end_date,
+        )
+        return result
+
     def fetch_portale_energy_kwh_for_range(
         self,
         impianto,
@@ -191,7 +237,6 @@ class SajMetricsProvider:
             [device.codice_dispositivo for device in matched_devices],
         )
         energy_kwh, devices_with_data, missing_serials = self._compute_range_daily_energy_kwh(
-            headers=headers,
             selected_devices=matched_devices,
             start_date=window.start_date,
             end_date=window.end_date,
@@ -210,9 +255,8 @@ class SajMetricsProvider:
         )
         return energy_kwh
 
-    @staticmethod
     def _compute_range_daily_energy_kwh(
-        headers: dict[str, str],
+        self,
         selected_devices: list,
         start_date: date,
         end_date: date,
@@ -241,8 +285,8 @@ class SajMetricsProvider:
                     getattr(device, "data_fine_monitoraggio", None),
                 )
                 continue
+
             device_total_kwh = 0.0
-            current_date = device_start_date
             days_with_data = 0
             logger.warning(
                 "[saj-annual-energy] device=%s start range=%s..%s monitoring=%s..%s",
@@ -252,30 +296,63 @@ class SajMetricsProvider:
                 getattr(device, "data_inizio_monitoraggio", None),
                 getattr(device, "data_fine_monitoraggio", None),
             )
-            while current_date <= device_end_date:
-                daily_energy_kwh = saj_client.get_device_daily_pv_energy_kwh(
-                    headers,
+
+            # Itera mese per mese: ogni mese parte con un nuovo login SAJ
+            # per evitare che la sessione scada o venga throttled su range lunghi.
+            current_month_start = device_start_date.replace(day=1)
+            while current_month_start <= device_end_date:
+                # Primo giorno del mese successivo e ultimo giorno del mese corrente
+                next_month_start = (current_month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+                month_end = next_month_start - timedelta(days=1)
+
+                # Limita ai confini del device
+                month_start_clamped = max(current_month_start, device_start_date)
+                month_end_clamped = min(month_end, device_end_date)
+
+                # Nuovo login per ogni mese
+                token = saj_client.get_token(force_refresh=True)
+                headers = saj_client.build_headers(token)
+                logger.warning(
+                    "[saj-annual-energy] device=%s month=%s fresh_token=True",
                     device_sn,
-                    current_date,
+                    current_month_start.strftime("%Y-%m"),
                 )
-                if daily_energy_kwh is None:
-                    logger.warning(
-                        "[saj-annual-energy] device=%s no records date=%s skipped accumulated_kwh=%s",
+
+                month_kwh = 0.0
+                current_date = month_start_clamped
+                while current_date <= month_end_clamped:
+                    daily_energy_kwh = saj_client.get_device_daily_pv_energy_kwh(
+                        headers,
                         device_sn,
                         current_date,
-                        round(device_total_kwh, 2),
                     )
-                else:
-                    device_total_kwh += daily_energy_kwh
-                    days_with_data += 1
-                    logger.warning(
-                        "[saj-annual-energy] device=%s date=%s daily_kwh=%s accumulated_kwh=%s",
-                        device_sn,
-                        current_date,
-                        round(daily_energy_kwh, 2),
-                        round(device_total_kwh, 2),
-                    )
-                current_date += timedelta(days=1)
+                    if daily_energy_kwh is None:
+                        logger.warning(
+                            "[saj-annual-energy] device=%s no records date=%s skipped accumulated_kwh=%s",
+                            device_sn,
+                            current_date,
+                            round(device_total_kwh + month_kwh, 2),
+                        )
+                    else:
+                        month_kwh += daily_energy_kwh
+                        days_with_data += 1
+                        logger.warning(
+                            "[saj-annual-energy] device=%s date=%s daily_kwh=%s accumulated_kwh=%s",
+                            device_sn,
+                            current_date,
+                            round(daily_energy_kwh, 2),
+                            round(device_total_kwh + month_kwh, 2),
+                        )
+                    current_date += timedelta(days=1)
+
+                logger.warning(
+                    "[saj-annual-energy] device=%s month=%s month_kwh=%s",
+                    device_sn,
+                    current_month_start.strftime("%Y-%m"),
+                    round(month_kwh, 2),
+                )
+                device_total_kwh += month_kwh
+                current_month_start = next_month_start
 
             if days_with_data == 0:
                 missing_serials.append(device_sn)
@@ -337,12 +414,15 @@ class SajMetricsProvider:
         )
 
     def _find_matching_portale_plant(self, headers: dict[str, str], impianto, sorgente):
+        id_esterno = str(getattr(sorgente, "identificativo_esterno", None) or "")
+        config_plant_id = (self._SAJ_EXPORTED_ENERGY_CONFIG.get(id_esterno) or {}).get("plant_id")
         candidates = {
-            self._normalize(getattr(sorgente, "identificativo_esterno", None)),
+            self._normalize(id_esterno),
             self._normalize(getattr(impianto, "codice_impianto", None)),
             self._normalize(getattr(sorgente, "nome_riferimento_esterno", None)),
             self._normalize(getattr(impianto, "tag_impianto", None)),
             self._normalize(getattr(impianto, "nome_impianto", None)),
+            self._normalize(config_plant_id),
         }
         candidates.discard("")
         for attempt in range(1, 3):
