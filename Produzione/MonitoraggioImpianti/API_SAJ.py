@@ -22,7 +22,7 @@ PLANT_DEVICE_OVERRIDES = {
         "power_field_name": "totalPVPower",
         "energy_field_name": "todayPvEnergy",
     },
-    "ziliogroup490kw": {
+    "ziliogroupsaj": {
         "device_serial_numbers_to_query": [
             "C6T9104J2314E00560", # inverter
             "C6T9104J2315E00670", # inverter

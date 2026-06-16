@@ -171,15 +171,14 @@ def datiNI(request, nickname, anno, mese):
     if not energia_non_incentivata:
         return [None]
     return energia_non_incentivata
+
 def datiCNI(request, nickname, anno, mese):
  
     
     # Calcoliamo l'energia non incentivata meno l'immissione
     # Otteniamo l'energia non incentivata come lista
     ni  = datiNI(request, nickname, anno, mese)
-    
-   
-    
+       
     # Query corretta per filtrare i dati CNI dalla tabella "Prezzi medi mensili"
     # usando le colonne timestamp e mean_CNIs per anno e mese specificati
     with connection.cursor() as cursor: 
@@ -704,6 +703,8 @@ def datiTFO_annuale(request, nickname, anno):
             try:
                 prod_corr = prod_totale * 0.98
                 val = min(prod_corr, imm_totale) * 0.21
+                if nickname== "petilia_bf_partitore" and anno < 2023:
+                    val = 0
                 per_month[mese] = val
                 # print(f"[DEBUG] Calcolato per mese {mese} -anno- {anno}: prod_corr={prod_corr}, val={val}")
             except (ValueError, TypeError) as e:
@@ -711,7 +712,7 @@ def datiTFO_annuale(request, nickname, anno):
                 continue
         else:
             # print(f"[DEBUG] Mese {mese}: dati insufficienti (prod_totale={prod_totale}, imm_totale={imm_totale})")
-            pass
+            pass        
     
     # print(f"[DEBUG] Risultato finale per_month: {per_month}")
     return JsonResponse({'success': True, 'per_month': per_month, 'anno': anno, 'impianto': nickname})
@@ -890,16 +891,25 @@ def datiCNI_annuale(request, nickname, anno):
     """
     Calcolo mensile del CNI: somma_i( (prod-imm, con gestione None) * media_PUN_mensile / 1000 )
     """
+    
+
     # Preleva tutti i record dell'anno
     records = regsegnanti.objects.filter(
         anno=anno,
         contatore__impianto_nickname=nickname,
         mese__in=_mesi_1_12()
     ).values_list('mese', 'prod_campo', 'imm_campo')
+    
+#     records = [
+#     tuple(0 if x is None else x for x in row)
+#     for row in records
+# ]
 
     # Calcolo energia non incentivata per mese (somma delle differenze gestendo None come in datiNI)
     ni_per_month_list = {m: [] for m in _mesi_1_12()}
     for mese, prod, imm in records:
+        if anno == 2022:
+            A=1
         mese = int(mese)
         if prod is not None and imm is not None:
             ni_val = float(prod) - float(imm)
@@ -909,7 +919,10 @@ def datiCNI_annuale(request, nickname, anno):
             ni_val = -float(imm)
         else:
             ni_val = 0.0
+        if nickname == "petilia_bf_partitore" and anno < 2023:
+            ni_val = float(imm)
         ni_per_month_list[mese].append(ni_val)
+        
 
     # Preleva media_puns per ciascun mese dell'anno richiesto
     media_pun_per_month = {m: 0.0 for m in _mesi_1_12()}
